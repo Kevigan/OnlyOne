@@ -22,12 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 private val DarkColorPalette = darkColors(
-    primary = Color(0xFF81D4FA),
+    primary = Color(0xFF121212), // Deep dark gray
     primaryVariant = PurpleGrey80,
     secondary = Color(0xFF0A192F),
     background = Color.Black,
     surface = Color.Black,
-    onPrimary = Color.Black,
+    onPrimary = Color.White,
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White
@@ -58,7 +58,8 @@ fun OnlyOneTheme(
     darkTheme: Boolean = isSystemInDarkTheme(), // Detect system dark mode
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) DarkColorPalette else LightColorPalette
+    //val colors = if (darkTheme) DarkColorPalette else LightColorPalette
+    val colors = DarkColorPalette
 
     androidx.compose.material.MaterialTheme(
         colors = colors,
