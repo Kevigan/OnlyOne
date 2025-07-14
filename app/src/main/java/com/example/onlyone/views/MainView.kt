@@ -96,7 +96,8 @@ fun MainView() {
                             avatarResId = R.drawable.baseline_tag_faces_24,
                             name = name,
                             message = message,
-                            expiration = expiration
+                            expiration = expiration,
+                            onClick = { } //TODO
                         )
                     }
                 }

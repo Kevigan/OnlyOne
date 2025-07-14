@@ -53,7 +53,7 @@ fun UserStatsCardContent(
                 color = Color.White
             )
             Text(
-                text = "Points in bank: $rank",
+                text = "Rank: $rank",
                 style = MaterialTheme.typography.body1,
                 color = Color.White
             )

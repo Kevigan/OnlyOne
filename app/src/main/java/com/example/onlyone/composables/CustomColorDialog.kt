@@ -48,15 +48,14 @@ fun CustomColorOverlay(
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .height(IntrinsicSize.Min),
+                .fillMaxWidth(),
             shape = shape,
             elevation = 8.dp,
             color = overlayColor
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(

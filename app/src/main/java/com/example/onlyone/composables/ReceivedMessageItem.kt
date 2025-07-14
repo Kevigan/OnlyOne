@@ -1,6 +1,7 @@
 package com.example.onlyone.composables
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,10 +35,13 @@ fun ReceivedMessageItem(
     avatarResId: Int,
     name: String,
     message: String,
-    expiration: String
+    expiration: String,
+    onClick: () -> Unit // ← new
 ) {
     CustomColorOverlay(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(percent = 45),
         overlayColor = Color.Gray,
         onDismiss = {},
@@ -131,3 +135,4 @@ fun ReceivedMessageItem(
         }
     }
 }
+

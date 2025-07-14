@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,20 +21,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.onlyone.R
+import com.example.onlyone.composables.FriendItem
 
 @Composable
 fun FriendsView() {
     val fakeFriends = listOf(
-        "Alice Johnson",
-        "Bob Smith",
-        "Charlie Adams",
-        "Diana Lee",
-        "Ethan Carter",
-        "Fiona Green",
-        "George Stone",
-        "Hannah White",
-        "Ivan Black",
-        "Jenny Moore"
+        Triple("Alice Johnson", "Online", R.drawable.baseline_tag_faces_24),
+        Triple("Bob Smith", "Away", R.drawable.baseline_tag_faces_24),
+        Triple("Charlie Adams", "Busy", R.drawable.baseline_tag_faces_24),
+        Triple("Diana Lee", "Online", R.drawable.baseline_tag_faces_24),
+        Triple("Ethan Carter", "Offline", R.drawable.baseline_tag_faces_24),
+        Triple("Alice Johnson", "Online", R.drawable.baseline_tag_faces_24),
+        Triple("Bob Smith", "Away", R.drawable.baseline_tag_faces_24),
+        Triple("Charlie Adams", "Busy", R.drawable.baseline_tag_faces_24),
+        Triple("Diana Lee", "Online", R.drawable.baseline_tag_faces_24),
+        Triple("Ethan Carter", "Offline", R.drawable.baseline_tag_faces_24)
+        // add more...
     )
 
     Column(
@@ -47,30 +51,16 @@ fun FriendsView() {
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        LazyColumn {
-            items(fakeFriends) { name ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    elevation = 4.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.primary,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(text = name, style = MaterialTheme.typography.body1)
-                    }
-                }
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 12.dp)
+        ) {
+            items(fakeFriends) { (name, status, avatarResId) ->
+                FriendItem(
+                    name = name,
+                    status = status,
+                    avatarResId = avatarResId
+                )
             }
         }
     }

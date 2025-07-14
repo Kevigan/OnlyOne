@@ -35,9 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.onlyone.R
 import com.example.onlyone.Screen
 
 @Composable
@@ -47,16 +49,21 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp).border(0.1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(32.dp))
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp + navBarHeight),
-            shape = RoundedCornerShape(32.dp), // ⬅️ All corners rounded
+                .height(64.dp + navBarHeight)
+                .border(
+                    width = 0.1.dp,
+                    color = Color.White.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(32.dp)
+                ), // ✅ Border here
+            shape = RoundedCornerShape(32.dp),
             elevation = 8.dp,
             color = Color.Transparent
-        ) {
+        ){
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -126,7 +133,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
             Button(
                 onClick = { /* Center action */ },
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.onSurface),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent), // Transparent to show gradient inside
                 modifier = Modifier.size(72.dp),
                 contentPadding = PaddingValues(0.dp),
                 elevation = ButtonDefaults.elevation(
@@ -136,13 +143,29 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
                     focusedElevation = 10.dp
                 )
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profile",
-                    tint = MaterialTheme.colors.onSecondary,
-                    modifier = Modifier.size(36.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF4CAF50), // green
+                                    Color(0xFF81C784)  // lighter green
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_message_24),
+                        contentDescription = "Profile",
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
             }
+
         }
     }
 }

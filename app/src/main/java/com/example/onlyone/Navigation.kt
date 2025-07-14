@@ -12,12 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.onlyone.composables.MainBottomBar
+import com.example.onlyone.viewModels.ChatViewModel
+import com.example.onlyone.viewModels.UserViewModel
 import com.example.onlyone.views.FriendsView
 import com.example.onlyone.views.MainView
 import com.example.onlyone.views.SettingsView
@@ -25,7 +28,9 @@ import com.example.onlyone.views.ShopView
 
 @Composable
 fun Navigation(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    userViewModel: UserViewModel = hiltViewModel(),
+    chatViewModel: ChatViewModel = hiltViewModel()
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
