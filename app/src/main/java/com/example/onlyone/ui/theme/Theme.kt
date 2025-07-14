@@ -22,15 +22,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 private val DarkColorPalette = darkColors(
-    primary = Color(0xFF121212), // Deep dark gray
-    primaryVariant = PurpleGrey80,
-    secondary = Color(0xFF0A192F),
-    background = Color.Black,
-    surface = Color.Black,
-    onPrimary = Color.White,
+    primary = Color(0xFF00FF00),
+    primaryVariant = Color(0xFF433A52),// 0xFF4B007D
+    secondary = Color(0xFF76FF03),
+    background = Color(0xFF2A003F),
+    surface = Color(0xFF1E1E1E),
+    onPrimary = Color.Black,
     onSecondary = Color.Black,
     onBackground = Color.White,
-    onSurface = Color.White
+    onSurface = Color(0xFFEEEEEE)
 )
 
 private val LightColorPalette = lightColors(

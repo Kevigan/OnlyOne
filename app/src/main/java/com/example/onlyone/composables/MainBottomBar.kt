@@ -1,5 +1,7 @@
 package com.example.onlyone.composables
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,73 +32,85 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.onlyone.Screen
 
 @Composable
-fun MainBottomBar(navController: NavController) {
+fun MainBottomBar(navController: NavController, currentRoute: String?) {
     val navBarHeight = 32.dp
 
-    Box {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp).border(0.1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(32.dp))
+    ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(64.dp + navBarHeight),
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            shape = RoundedCornerShape(32.dp), // ⬅️ All corners rounded
             elevation = 8.dp,
-            color = MaterialTheme.colors.primary
+            color = Color.Transparent
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Top
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF433A52), // Darker
+                                Color(0xFF5A4A6A)  // Lighter
+                            )
+                        ),
+                        shape = RoundedCornerShape(32.dp)
+                    )
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .padding(horizontal = 12.dp), // spacing to edge
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Your Column or Row content goes here
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Top
                 ) {
-                    // Leftmost icon
-                    IconButton(onClick = { /* TODO: Menu */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Menu",
-                            tint = MaterialTheme.colors.onSurface,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-
-                    // Inner-left
-                    IconButton(onClick = { /* TODO: Home */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .padding(horizontal = 12.dp), // inner content spacing
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        NavigationIcon(
+                            icon = Icons.Default.Home,
                             contentDescription = "Home",
-                            tint = MaterialTheme.colors.onSurface,
-                            modifier = Modifier.size(32.dp)
+                            isSelected = currentRoute == Screen.MainScreen.route,
+                            onClick = { navController.navigate(Screen.MainScreen.route) }
                         )
-                    }
 
-                    Spacer(modifier = Modifier.width(64.dp)) // space for floating button
+                        NavigationIcon(
+                            icon = Icons.Default.Person,
+                            contentDescription = "Friends",
+                            isSelected = currentRoute == Screen.FriendsScreen.route,
+                            onClick = { navController.navigate(Screen.FriendsScreen.route) }
+                        )
 
-                    // Inner-right
-                    IconButton(onClick = { /* TODO: Settings */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
+                        Spacer(modifier = Modifier.width(64.dp))
+
+                        NavigationIcon(
+                            icon = Icons.Default.Settings,
+                            contentDescription = "Shop",
+                            isSelected = currentRoute == Screen.ShopScreen.route,
+                            onClick = { navController.navigate(Screen.ShopScreen.route) }
+                        )
+
+                        NavigationIcon(
+                            icon = Icons.Default.Info,
                             contentDescription = "Settings",
-                            tint = MaterialTheme.colors.onSurface,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    // Rightmost icon
-                    IconButton(onClick = { /* TODO: Info */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Info",
-                            tint = MaterialTheme.colors.onSurface,
-                            modifier = Modifier.size(28.dp)
+                            isSelected = currentRoute == Screen.SettingsScreen.route,
+                            onClick = { navController.navigate(Screen.SettingsScreen.route) }
                         )
                     }
                 }
@@ -115,7 +129,12 @@ fun MainBottomBar(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.onSurface),
                 modifier = Modifier.size(72.dp),
                 contentPadding = PaddingValues(0.dp),
-                elevation = ButtonDefaults.elevation(defaultElevation = 6.dp)
+                elevation = ButtonDefaults.elevation(
+                    defaultElevation = 12.dp,
+                    pressedElevation = 16.dp,
+                    hoveredElevation = 10.dp,
+                    focusedElevation = 10.dp
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
@@ -124,6 +143,39 @@ fun MainBottomBar(navController: NavController) {
                     modifier = Modifier.size(36.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun NavigationIcon(
+    icon: ImageVector,
+    contentDescription: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    iconSize: Dp = 28.dp,
+    selectedGradient: Brush = Brush.linearGradient(
+        listOf(Color(0xFF8A226D), Color(0xFFEB69CD))
+    ),
+    backgroundColor: Color = MaterialTheme.colors.onBackground
+) {
+    IconButton(onClick = onClick) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    brush = if (isSelected) selectedGradient
+                    else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = backgroundColor,
+                modifier = Modifier.size(iconSize)
+            )
         }
     }
 }
