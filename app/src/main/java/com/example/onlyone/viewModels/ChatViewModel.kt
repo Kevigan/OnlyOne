@@ -11,7 +11,7 @@ class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository
 ) : ViewModel() {
 
-   /* fun sendMessage(message: Message, onComplete: (Boolean) -> Unit) {
+   fun sendMessage(message: Message, onComplete: (Boolean) -> Unit) {
         chatRepository.sendMessage(message).addOnCompleteListener {
             onComplete(it.isSuccessful)
         }
@@ -25,5 +25,5 @@ class ChatViewModel @Inject constructor(
 
     fun addFeedback(messageId: String, feedback: Int) {
         chatRepository.addFeedback(messageId, feedback)
-    }*/
+    }
 }

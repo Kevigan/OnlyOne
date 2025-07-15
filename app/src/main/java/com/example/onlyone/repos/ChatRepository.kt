@@ -9,9 +9,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ChatRepository@Inject constructor(/*private val db: FirebaseFirestore*/) {
+class ChatRepository@Inject constructor(private val db: FirebaseFirestore) {
 
-    /*fun sendMessage(message: Message): Task<Void> {
+    fun sendMessage(message: Message): Task<Void> {
         val docId = db.collection("messages").document().id
         val msgWithId = message.copy(id = docId)
         return db.collection("messages").document(docId).set(msgWithId)
@@ -34,7 +34,7 @@ class ChatRepository@Inject constructor(/*private val db: FirebaseFirestore*/) {
 
     fun addFeedback(messageId: String, feedback: Int): Task<Void> {
         return db.collection("messages").document(messageId).update("feedback", feedback)
-    }*/
+    }
 
     // Add logic for auto-deletion after 24h if needed via Cloud Functions
 }

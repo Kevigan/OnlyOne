@@ -23,9 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.FriendItem
+import com.example.onlyone.viewModels.UserViewModel
 
 @Composable
-fun FriendsView() {
+fun FriendsView(userViewModel: UserViewModel) {
     val fakeFriends = listOf(
         Triple("Alice Johnson", "Online", R.drawable.baseline_tag_faces_24),
         Triple("Bob Smith", "Away", R.drawable.baseline_tag_faces_24),

@@ -16,10 +16,15 @@ import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.composables.ReceivedMessageItem
 import com.example.onlyone.composables.UserStatsCardContent
+import com.example.onlyone.viewModels.ChatViewModel
+import com.example.onlyone.viewModels.UserViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Composable
-fun MainView() {
+fun MainView(
+    userViewModel: UserViewModel,
+    chatViewModel: ChatViewModel
+) {
     val systemUiController = rememberSystemUiController()
     val statusBarColor = MaterialTheme.colors.background
 

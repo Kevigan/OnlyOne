@@ -12,9 +12,10 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.onlyone.viewModels.UserViewModel
 
 @Composable
-fun SettingsView() {
+fun SettingsView(userViewModel: UserViewModel) {
     val settingsItems = listOf(
         "Account",
         "Notifications",

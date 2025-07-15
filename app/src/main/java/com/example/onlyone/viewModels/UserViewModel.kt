@@ -13,12 +13,12 @@ class UserViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
-    private val _user = MutableLiveData<User>()
-    val user: LiveData<User> get() = _user
+    private val _user = MutableLiveData<User?>()
+    val user: LiveData<User?> get() = _user
 
-    /*fun loadUser(uid: String) {
-        userRepository.getUser(uid).addOnSuccessListener {
-            _user.value = it.toObject(User::class.java)
+    fun loadUser(uid: String) {
+        userRepository.getFullUser(uid) { loadedUser ->
+            _user.value = loadedUser
         }
     }
 
@@ -32,5 +32,5 @@ class UserViewModel @Inject constructor(
         _user.value?.uid?.let {
             userRepository.blockUser(it, blockedUid)
         }
-    }*/
+    }
 }

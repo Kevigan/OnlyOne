@@ -29,9 +29,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
+import com.example.onlyone.viewModels.UserViewModel
 
 @Composable
-fun ShopView() {
+fun ShopView(userViewModel: UserViewModel) {
     // Fake image lists – replace with actual drawable resources
     val avatarImages = listOf(
         R.drawable.baseline_tag_faces_24,

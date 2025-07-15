@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -20,22 +22,25 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.onlyone.composables.MainBottomBar
 import com.example.onlyone.viewModels.ChatViewModel
+import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.UserViewModel
 import com.example.onlyone.views.FriendsView
+import com.example.onlyone.views.LoginView
 import com.example.onlyone.views.MainView
 import com.example.onlyone.views.SettingsView
 import com.example.onlyone.views.ShopView
+import com.example.onlyone.views.SplashView
 
 @Composable
 fun Navigation(
     navController: NavHostController = rememberNavController(),
+    sessionViewModel: SessionViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel(),
     chatViewModel: ChatViewModel = hiltViewModel()
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // ⬇️ OUTER BOX with gradient background
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -61,26 +66,46 @@ fun Navigation(
             ) {
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.MainScreen.route
+                    startDestination = Screen.SplashScreen.route
                 ) {
+                    composable(Screen.SplashScreen.route) {
+                        SplashView(
+                            sessionViewModel = sessionViewModel,
+                            navController = navController
+                        )
+                    }
+
                     composable(Screen.MainScreen.route) {
-                        MainView()
+                        MainView(
+                            userViewModel = userViewModel,
+                            chatViewModel = chatViewModel
+                        )
                     }
 
                     composable(Screen.FriendsScreen.route) {
-                        FriendsView()
+                        FriendsView(userViewModel = userViewModel)
                     }
 
                     composable(Screen.ShopScreen.route) {
-                        ShopView()
+                        ShopView(userViewModel = userViewModel)
                     }
 
                     composable(Screen.SettingsScreen.route) {
-                        SettingsView()
+                        SettingsView(userViewModel = userViewModel)
                     }
+
+                    composable(Screen.LoginScreen.route) {
+                        LoginView(
+                            navController = navController,
+                            sessionViewModel = sessionViewModel,
+                            userViewModel = userViewModel
+                        )
+                    }
+
                 }
             }
         }
     }
 }
+
 

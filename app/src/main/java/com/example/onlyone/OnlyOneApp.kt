@@ -10,7 +10,7 @@ import dagger.hilt.android.HiltAndroidApp
 class OnlyOneApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        //FirebaseApp.initializeApp(this)  // keep it here
+        FirebaseApp.initializeApp(this)
     }
 }
 
