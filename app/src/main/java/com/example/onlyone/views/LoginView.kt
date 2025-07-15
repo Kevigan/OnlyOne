@@ -28,6 +28,8 @@ import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.example.onlyone.BuildConfig
+
 
 @Composable
 fun LoginView(
@@ -38,7 +40,7 @@ fun LoginView(
     val context = LocalContext.current
 
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken("YOUR_WEB_CLIENT_ID") // 🔒 Replace with real one
+        .requestIdToken(BuildConfig.WEB_CLIENT_ID)
         .requestEmail()
         .build()
 

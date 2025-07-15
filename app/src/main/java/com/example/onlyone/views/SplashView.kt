@@ -1,10 +1,14 @@
 package com.example.onlyone.views
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,6 +21,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 
@@ -33,12 +41,10 @@ fun SplashView(
     navController: NavController
 ) {
     val firebaseUser by sessionViewModel.currentUser.collectAsState()
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val offsetX = remember { Animatable(-screenWidth.value) }
 
-    val density = LocalDensity.current
-    val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
-    val offsetX = remember { androidx.compose.animation.core.Animatable(-screenWidthPx) } // Float in px
-
-    // Animate the logo in from the left
+    // Animate logo from left to center
     LaunchedEffect(Unit) {
         offsetX.animateTo(
             targetValue = 0f,
@@ -48,7 +54,7 @@ fun SplashView(
 
     // Navigate after delay
     LaunchedEffect(firebaseUser) {
-        delay(2000) // Let animation finish
+        delay(2000)
         if (firebaseUser == null) {
             navController.navigate(Screen.LoginScreen.route) {
                 popUpTo(0) { inclusive = true }
@@ -60,20 +66,28 @@ fun SplashView(
         }
     }
 
-    // Splash screen content
+    // Splash screen UI
     Box(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        val offsetInPx = offsetX.value
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(id = R.drawable.logo_only_one),
+                contentDescription = "OnlyOne Logo",
+                modifier = Modifier
+                    .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                    .size(160.dp)
+            )
 
-        Image(
-            painter = painterResource(id = R.drawable.logo_only_one),
-            contentDescription = "OnlyOne Logo",
-            modifier = Modifier
-                .offset { IntOffset(x = offsetX.value.roundToInt(), y = 0) }
-                .size(160.dp)
-        )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Only One\nMake it count!",
+                style = MaterialTheme.typography.h6,
+                textAlign = TextAlign.Center,
+                color = Color.White
+            )
+        }
     }
 }

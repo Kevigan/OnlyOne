@@ -56,7 +56,9 @@ fun Navigation(
     ) {
         Scaffold(
             bottomBar = {
-                MainBottomBar(navController = navController, currentRoute = currentRoute)
+                if (currentRoute !in listOf(Screen.SplashScreen.route, Screen.LoginScreen.route)) {
+                    MainBottomBar(navController = navController, currentRoute = currentRoute)
+                }
             },
         ) { innerPadding ->
             Box(
