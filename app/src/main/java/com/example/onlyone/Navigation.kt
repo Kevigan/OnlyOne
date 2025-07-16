@@ -27,6 +27,7 @@ import com.example.onlyone.viewModels.UserViewModel
 import com.example.onlyone.views.FriendsView
 import com.example.onlyone.views.LoginView
 import com.example.onlyone.views.MainView
+import com.example.onlyone.views.SetUsernameView
 import com.example.onlyone.views.SettingsView
 import com.example.onlyone.views.ShopView
 import com.example.onlyone.views.SplashView
@@ -73,14 +74,17 @@ fun Navigation(
                     composable(Screen.SplashScreen.route) {
                         SplashView(
                             sessionViewModel = sessionViewModel,
-                            navController = navController
+                            navController = navController,
+                            userViewModel = userViewModel
                         )
                     }
 
                     composable(Screen.MainScreen.route) {
                         MainView(
                             userViewModel = userViewModel,
-                            chatViewModel = chatViewModel
+                            chatViewModel = chatViewModel,
+                            navController = navController,
+                            sessionViewModel = sessionViewModel
                         )
                     }
 
@@ -102,6 +106,12 @@ fun Navigation(
                             sessionViewModel = sessionViewModel,
                             userViewModel = userViewModel
                         )
+                    }
+
+                    composable(Screen.SetUsernameScreen.route) { backStackEntry ->
+                        val uid = backStackEntry.arguments?.getString("uid") ?: ""
+                        val email = backStackEntry.arguments?.getString("email") ?: ""
+                        SetUsernameView(uid = uid, email = email, userViewModel = userViewModel, navController = navController)
                     }
 
                 }

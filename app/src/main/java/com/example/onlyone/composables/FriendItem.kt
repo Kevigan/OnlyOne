@@ -2,6 +2,7 @@ package com.example.onlyone.composables
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,12 +32,14 @@ fun FriendItem(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(percent = 45),
         overlayColor = Color.Gray,
-        onDismiss = {}
+        onDismiss = {},
+        paddingBox1 = PaddingValues(vertical = 1.dp),
+        paddingBox2 = PaddingValues(vertical = 1.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 2.dp),
+                .padding(horizontal = 4.dp, vertical = 1.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 👤 Avatar

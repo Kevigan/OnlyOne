@@ -33,12 +33,14 @@ import androidx.navigation.NavController
 import com.example.onlyone.R
 import com.example.onlyone.Screen
 import com.example.onlyone.viewModels.SessionViewModel
+import com.example.onlyone.viewModels.UserViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashView(
     sessionViewModel: SessionViewModel,
-    navController: NavController
+    navController: NavController,
+    userViewModel: UserViewModel
 ) {
     val firebaseUser by sessionViewModel.currentUser.collectAsState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -60,6 +62,8 @@ fun SplashView(
                 popUpTo(0) { inclusive = true }
             }
         } else {
+            val uid = firebaseUser!!.uid
+            userViewModel.loadUser(uid)
             navController.navigate(Screen.MainScreen.route) {
                 popUpTo(0) { inclusive = true }
             }

@@ -66,8 +66,12 @@ android {
 }
 
 dependencies {
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0") // Check for latest
 
+    implementation("androidx.compose.runtime:runtime-livedata")
+
+    implementation("androidx.compose.material:material-icons-extended")
+
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0") // Check for latest
 
     // Hilt core
     implementation("com.google.dagger:hilt-android:2.50")

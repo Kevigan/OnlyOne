@@ -9,7 +9,10 @@ data class User(
     val isPro: Boolean = false,
     val blockList: List<String> = emptyList(), // ✅ Private
     val reportCount: Int = 0, // ✅ Private
-    val avatarId: Int = 0
+    val avatarId: Int = 0,
+    val friendList: List<String> = emptyList(), // ✅ Private
+    val incomingFriendRequests: List<String> = emptyList(), // ✅ Private
+    val outgoingFriendRequests: List<String> = emptyList()  // ✅ Private
 )
 
 data class PublicUser(
@@ -25,6 +28,9 @@ data class PrivateUser(
     val email: String = "",
     val blockList: List<String> = emptyList(),
     val reportCount: Int = 0,
-    val isPro: Boolean = false
+    val isPro: Boolean = false,
+    val friendList: List<String> = emptyList(),
+    val incomingFriendRequests: List<String> = emptyList(),
+    val outgoingFriendRequests: List<String> = emptyList()
 )
 
