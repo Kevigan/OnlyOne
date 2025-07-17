@@ -40,13 +40,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.onlyone.R
+import com.example.onlyone.Screen
 import com.example.onlyone.composables.FriendItem
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.viewModels.UserViewModel
 
 @Composable
-fun FriendsView(userViewModel: UserViewModel) {
+fun FriendsView(
+    userViewModel: UserViewModel,
+    navController: NavController
+    ) {
     val user by userViewModel.user.observeAsState()
     val incomingRequests by userViewModel.incomingRequestUsernames.collectAsState()
     val outgoingUsernames by userViewModel.outgoingRequestUsernames.collectAsState()
@@ -112,13 +117,19 @@ fun FriendsView(userViewModel: UserViewModel) {
                     modifier = Modifier.padding(horizontal = 12.dp)
                 ) {
                     items(friends) { friend ->
+                        val canWriteToFriend = true // TODO: insert logic if message already sent today
                         FriendItem(
                             name = friend.username,
                             status = friend.moodStatus,
                             avatarResId = mapAvatarIdToDrawable(friend.avatarId),
-                            canWrite = false,
-                            onWriteClick = {}
+                            canWrite = canWriteToFriend,
+                            onWriteClick = {
+                                if (canWriteToFriend) {
+                                    navController.navigate(Screen.ChatScreen.createRoute(friend.uid, true))
+                                }
+                            }
                         )
+
                     }
                 }
             }

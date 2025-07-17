@@ -21,16 +21,15 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
     private var readCount = 0
     private var writeCount = 0
 
-    fun trackRead(path: String) {
+    fun trackRead(path: String, from: String = "") {
         readCount++
-        Log.d("FirestoreTrack", "Read [$readCount]: $path")
+        Log.d("FirestoreTrack", "Read [$readCount]: $path${if (from.isNotBlank()) " ($from)" else ""}")
     }
 
-    fun trackWrite(path: String) {
+    fun trackWrite(path: String, from: String = "") {
         writeCount++
-        Log.d("FirestoreTrack", "Write [$writeCount]: $path")
+        Log.d("FirestoreTrack", "Write [$writeCount]: $path${if (from.isNotBlank()) " ($from)" else ""}")
     }
-
 
     fun createUserProfile(uid: String, email: String, username: String): Task<Void> {
         trackWrite("users_public/$uid (new user)")
@@ -69,18 +68,18 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
         return batch.commit()
     }
     fun getPublicUser(uid: String): Task<DocumentSnapshot> {
-        trackRead("users_public/$uid")
+        trackRead("users_public/$uid", "getPublicUser")
         return db.collection("users_public").document(uid).get()
     }
 
     fun getPrivateUser(uid: String): Task<DocumentSnapshot> {
-        trackRead("users_private/$uid")
+        trackRead("users_private/$uid", "getPrivateUser")
         return db.collection("users_private").document(uid).get()
     }
 
     fun getFullUser(uid: String, onComplete: (User?) -> Unit) {
-        trackRead("users_public/$uid")
-        trackRead("users_private/$uid")
+        trackRead("users_public/$uid", "getFullUser")
+        trackRead("users_private/$uid", "getFullUser")
 
         val publicTask = db.collection("users_public").document(uid).get()
         val privateTask = db.collection("users_private").document(uid).get()
@@ -118,6 +117,7 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
     }
 
     fun isUsernameTaken(username: String, onResult: (Boolean) -> Unit) {
+        trackRead("users?username=$username", "isUsernameTaken")
         val usersRef = db.collection("users")
         usersRef
             .whereEqualTo("public.data.username", username)
@@ -131,22 +131,23 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
     }
 
     fun createUser(user: User): Task<Void> {
+        trackWrite("users_public/${user.uid}", "createUser")
         return db.collection("users_public").document(user.uid).set(user)
     }
 
     fun updateMood(uid: String, mood: String): Task<Void> {
-        trackWrite("users_public/$uid → moodStatus")
+        trackWrite("users_public/$uid → moodStatus", "updateMood")
         return db.collection("users_public").document(uid).update("moodStatus", mood)
     }
 
     fun blockUser(currentUid: String, blockedUid: String): Task<Void> {
-        trackWrite("users_private/$currentUid → blockList")
+        trackWrite("users_private/$currentUid → blockList", "blockUser")
         return db.collection("users_private").document(currentUid)
             .update("blockList", FieldValue.arrayUnion(blockedUid))
     }
 
     fun findUserByEmail(email: String, onResult: (String?) -> Unit) {
-        trackRead("users_private?email=$email")
+        trackRead("users_private?email=$email", "findUserByEmail")
         db.collection("users_private")
             .whereEqualTo("email", email)
             .get()
@@ -176,7 +177,7 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
         val results = mutableListOf<PublicUser>()
 
         val tasks = chunks.map { chunk ->
-            chunk.forEach { trackRead("users_public/$it") }
+            chunk.forEach { trackRead("users_public/$it", "getPublicUsers") }
             db.collection("users_public")
                 .whereIn(FieldPath.documentId(), chunk)
                 .get()
@@ -227,7 +228,6 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
         return batch.commit()
     }
 
-
     fun acceptFriendRequest(currentUid: String, requesterUid: String): Task<Void> {
         trackWrite("users_private/$currentUid → friendList, incomingFriendRequests")
         trackWrite("users_private/$requesterUid → friendList, outgoingFriendRequests")
@@ -257,6 +257,28 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
         return batch.commit()
     }
 
+    fun getRandomUserExcluding(
+        excludeUid: String,
+        excludeList: List<String>,
+        onResult: (PublicUser?) -> Unit
+    ) {
+        trackRead("users_public", "getRandomUserExcluding")
+        // Combine excluded UIDs into a Set for fast lookup
+        val excluded = (excludeList + excludeUid).toSet()
 
+        db.collection("users_public")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val candidates = snapshot.documents
+                    .mapNotNull { it.toObject(PublicUser::class.java) }
+                    .filter { it.uid !in excluded }
+
+                val randomUser = candidates.randomOrNull()
+                onResult(randomUser)
+            }
+            .addOnFailureListener {
+                onResult(null)
+            }
+    }
     // Add more: reportUser(), updatePoints(), etc.
 }

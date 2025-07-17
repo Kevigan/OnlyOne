@@ -13,4 +13,9 @@ sealed class Screen(val route: String, val title: String){
             return "SetUsername/$uid/$email"
         }
     }
+
+    object ChatScreen : Screen("ChatScreen/{uid}/{isFriend}", "Chat") {
+        fun createRoute(uid: String, isFriend: Boolean): String = "ChatScreen/$uid/$isFriend"
+    }
+
 }

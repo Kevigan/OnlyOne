@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,18 +45,17 @@ fun MainView(
     val context = LocalContext.current
     val systemUiController = rememberSystemUiController()
     val user by userViewModel.user.observeAsState()
+    val receivedMessages by chatViewModel.receivedMessages.collectAsState()
 
     val statusBarColor = MaterialTheme.colors.background
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(user) {
-        if (user != null) {
-            Log.d("MainView", "Logged in as: ${user!!.username} (${user!!.uid}) | Email: ${user!!.email}")
-        } else {
-            Log.d("MainView", "Logged in as: User") // fallback only if null
+        user?.let {
+            Log.d("MainView", "Logged in as: ${it.username} (${it.uid}) | Email: ${it.email}")
+            chatViewModel.loadReceivedMessages(it.uid) // 👈 fetch messages
         }
     }
-
 
     SideEffect {
         systemUiController.setStatusBarColor(color = statusBarColor, darkIcons = true)
@@ -122,27 +122,16 @@ fun MainView(
             ) {
                 Text("Received Messages", style = MaterialTheme.typography.h6, color = Color.White)
                 Spacer(modifier = Modifier.height(8.dp))
-
-                val messages = listOf(
-                    Triple("Alice", "Hey, did you check out the new update?", "24hrs"),
-                    Triple("Bob", "Got your message, will reply soon!", "12hrs"),
-                    Triple("Charlie", "Let's meet up tomorrow around noon", "6hrs"),
-                    Triple("Diana", "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", "48hrs"),
-                    Triple("Diana", "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", "48hrs"),
-                    Triple("Diana", "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", "48hrs"),
-                    Triple("Diana", "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", "48hrs")
-                )
-
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(messages) { (name, message, expiration) ->
+                    items(receivedMessages) { message ->
                         ReceivedMessageItem(
-                            avatarResId = R.drawable.baseline_tag_faces_24,
-                            name = name,
-                            message = message,
-                            expiration = expiration,
-                            onClick = { } //TODO
+                            avatarResId = R.drawable.baseline_tag_faces_24, // TODO: Use sender avatar if needed
+                            name = message.senderId, // Or resolve name from cache or ViewModel
+                            message = message.content,
+                            expiration = "24hrs", // TODO: Calculate expiration if needed
+                            onClick = { /* Handle open */ }
                         )
                     }
                 }
