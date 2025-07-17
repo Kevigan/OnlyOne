@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,12 +13,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Tab
+import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
@@ -34,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.FriendItem
@@ -44,17 +49,23 @@ import com.example.onlyone.viewModels.UserViewModel
 fun FriendsView(userViewModel: UserViewModel) {
     val user by userViewModel.user.observeAsState()
     val incomingRequests by userViewModel.incomingRequestUsernames.collectAsState()
+    val outgoingUsernames by userViewModel.outgoingRequestUsernames.collectAsState()
+    val incomingCount = incomingRequests.size
+    val outgoingCount = outgoingUsernames.size
     val friends by userViewModel.friends.collectAsState()
+    val context = LocalContext.current
 
     var showAddDialog by remember { mutableStateOf(false) }
-    var showRequestsDialog by remember { mutableStateOf(false) }
+    var selectedTabIndex by remember { mutableStateOf(0) }
+
+    val tabTitles = listOf("Friends", "Incoming", "Outgoing")
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(top = 32.dp, bottom = 16.dp)
     ) {
-        // 🔹 Top bar with action icons
+        // 🔹 Top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -62,55 +73,114 @@ fun FriendsView(userViewModel: UserViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Your Friends", style = MaterialTheme.typography.h5)
+            Text("Connections", style = MaterialTheme.typography.h5)
 
-            Row {
-                IconButton(onClick = { showRequestsDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Friend Requests",
-                        tint = if (incomingRequests.isNotEmpty()) Color.Red else Color.Gray
-                    )
-                }
-                IconButton(onClick = { showAddDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.PersonAdd,
-                        contentDescription = "Add Friend"
-                    )
-                }
+            IconButton(onClick = { showAddDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = "Add Friend"
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 🔹 Display Incoming Friend Requests
-        if (incomingRequests.isNotEmpty()) {
-            Text("Incoming Friend Requests:", style = MaterialTheme.typography.h6)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(horizontal = 12.dp)
-            ) {
-                items(incomingRequests) { username ->
-                    // Display the username for each incoming request
-                    Text("Friend Request from $username")
-                    // Add buttons or interactions for accepting/rejecting the request
+        // 🔹 Tabs
+        TabRow(selectedTabIndex = selectedTabIndex) {
+            tabTitles.forEachIndexed { index, baseTitle ->
+                val label = when (baseTitle) {
+                    "Incoming" -> if (incomingCount > 0) "Incoming ($incomingCount)" else "Incoming"
+                    "Outgoing" -> if (outgoingCount > 0) "Outgoing ($outgoingCount)" else "Outgoing"
+                    else -> baseTitle
                 }
+
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(label) }
+                )
             }
         }
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // 🔹 Friend list (replace with real loaded users)
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(horizontal = 12.dp)
-        ) {
-            items(friends) { friend ->
-                FriendItem(
-                    name = friend.username,
-                    status = friend.moodStatus,
-                    avatarResId = mapAvatarIdToDrawable(friend.avatarId)
-                )
+        // 🔹 Tab content
+        when (selectedTabIndex) {
+            0 -> {
+                // 🔹 Friends
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                ) {
+                    items(friends) { friend ->
+                        FriendItem(
+                            name = friend.username,
+                            status = friend.moodStatus,
+                            avatarResId = mapAvatarIdToDrawable(friend.avatarId),
+                            canWrite = false,
+                            onWriteClick = {}
+                        )
+                    }
+                }
+            }
+
+            1 -> {
+                // 🔹 Incoming Requests
+                val incomingUids = user?.incomingFriendRequests ?: emptyList()
+                if (incomingUids.isEmpty()) {
+                    Text("No incoming friend requests.", modifier = Modifier.padding(12.dp))
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    ) {
+                        itemsIndexed(incomingUids) { index, uid ->
+                            val username = incomingRequests.getOrNull(index) ?: "Unknown"
+                            FriendItem(
+                                name = username,
+                                status = "Wants to connect",
+                                avatarResId = mapAvatarIdToDrawable(0), // You could enhance with avatar lookup
+                                showAccept = true,
+                                showDecline = true,
+                                onAccept = { userViewModel.acceptFriendRequest(uid) },
+                                onDecline = { userViewModel.declineFriendRequest(uid) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            2 -> {
+                // 🔹 Outgoing Requests
+                val outgoingUids = user?.outgoingFriendRequests ?: emptyList()
+                if (outgoingUids.isEmpty()) {
+                    Text("No outgoing requests.", modifier = Modifier.padding(12.dp))
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    ) {
+                        itemsIndexed(outgoingUids) { index, uid ->
+                            val username = outgoingUsernames.getOrNull(index) ?: "Pending"
+
+                            FriendItem(
+                                name = username,
+                                status = "Request sent",
+                                avatarResId = mapAvatarIdToDrawable(0),
+                                showDecline = true,
+                                onDecline = {
+                                    userViewModel.cancelOutgoingFriendRequest(uid,
+                                        onSuccess = {
+                                            Toast.makeText(context, "Request canceled", Toast.LENGTH_SHORT).show()
+                                        },
+                                        onFailure = {
+                                            Toast.makeText(context, "Failed to cancel request", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -123,18 +193,29 @@ fun FriendsView(userViewModel: UserViewModel) {
             onDismissRequest = { showAddDialog = false },
             title = { Text("Send Friend Request") },
             text = {
-                Column {
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Friend's Email") }
-                    )
-                }
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Friend's Email") }
+                )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    userViewModel.sendFriendRequestByEmail(email)
-                    showAddDialog = false
+                    if (email.isBlank()) {
+                        Toast.makeText(context, "Email cannot be empty", Toast.LENGTH_SHORT).show()
+                        return@TextButton
+                    }
+
+                    userViewModel.sendFriendRequestByEmail(
+                        email = email,
+                        onSuccess = {
+                            Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show()
+                            showAddDialog = false
+                        },
+                        onFailure = { reason ->
+                            Toast.makeText(context, reason, Toast.LENGTH_SHORT).show()
+                        }
+                    )
                 }) {
                     Text("Send")
                 }
@@ -146,45 +227,7 @@ fun FriendsView(userViewModel: UserViewModel) {
             }
         )
     }
-
-    // 🔹 Incoming Requests Dialog
-    if (showRequestsDialog) {
-        AlertDialog(
-            onDismissRequest = { showRequestsDialog = false },
-            title = { Text("Incoming Friend Requests") },
-            text = {
-                Column {
-                    user?.incomingFriendRequests?.forEachIndexed { index, uid ->
-                        // Check if the username exists at the current index of incomingRequests
-                        val username = incomingRequests.getOrNull(index) ?: "Unknown"
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Username: $username") // Show username instead of UID
-                            TextButton(onClick = {
-                                showRequestsDialog = false
-                                userViewModel.acceptFriendRequest(uid)
-                            }) {
-                                Text("Accept")
-                            }
-                        }
-                    }
-                    if (user?.incomingFriendRequests.isNullOrEmpty()) {
-                        Text("No incoming requests.")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showRequestsDialog = false }) {
-                    Text("Close")
-                }
-            },
-            dismissButton = {}
-        )
-    }
 }
+
 
 

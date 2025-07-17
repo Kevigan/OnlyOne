@@ -11,22 +11,35 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.onlyone.R
 
 @Composable
 fun FriendItem(
     avatarResId: Int,
     name: String,
-    status: String
+    status: String,
+    showAccept: Boolean = false,
+    showDecline: Boolean = false,
+    onAccept: (() -> Unit)? = null,
+    onDecline: (() -> Unit)? = null,
+    canWrite: Boolean = false,
+    onWriteClick: (() -> Unit)? = null
 ) {
     CustomColorOverlay(
         modifier = Modifier.fillMaxWidth(),
@@ -55,7 +68,7 @@ fun FriendItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             // Name + Status
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = name,
                     style = MaterialTheme.typography.body1,
@@ -67,6 +80,34 @@ fun FriendItem(
                     color = Color.White.copy(alpha = 0.7f)
                 )
             }
+
+            // ✅ Baseline Write Icon
+            if (onWriteClick != null) {
+                IconButton(onClick = onWriteClick) {
+                    Image(
+                        painter = painterResource(id = R.drawable.baseline_message_24),
+                        contentDescription = "Write",
+                        modifier = Modifier.size(24.dp),
+                        colorFilter = ColorFilter.tint(
+                            if (canWrite) Color.Green else Color.Gray
+                        )
+                    )
+                }
+            }
+
+            if (showAccept && onAccept != null) {
+                IconButton(onClick = onAccept) {
+                    Icon(Icons.Default.Check, contentDescription = "Accept", tint = Color.Green)
+                }
+            }
+
+            if (showDecline && onDecline != null) {
+                IconButton(onClick = onDecline) {
+                    Icon(Icons.Default.Close, contentDescription = "Decline", tint = Color.Red)
+                }
+            }
         }
     }
 }
+
+

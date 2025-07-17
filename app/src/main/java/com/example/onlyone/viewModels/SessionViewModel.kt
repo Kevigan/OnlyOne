@@ -101,21 +101,14 @@ class SessionViewModel @Inject constructor(
                     val displayName = user.displayName ?: ""
                     val email = user.email ?: ""
 
-                    firestore.collection("users_public").document(uid).get().addOnSuccessListener { doc ->
-                        val isNewUser = !doc.exists()
+                    firestore.collection("users_public").document(uid).get()
+                        .addOnSuccessListener { doc ->
+                            val isNewUser = !doc.exists()
 
-                        // Call the userRepository to create public and private profiles
-                        if (isNewUser) {
-                            userRepository.createUserProfile(uid, email, displayName)
-                                .addOnSuccessListener {
-                                    onSuccess(uid, displayName, email, true)
-                                }
-                                .addOnFailureListener { onError(it) }
-                        } else {
-                            onSuccess(uid, displayName, email, false)
+                            // ✅ Just report isNewUser, don't create anything here
+                            onSuccess(uid, displayName, email, isNewUser)
                         }
-                    }.addOnFailureListener { onError(it) }
-
+                        .addOnFailureListener { onError(it) }
                 }
                 .addOnFailureListener { onError(it) }
 
