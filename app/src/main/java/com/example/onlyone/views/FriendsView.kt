@@ -45,12 +45,14 @@ import com.example.onlyone.R
 import com.example.onlyone.Screen
 import com.example.onlyone.composables.FriendItem
 import com.example.onlyone.composables.mapAvatarIdToDrawable
+import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.UserViewModel
 
 @Composable
 fun FriendsView(
     userViewModel: UserViewModel,
-    navController: NavController
+    navController: NavController,
+    chatViewModel: ChatViewModel
     ) {
     val user by userViewModel.user.observeAsState()
     val incomingRequests by userViewModel.incomingRequestUsernames.collectAsState()
@@ -59,6 +61,8 @@ fun FriendsView(
     val outgoingCount = outgoingUsernames.size
     val friends by userViewModel.friends.collectAsState()
     val context = LocalContext.current
+    val writtenList by chatViewModel.writtenTodayList.collectAsState(initial = emptyList())
+    val writtenIds = writtenList.map { it.receiverId }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
@@ -117,19 +121,17 @@ fun FriendsView(
                     modifier = Modifier.padding(horizontal = 12.dp)
                 ) {
                     items(friends) { friend ->
-                        val canWriteToFriend = true // TODO: insert logic if message already sent today
                         FriendItem(
+                            avatarResId = mapAvatarIdToDrawable(friend.avatarId),
                             name = friend.username,
                             status = friend.moodStatus,
-                            avatarResId = mapAvatarIdToDrawable(friend.avatarId),
-                            canWrite = canWriteToFriend,
+                            isLocked = friend.uid in writtenIds,
                             onWriteClick = {
-                                if (canWriteToFriend) {
-                                    navController.navigate(Screen.ChatScreen.createRoute(friend.uid, true))
+                                if (friend.uid !in writtenIds) {
+                                    navController.navigate("ChatScreen/${friend.uid}/true")
                                 }
                             }
                         )
-
                     }
                 }
             }

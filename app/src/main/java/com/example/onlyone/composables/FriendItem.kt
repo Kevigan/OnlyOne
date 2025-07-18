@@ -34,11 +34,11 @@ fun FriendItem(
     avatarResId: Int,
     name: String,
     status: String,
+    isLocked: Boolean = true,
     showAccept: Boolean = false,
     showDecline: Boolean = false,
     onAccept: (() -> Unit)? = null,
     onDecline: (() -> Unit)? = null,
-    canWrite: Boolean = false,
     onWriteClick: (() -> Unit)? = null
 ) {
     CustomColorOverlay(
@@ -83,15 +83,22 @@ fun FriendItem(
 
             // ✅ Baseline Write Icon
             if (onWriteClick != null) {
-                IconButton(onClick = onWriteClick) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_message_24),
-                        contentDescription = "Write",
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(
-                            if (canWrite) Color.Green else Color.Gray
-                        )
+                if (isLocked) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_lock_clock_24),
+                        contentDescription = "Locked",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(24.dp)
                     )
+                } else {
+                    IconButton(onClick = onWriteClick) {
+                        Image(
+                            painter = painterResource(id = R.drawable.baseline_message_24),
+                            contentDescription = "Write",
+                            modifier = Modifier.size(24.dp),
+                            colorFilter = ColorFilter.tint(Color.Green)
+                        )
+                    }
                 }
             }
 

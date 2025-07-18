@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -99,7 +100,7 @@ fun Navigation(
                     }
 
                     composable(Screen.FriendsScreen.route) {
-                        FriendsView(userViewModel = userViewModel, navController = navController)
+                        FriendsView(userViewModel = userViewModel, navController = navController, chatViewModel = chatViewModel)
                     }
 
                     composable(Screen.ShopScreen.route) {
@@ -134,7 +135,8 @@ fun Navigation(
                         val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
                         val isFriend = backStackEntry.arguments?.getBoolean("isFriend") ?: false
 
-                        val currentUser = userViewModel.user.value
+                        val currentUser by userViewModel.user.observeAsState()
+
                         val targetUser by chatViewModel.targetUser.collectAsState()
 
                         // Load user only once (unless UID changes)
@@ -146,13 +148,13 @@ fun Navigation(
 
                         if (currentUser != null && targetUser != null) {
                             ChatView(
-                                currentUserUid = currentUser.uid,
+                                user = currentUser!!,
                                 targetUser = targetUser!!,
                                 isFriend = isFriend,
                                 chatViewModel = chatViewModel,
                                 onNextUser = {
                                     userViewModel.repository.getRandomUserExcluding(
-                                        excludeUid = currentUser.uid,
+                                        excludeUid = currentUser!!.uid,
                                         excludeList = listOf(targetUser!!.uid) + userViewModel.user.value?.friendList.orEmpty()
                                     ) { randomUser ->
                                         if (randomUser != null) {

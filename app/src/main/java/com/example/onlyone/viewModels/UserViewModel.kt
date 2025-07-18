@@ -34,6 +34,17 @@ class UserViewModel @Inject constructor(
     private val _incomingRequestUsernames = MutableStateFlow<List<String>>(emptyList())
     val incomingRequestUsernames: StateFlow<List<String>> = _incomingRequestUsernames.asStateFlow()
 
+    private var lastLoadedMessageUid: String? = null
+
+    fun shouldLoadMessagesFor(uid: String): Boolean {
+        return if (uid != lastLoadedMessageUid) {
+            lastLoadedMessageUid = uid
+            true
+        } else {
+            false
+        }
+    }
+
     fun createUserProfile(uid: String, email: String, username: String): Task<Void> {
         return userRepository.createUserProfile(uid, email, username)
     }
@@ -106,8 +117,10 @@ class UserViewModel @Inject constructor(
 
 
     fun updateMood(mood: String) {
-        _user.value?.uid?.let {
-            userRepository.updateMood(it, mood)
+        val currentUser = _user.value ?: return
+
+        userRepository.updateMood(currentUser.uid, mood).addOnSuccessListener {
+            _user.value = currentUser.copy(moodStatus = mood)
         }
     }
 

@@ -54,7 +54,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp + navBarHeight)
+                .height(54.dp + navBarHeight)
                 .border(
                     width = 0.1.dp,
                     color = Color.White.copy(alpha = 0.6f),
@@ -85,7 +85,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp)
+                            .height(54.dp)
                             .padding(horizontal = 12.dp), // inner content spacing
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -176,7 +176,7 @@ fun NavigationIcon(
     contentDescription: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    iconSize: Dp = 28.dp,
+    iconSize: Dp = 34.dp,
     selectedGradient: Brush = Brush.linearGradient(
         listOf(Color(0xFF8A226D), Color(0xFFEB69CD))
     ),
@@ -185,7 +185,7 @@ fun NavigationIcon(
     IconButton(onClick = onClick) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(45.dp)
                 .background(
                     brush = if (isSelected) selectedGradient
                     else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)),

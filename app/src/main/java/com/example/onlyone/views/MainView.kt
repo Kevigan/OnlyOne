@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -34,6 +35,7 @@ import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.UserViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import androidx.compose.runtime.livedata.observeAsState
+import com.example.onlyone.composables.MoodStatusCardContent
 
 @Composable
 fun MainView(
@@ -45,15 +47,17 @@ fun MainView(
     val context = LocalContext.current
     val systemUiController = rememberSystemUiController()
     val user by userViewModel.user.observeAsState()
-    val receivedMessages by chatViewModel.receivedMessages.collectAsState()
-
+    val localMessages by chatViewModel.observeLocalMessages(user?.uid.orEmpty())
+        .collectAsState(initial = emptyList())
+    val millisUntilReset by chatViewModel.timeUntilReset.collectAsState()
     val statusBarColor = MaterialTheme.colors.background
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(user) {
-        user?.let {
-            Log.d("MainView", "Logged in as: ${it.username} (${it.uid}) | Email: ${it.email}")
-            chatViewModel.loadReceivedMessages(it.uid) // 👈 fetch messages
+    LaunchedEffect(user?.uid) {
+        val uid = user?.uid
+        if (uid != null && userViewModel.shouldLoadMessagesFor(uid)) {
+            Log.d("MainView", "Syncing messages for $uid")
+            chatViewModel.syncMessagesFromServer(uid)
         }
     }
 
@@ -96,6 +100,22 @@ fun MainView(
                 }
             }
 
+            CustomColorOverlay(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                paddingBox1 = PaddingValues(6.dp),
+                paddingBox2 = PaddingValues(1.dp),
+                shape = RoundedCornerShape(24.dp),
+                onDismiss = {}
+            ){
+                MoodStatusCardContent(
+                    moodStatus = user?.moodStatus.orEmpty(),
+                    avatarResId = R.drawable.baseline_tag_faces_24,
+                    onMoodSubmit = { newMood -> userViewModel.updateMood(newMood) }
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             // 🟣 2/8 — Overlay
             CustomColorOverlay(
                 modifier = Modifier
@@ -105,10 +125,9 @@ fun MainView(
             ) {
                 UserStatsCardContent(
                     messagesLeft = "12/25",
-                    dailyPoints = "240",
                     pointsBank = "1820",
                     rank = "S-Rank",
-                    avatarResId = R.drawable.baseline_tag_faces_24
+                    millisUntilReset = millisUntilReset // ✅ add this
                 )
             }
 
@@ -125,10 +144,10 @@ fun MainView(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(receivedMessages) { message ->
+                    items(localMessages) { message ->
                         ReceivedMessageItem(
                             avatarResId = R.drawable.baseline_tag_faces_24, // TODO: Use sender avatar if needed
-                            name = message.senderId, // Or resolve name from cache or ViewModel
+                            name = message.senderUsername, // Or resolve name from cache or ViewModel
                             message = message.content,
                             expiration = "24hrs", // TODO: Calculate expiration if needed
                             onClick = { /* Handle open */ }

@@ -15,11 +15,13 @@ import androidx.compose.ui.unit.dp
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.Message
+import com.example.onlyone.data.User
 import com.example.onlyone.viewModels.ChatViewModel
+import com.google.firebase.Timestamp
 
 @Composable
 fun ChatView(
-    currentUserUid: String,
+    user: User,
     targetUser: PublicUser,
     isFriend: Boolean,
     onNextUser: () -> Unit,
@@ -91,10 +93,12 @@ fun ChatView(
             Button(
                 onClick = {
                     val msg = Message(
-                        senderId = currentUserUid,
+                        senderUsername = user.username,
+                        senderId = user.uid,
                         receiverId = targetUser.uid,
                         content = messageText.trim(),
-                        timestamp = System.currentTimeMillis()
+                        timestamp = Timestamp.now(),
+                        senderAvatarId = 0,
                     )
                     chatViewModel.sendMessage(msg) { success ->
                         if (success) {
