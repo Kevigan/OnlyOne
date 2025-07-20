@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,7 @@ fun FriendsView(
     val outgoingUsernames by userViewModel.outgoingRequestUsernames.collectAsState()
     val incomingCount = incomingRequests.size
     val outgoingCount = outgoingUsernames.size
-    val friends by userViewModel.friends.collectAsState()
+    val localFriends by userViewModel.observeLocalFriends().collectAsState(initial = emptyList())
     val context = LocalContext.current
     val writtenList by chatViewModel.writtenTodayList.collectAsState(initial = emptyList())
     val writtenIds = writtenList.map { it.receiverId }
@@ -115,27 +116,36 @@ fun FriendsView(
         // 🔹 Tab content
         when (selectedTabIndex) {
             0 -> {
-                // 🔹 Friends
+                Log.d("FriendsView", "Rendering Friends tab with ${localFriends.size} friends")
+
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(horizontal = 12.dp)
                 ) {
-                    items(friends) { friend ->
+                    items(localFriends) { friend ->
+                        Log.d("FriendsView", "Rendering friend: ${friend.username}, uid=${friend.uid}")
+
                         FriendItem(
                             avatarResId = mapAvatarIdToDrawable(friend.avatarId),
                             name = friend.username,
                             status = friend.moodStatus,
                             isLocked = friend.uid in writtenIds,
                             onWriteClick = {
+                                Log.d("FriendsView", "Write clicked for ${friend.username} (${friend.uid})")
                                 if (friend.uid !in writtenIds) {
-                                    navController.navigate("ChatScreen/${friend.uid}/true")
+                                    val route = "ChatScreen/${friend.uid}?isRandom=false"
+                                    Log.d("FriendsView", "Navigating to $route")
+                                    navController.navigate(route)
+                                } else {
+                                    Log.d("FriendsView", "User already written to today")
                                 }
-                            }
+                            },
+                            showDelete = true,
+                            onDelete = { userViewModel.deleteFriend(friend.uid) }
                         )
                     }
                 }
             }
-
             1 -> {
                 // 🔹 Incoming Requests
                 val incomingUids = user?.incomingFriendRequests ?: emptyList()
@@ -146,12 +156,13 @@ fun FriendsView(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
-                        itemsIndexed(incomingUids) { index, uid ->
-                            val username = incomingRequests.getOrNull(index) ?: "Unknown"
+                        items(incomingUids) { uid ->
+                            val username = incomingRequests[uid] ?: "Unknown"
+
                             FriendItem(
                                 name = username,
                                 status = "Wants to connect",
-                                avatarResId = mapAvatarIdToDrawable(0), // You could enhance with avatar lookup
+                                avatarResId = mapAvatarIdToDrawable(0), // You can enhance this with avatar lookup later
                                 showAccept = true,
                                 showDecline = true,
                                 onAccept = { userViewModel.acceptFriendRequest(uid) },
@@ -172,8 +183,8 @@ fun FriendsView(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
-                        itemsIndexed(outgoingUids) { index, uid ->
-                            val username = outgoingUsernames.getOrNull(index) ?: "Pending"
+                        items(outgoingUids) { uid ->
+                            val username = outgoingUsernames[uid] ?: "Pending"
 
                             FriendItem(
                                 name = username,
@@ -181,7 +192,8 @@ fun FriendsView(
                                 avatarResId = mapAvatarIdToDrawable(0),
                                 showDecline = true,
                                 onDecline = {
-                                    userViewModel.cancelOutgoingFriendRequest(uid,
+                                    userViewModel.cancelOutgoingFriendRequest(
+                                        targetUid = uid,
                                         onSuccess = {
                                             Toast.makeText(context, "Request canceled", Toast.LENGTH_SHORT).show()
                                         },

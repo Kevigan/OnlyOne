@@ -11,14 +11,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,8 +46,12 @@ fun FriendItem(
     showDecline: Boolean = false,
     onAccept: (() -> Unit)? = null,
     onDecline: (() -> Unit)? = null,
-    onWriteClick: (() -> Unit)? = null
+    onWriteClick: (() -> Unit)? = null,
+    showDelete: Boolean = false,
+    onDelete: (() -> Unit)? = null
 ) {
+    var deleteDialogVisible by remember { mutableStateOf(false) }
+
     CustomColorOverlay(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(percent = 45),
@@ -81,7 +92,7 @@ fun FriendItem(
                 )
             }
 
-            // ✅ Baseline Write Icon
+            // 💬 Write
             if (onWriteClick != null) {
                 if (isLocked) {
                     Icon(
@@ -100,8 +111,20 @@ fun FriendItem(
                         )
                     }
                 }
+
+                // ❌ Delete icon
+                if (showDelete && onDelete != null) {
+                    IconButton(onClick = { deleteDialogVisible = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Friend",
+                            tint = Color.Red
+                        )
+                    }
+                }
             }
 
+            // ✅ Accept / ❌ Decline buttons
             if (showAccept && onAccept != null) {
                 IconButton(onClick = onAccept) {
                     Icon(Icons.Default.Check, contentDescription = "Accept", tint = Color.Green)
@@ -112,6 +135,28 @@ fun FriendItem(
                 IconButton(onClick = onDecline) {
                     Icon(Icons.Default.Close, contentDescription = "Decline", tint = Color.Red)
                 }
+            }
+
+            // 🧨 Delete Confirmation Dialog
+            if (deleteDialogVisible) {
+                AlertDialog(
+                    onDismissRequest = { deleteDialogVisible = false },
+                    title = { Text("Delete Friend") },
+                    text = { Text("Are you sure you want to delete $name from your friend list?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            deleteDialogVisible = false
+                            onDelete?.invoke()
+                        }) {
+                            Text("Yes")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { deleteDialogVisible = false }) {
+                            Text("No")
+                        }
+                    }
+                )
             }
         }
     }

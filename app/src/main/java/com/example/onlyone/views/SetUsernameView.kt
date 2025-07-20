@@ -76,7 +76,7 @@ fun SetUsernameView(
                             // Call the `createUserProfile` function via `UserRepository`
                             userViewModel.repository.createUserProfile(uid, email, username)
                                 .addOnSuccessListener {
-                                    userViewModel.loadUser(uid)
+                                    userViewModel.loadUser()
                                     navController.navigate(Screen.MainScreen.route) {
                                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
                                     }

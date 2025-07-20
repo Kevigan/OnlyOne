@@ -1,5 +1,6 @@
 package com.example.onlyone.di
 
+import com.example.dao.FriendDao
 import com.example.dao.MessageDao
 import com.example.onlyone.repos.ChatRepository
 import com.example.onlyone.repos.UserRepository
@@ -25,8 +26,8 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideUserRepository(db: FirebaseFirestore): UserRepository {
-        return UserRepository(db)
+    fun provideUserRepository(db: FirebaseFirestore, friendDao: FriendDao, messageDao: MessageDao): UserRepository {
+        return UserRepository(db, friendDao, messageDao)
     }
 
     @Provides

@@ -1,9 +1,13 @@
 package com.example.onlyone.repos
 
 import android.util.Log
+import com.example.dao.FriendDao
+import com.example.dao.MessageDao
+import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PrivateUser
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.User
+import com.example.onlyone.data.UserSwipeStatus
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.DocumentSnapshot
@@ -11,11 +15,26 @@ import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.functions.ktx.functions
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @Singleton
-class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
+class UserRepository @Inject constructor(
+    private val db: FirebaseFirestore,
+    private val friendDao: FriendDao,
+    private val messageDao: MessageDao
+) {
     private val publicUserCache = mutableMapOf<String, PublicUser>()
 
     private var readCount = 0
@@ -23,19 +42,84 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
 
     fun trackRead(path: String, from: String = "") {
         readCount++
-        Log.d("FirestoreTrack", "Read [$readCount]: $path${if (from.isNotBlank()) " ($from)" else ""}")
+        Log.d(
+            "FirestoreTrack",
+            "Read from UserRepo [$readCount]: $path${if (from.isNotBlank()) " ($from)" else ""}"
+        )
     }
 
     fun trackWrite(path: String, from: String = "") {
         writeCount++
-        Log.d("FirestoreTrack", "Write [$writeCount]: $path${if (from.isNotBlank()) " ($from)" else ""}")
+        Log.d(
+            "FirestoreTrack",
+            "Write from UserRepo [$writeCount]: $path${if (from.isNotBlank()) " ($from)" else ""}"
+        )
     }
+
+    fun logFirestoreUsage(tag: String = "FirestoreUsage") {
+        Log.d(tag, "📊 Total Firestore Reads: $readCount")
+        Log.d(tag, "📦 Total Firestore Writes: $writeCount")
+    }
+
+    fun getUserWithFriends(onComplete: (User, List<PublicUser>, List<PublicUser>, List<PublicUser>) -> Unit, onFailure: (Exception) -> Unit) {
+
+        trackRead("functions/getUserWithFriends", "getUserWithFriends")
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("getUserWithFriends")
+            .call()
+            .addOnSuccessListener { result ->
+                val data = result.data as? Map<*, *> ?: throw Exception("Malformed response")
+
+                val userMap = data["user"] as? Map<*, *> ?: throw Exception("Missing user")
+                val friendsList = data["friends"] as? List<*> ?: emptyList<Any>()
+                val incomingList = data["incomingRequests"] as? List<*> ?: emptyList<Any>()
+                val outgoingList = data["outgoingRequests"] as? List<*> ?: emptyList<Any>()
+
+                val user = parseUser(userMap)
+                val friends = friendsList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
+                val incoming = incomingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
+                val outgoing = outgoingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
+
+                onComplete(user, friends, incoming, outgoing)
+            }
+            .addOnFailureListener(onFailure)
+    }
+
+    private fun parseUser(map: Map<*, *>): User {
+        return User(
+            uid = map["uid"] as? String ?: "",
+            username = map["username"] as? String ?: "",
+            email = map["email"] as? String ?: "",
+            moodStatus = map["moodStatus"] as? String ?: "",
+            points = (map["points"] as? Number)?.toInt() ?: 0,
+            isPro = map["isPro"] as? Boolean ?: false,
+            blockList = map["blockList"] as? List<String> ?: emptyList(),
+            reportCount = (map["reportCount"] as? Number)?.toInt() ?: 0,
+            avatarId = (map["avatarId"] as? Number)?.toInt() ?: 0,
+            friendList = map["friendList"] as? List<String> ?: emptyList(),
+            incomingFriendRequests = map["incomingFriendRequests"] as? List<String> ?: emptyList(),
+            outgoingFriendRequests = map["outgoingFriendRequests"] as? List<String> ?: emptyList()
+        )
+    }
+
+    private fun parsePublicUser(map: Map<*, *>?): PublicUser? {
+        if (map == null) return null
+        return PublicUser(
+            uid = map["uid"] as? String ?: return null,
+            username = map["username"] as? String ?: "",
+            moodStatus = map["moodStatus"] as? String ?: "",
+            avatarId = (map["avatarId"] as? Number)?.toInt() ?: 0,
+            points = (map["points"] as? Number)?.toInt() ?: 0
+        )
+    }
+
 
     fun createUserProfile(uid: String, email: String, username: String): Task<Void> {
         trackWrite("users_public/$uid (new user)")
         trackWrite("users_private/$uid (new user)")
+        trackWrite("swipes/$uid (new user)") // ✅ New tracking
 
-        // Public User object
         val publicUser = PublicUser(
             uid = uid,
             username = username,
@@ -44,10 +128,9 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
             points = 0
         )
 
-        // Private User object
         val privateUser = PrivateUser(
             uid = uid,
-            email = email,
+            email = email.lowercase(),
             blockList = emptyList(),
             reportCount = 0,
             isPro = false,
@@ -56,17 +139,24 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
             outgoingFriendRequests = emptyList()
         )
 
-        // Create references for public and private users
+        val swipeStatus = UserSwipeStatus(
+            uid = uid,
+            swipesUsed = 0,
+            swipesGranted = 25
+        )
+
         val publicRef = db.collection("users_public").document(uid)
         val privateRef = db.collection("users_private").document(uid)
+        val swipeRef = db.collection("swipes").document(uid)
 
-        // Batch writing for both public and private data
         val batch = db.batch()
         batch.set(publicRef, publicUser)
         batch.set(privateRef, privateUser)
+        batch.set(swipeRef, swipeStatus) // ✅ Add swipe status to batch
 
         return batch.commit()
     }
+
     fun getPublicUser(uid: String): Task<DocumentSnapshot> {
         trackRead("users_public/$uid", "getPublicUser")
         return db.collection("users_public").document(uid).get()
@@ -75,45 +165,6 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
     fun getPrivateUser(uid: String): Task<DocumentSnapshot> {
         trackRead("users_private/$uid", "getPrivateUser")
         return db.collection("users_private").document(uid).get()
-    }
-
-    fun getFullUser(uid: String, onComplete: (User?) -> Unit) {
-        trackRead("users_public/$uid", "getFullUser")
-        trackRead("users_private/$uid", "getFullUser")
-
-        val publicTask = db.collection("users_public").document(uid).get()
-        val privateTask = db.collection("users_private").document(uid).get()
-
-        Tasks.whenAllSuccess<DocumentSnapshot>(listOf(publicTask, privateTask))
-            .addOnSuccessListener { docs ->
-                val publicSnap = docs[0] as DocumentSnapshot
-                val privateSnap = docs[1] as DocumentSnapshot
-
-                val public = publicSnap.toObject(PublicUser::class.java)
-                val private = privateSnap.toObject(PrivateUser::class.java)
-
-                if (public != null && private != null) {
-                    val user = User(
-                        uid = public.uid,
-                        username = public.username,
-                        moodStatus = public.moodStatus,
-                        avatarId = public.avatarId,
-                        points = public.points,
-                        email = private.email,
-                        blockList = private.blockList,
-                        reportCount = private.reportCount,
-                        friendList = private.friendList,
-                        incomingFriendRequests = private.incomingFriendRequests,
-                        outgoingFriendRequests = private.outgoingFriendRequests
-                    )
-                    onComplete(user)
-                } else {
-                    onComplete(null)
-                }
-            }
-            .addOnFailureListener {
-                onComplete(null)
-            }
     }
 
     fun isUsernameTaken(username: String, onResult: (Boolean) -> Unit) {
@@ -147,15 +198,22 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
     }
 
     fun findUserByEmail(email: String, onResult: (String?) -> Unit) {
-        trackRead("users_private?email=$email", "findUserByEmail")
-        db.collection("users_private")
-            .whereEqualTo("email", email)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                val uid = querySnapshot.documents.firstOrNull()?.id
-                onResult(uid) // null if not found
+        trackRead("functions/getUidByEmail", "findUserByEmail")
+
+        val data = mapOf("email" to email)
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("getUidByEmail")
+            .call(data)
+            .addOnSuccessListener { result ->
+                val uid = (result.data as? Map<*, *>)?.get("uid") as? String
+                Log.d("EmailTracker", "Cloud function success: $uid")
+                onResult(uid)
             }
-            .addOnFailureListener { onResult(null) }
+            .addOnFailureListener { error ->
+                Log.e("EmailTracker", "Cloud function failure: ${error.message}", error)
+                onResult(null)
+            }
     }
 
     fun getPublicUsers(uids: List<String>, onComplete: (List<PublicUser>) -> Unit) {
@@ -257,28 +315,151 @@ class UserRepository @Inject constructor(private val db: FirebaseFirestore) {
         return batch.commit()
     }
 
-    fun getRandomUserExcluding(
-        excludeUid: String,
-        excludeList: List<String>,
-        onResult: (PublicUser?) -> Unit
+    fun deleteFriend(currentUid: String, targetUid: String): Task<Void> {
+        trackWrite("users_private/$currentUid → friendList (remove)")
+        trackWrite("users_private/$targetUid → friendList (remove)")
+
+        val currentRef = db.collection("users_private").document(currentUid)
+        val targetRef = db.collection("users_private").document(targetUid)
+
+        val batch = db.batch()
+        batch.update(currentRef, "friendList", FieldValue.arrayRemove(targetUid))
+        batch.update(targetRef, "friendList", FieldValue.arrayRemove(currentUid))
+
+        return batch.commit()
+    }
+
+    suspend fun removeLocalFriend(uid: String) {
+        friendDao.deleteByUid(uid)
+    }
+
+
+    fun getRandomUsersFromCloud(
+        excludedIds: List<String>,
+        onResult: (List<PublicUser>) -> Unit
     ) {
-        trackRead("users_public", "getRandomUserExcluding")
-        // Combine excluded UIDs into a Set for fast lookup
-        val excluded = (excludeList + excludeUid).toSet()
+        val function = Firebase.functions("europe-west3") // ✅ Add this
+            .getHttpsCallable("getRandomEligibleUsers")
+        val data = mapOf("excludedIds" to excludedIds)
 
-        db.collection("users_public")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val candidates = snapshot.documents
-                    .mapNotNull { it.toObject(PublicUser::class.java) }
-                    .filter { it.uid !in excluded }
+        Log.d("RandomUser", "📤 Calling cloud function with excludedIds=$excludedIds")
 
-                val randomUser = candidates.randomOrNull()
-                onResult(randomUser)
+        function.call(data)
+            .addOnSuccessListener { result ->
+                val usersList = result.data as? List<*> ?: run {
+                    Log.w("RandomUser", "⚠️ Cloud function returned null or wrong type")
+                    onResult(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                Log.d("RandomUser", "✅ Received ${usersList.size} user(s) from cloud")
+
+                val publicUsers = usersList.mapNotNull { item ->
+                    item as? Map<*, *> ?: return@mapNotNull null
+
+                    val uid = item["uid"] as? String
+                    val username = item["username"] as? String
+                    val moodStatus = item["moodStatus"] as? String
+                    val avatarId = (item["avatarId"] as? Number)?.toInt()
+                    val points = (item["points"] as? Number)?.toInt()
+
+                    if (uid == null) {
+                        Log.w("RandomUser", "⚠️ Skipping user with missing uid: $item")
+                        return@mapNotNull null
+                    }
+
+                    Log.d("RandomUser", "→ Parsed user: $uid ($username)")
+
+                    PublicUser(
+                        uid = uid,
+                        username = username ?: "",
+                        moodStatus = moodStatus ?: "",
+                        avatarId = avatarId ?: 0,
+                        points = points ?: 0
+                    )
+                }
+
+                onResult(publicUsers)
             }
-            .addOnFailureListener {
-                onResult(null)
+            .addOnFailureListener { error ->
+                Log.e("RandomUser", "❌ Cloud function call failed: ${error.message}", error)
+                onResult(emptyList())
             }
     }
+
     // Add more: reportUser(), updatePoints(), etc.
+
+    fun getSwipeStatus(uid: String, onComplete: (UserSwipeStatus?) -> Unit) {
+        db.collection("swipes").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val status = doc.toObject(UserSwipeStatus::class.java)
+                if (status != null) {
+                    Log.d(
+                        "SwipeStatus",
+                        "✅ swipesUsed=${status.swipesUsed}, swipesGranted=${status.swipesGranted}"
+                    )
+                } else {
+                    Log.w(
+                        "SwipeStatus",
+                        "⚠️ Swipe status document is null or malformed for uid=$uid"
+                    )
+                }
+                onComplete(status)
+            }
+            .addOnFailureListener { e ->
+                Log.e("SwipeStatus", "❌ Failed to fetch swipe status for uid=$uid", e)
+                onComplete(null)
+            }
+    }
+
+
+    /////////////ROOM Database///////////////
+
+
+    suspend fun syncFriendsToLocal(uids: List<String>, publicFriends: List<PublicUser>) {
+        val newLocalFriends = publicFriends.map {
+            LocalFriend(
+                uid = it.uid,
+                username = it.username,
+                moodStatus = it.moodStatus,
+                avatarId = it.avatarId,
+                points = it.points
+            )
+        }.sortedBy { it.uid }
+
+        val existingFriends = friendDao.getAllFriendsNow().sortedBy { it.uid }
+
+        if (existingFriends != newLocalFriends) {
+            Log.d("SyncFriends", "🔄 Local Room DB differs from Cloud — syncing")
+            friendDao.clearFriends()
+            friendDao.insertAll(newLocalFriends)
+        } else {
+            Log.d("SyncFriends", "✅ No changes detected — skipping sync")
+        }
+    }
+
+    suspend fun getPublicUsersSuspend(uids: List<String>): List<PublicUser> =
+        suspendCoroutine { cont ->
+            getPublicUsers(uids) { users -> cont.resume(users) }
+        }
+
+
+    suspend fun getLocalFriend(uid: String): LocalFriend? {
+        return friendDao.getFriendByUid(uid)
+    }
+
+    suspend fun hardResetFriends() {
+        friendDao.clearFriends()
+    }
+
+
+    suspend fun hardResetLocalMessages() {
+        messageDao.clearLocalMessages()
+    }
+
 }
+
+
+//getRandomEligibleUsers
+//getRandomEligibleUsers

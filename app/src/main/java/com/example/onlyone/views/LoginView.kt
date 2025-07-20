@@ -62,7 +62,7 @@ fun LoginView(
                 if (isNewUser) {
                     navController.navigate("SetUsername/$uid/$email")
                 } else {
-                    userViewModel.loadUser(uid)
+                    userViewModel.loadUser()
                     navController.navigate(Screen.MainScreen.route) {
                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
                     }
@@ -136,7 +136,7 @@ fun LoginView(
                     if (isNewUser) {
                         navController.navigate("SetUsername/$uid/$email")
                     } else {
-                        userViewModel.loadUser(uid)
+                        userViewModel.loadUser()
                         navController.navigate(Screen.MainScreen.route) {
                             popUpTo(Screen.LoginScreen.route) { inclusive = true }
                         }
@@ -170,7 +170,7 @@ fun LoginView(
                     if (isNewUser) {
                         navController.navigate("SetUsername/$uid/$email")
                     } else {
-                        userViewModel.loadUser(uid)
+                        userViewModel.loadUser()
                         navController.navigate(Screen.MainScreen.route) {
                             popUpTo(Screen.LoginScreen.route) { inclusive = true }
                         }

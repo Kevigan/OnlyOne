@@ -63,7 +63,7 @@ fun SplashView(
             }
         } else {
             val uid = firebaseUser!!.uid
-            userViewModel.loadUser(uid)
+            userViewModel.loadUser()
             navController.navigate(Screen.MainScreen.route) {
                 popUpTo(0) { inclusive = true }
             }

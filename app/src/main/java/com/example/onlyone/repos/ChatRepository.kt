@@ -5,11 +5,15 @@ import com.example.dao.MessageDao
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.utils.toFirestoreMap
 import com.example.onlyone.data.Message
+import com.example.onlyone.data.PublicUser
+import com.example.onlyone.data.UserSwipeStatus
 import com.example.onlyone.data.WrittenTodayEntity
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.functions.ktx.functions
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -31,27 +35,25 @@ class ChatRepository @Inject constructor(
 
     private fun trackRead(path: String, from: String = "") {
         readCount++
-        Log.d("FirestoreTrack", "Read Repo [$readCount]: $path${if (from.isNotBlank()) " ($from)" else ""}")
+        Log.d("ChatFirestore_Track", "[ChatRepo] Read #$readCount: $path${if (from.isNotBlank()) " ($from)" else ""}")
     }
 
     private fun trackWrite(path: String, from: String = "") {
         writeCount++
-        Log.d("FirestoreTrack", "Write Repo [$writeCount]: $path${if (from.isNotBlank()) " ($from)" else ""}")
+        Log.d("ChatFirestore_Track", "[ChatRepo] Write #$writeCount: $path${if (from.isNotBlank()) " ($from)" else ""}")
     }
 
     fun sendMessage(message: Message): Task<Void> {
         val docId = db.collection("messages").document().id
         val msgWithId = message.copy(id = docId)
 
-        trackWrite("messages/$docId", "sendMessage")
-
         val messageMap = msgWithId.toFirestoreMap()
+        trackWrite("messages/$docId", "sendMessage")
         return db.collection("messages").document(docId).set(messageMap)
     }
 
     fun getMessagesToUser(uid: String): Task<QuerySnapshot> {
         trackRead("messages?recipientId=$uid", "getMessagesToUser")
-
         return db.collection("messages")
             .whereEqualTo("receiverId", uid)
             .get()
@@ -59,20 +61,47 @@ class ChatRepository @Inject constructor(
 
     fun addFeedback(messageId: String, feedback: Int): Task<Void> {
         trackWrite("messages/$messageId → feedback", "addFeedback")
-
         return db.collection("messages").document(messageId).update("feedback", feedback)
     }
 
-    // Add logic for auto-deletion after 24h if needed via Cloud Functions
+    fun getRandomAvailableUserFromCloud(
+        excludedIds: List<String>,
+        onResult: (PublicUser?) -> Unit
+    ) {
+        trackRead("functions/getRandomEligibleUser", "getRandomAvailableUserFromCloud")
 
+        val function = Firebase.functions("europe-west3").getHttpsCallable("getRandomEligibleUser")
+        val data = mapOf("excludedIds" to excludedIds)
+
+        function.call(data)
+            .addOnSuccessListener { result ->
+                val userMap = result.data as? Map<*, *> ?: return@addOnSuccessListener onResult(null)
+
+                val user = PublicUser(
+                    uid = userMap["uid"] as? String ?: return@addOnSuccessListener onResult(null),
+                    username = userMap["username"] as? String ?: "",
+                    moodStatus = userMap["moodStatus"] as? String ?: "",
+                    avatarId = (userMap["avatarId"] as? Number)?.toInt() ?: 0,
+                    points = (userMap["points"] as? Number)?.toInt() ?: 0
+                )
+
+                onResult(user)
+            }
+            .addOnFailureListener {
+                Log.e("ChatRepo", "❌ Cloud function getRandomEligibleUser failed", it)
+                onResult(null)
+            }
+    }
 
     /////////////ROOM Database///////////////
 
     fun observeMessagesForUser(uid: String): Flow<List<LocalMessage>> {
+        //trackRead("room/messages/$uid", "observeMessagesForUser")
         return messageDao.getMessagesForUser(uid)
     }
 
     fun observeWrittenToday(): Flow<List<WrittenTodayEntity>> {
+        //trackRead("room/writtenToday", "observeWrittenToday")
         return messageDao.observeWrittenToday()
     }
 
@@ -91,14 +120,11 @@ class ChatRepository @Inject constructor(
                 val msg = doc.toObject(Message::class.java)
                 msg
             }
-            Log.d("ChatRepo", "Fetched ${newMessages.size} new messages")
 
             val localMessages = newMessages.map { it.toLocal() }
-
             messageDao.insertAll(localMessages)
 
             trackRead("messages (new only)", "syncMessages")
-
         } catch (e: Exception) {
             Log.e("ChatRepo", "syncMessages failed", e)
         }
@@ -106,10 +132,12 @@ class ChatRepository @Inject constructor(
 
     suspend fun recordWrittenUser(receiverId: String) {
         val now = System.currentTimeMillis()
+        trackWrite("room/writtenToday/$receiverId", "recordWrittenUser")
         messageDao.insertWrittenEntry(WrittenTodayEntity(receiverId, now))
     }
 
     suspend fun hasAlreadyWrittenTo(receiverId: String): Boolean {
+        trackRead("room/writtenToday/$receiverId", "hasAlreadyWrittenTo")
         return messageDao.getWrittenEntry(receiverId) != null
     }
 
@@ -129,12 +157,17 @@ class ChatRepository @Inject constructor(
 
         if (firstWrite < startOfToday) {
             Log.d("ChatRepo", "New UTC day detected. Clearing WrittenTodayEntity.")
+            trackWrite("room/writtenToday/clear", "resetWrittenIfNewDay")
             messageDao.clearWrittenToday()
         } else {
             Log.d("ChatRepo", "Still same UTC day. Keeping written entries.")
         }
     }
 
+    suspend fun hardResetWritten() {
+        trackWrite("room/writtenToday/clear", "hardResetWritten")
+        messageDao.clearWrittenToday()
+    }
 
     fun Message.toLocal(): LocalMessage = LocalMessage(
         id = this.id,

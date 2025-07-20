@@ -35,6 +35,8 @@ import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.UserViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.unit.sp
+import com.example.dao.FriendDao
 import com.example.onlyone.composables.MoodStatusCardContent
 
 @Composable
@@ -85,21 +87,28 @@ fun MainView(
             ) {
                 Text(
                     text = "Hello ${user?.username ?: "User"}",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.subtitle1,
                     color = Color.White
                 )
-                IconButton(onClick = {
-                    showLogoutDialog = true
-                }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_logout_24),
-                        contentDescription = "Logout",
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(Color.White)
-                    )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SmallResetButton("WM") { chatViewModel.hardResetWritten() }
+                    SmallResetButton("F") { userViewModel.hardResetFriends() }
+                    SmallResetButton("LM") { userViewModel.hardResetLocalMessages() }
+
+                    IconButton(onClick = { showLogoutDialog = true }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.baseline_logout_24),
+                            contentDescription = "Logout",
+                            modifier = Modifier.size(20.dp),
+                            colorFilter = ColorFilter.tint(Color.White)
+                        )
+                    }
                 }
             }
-
             CustomColorOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -182,4 +191,16 @@ fun MainView(
         )
     }
 
+}
+
+@Composable
+fun SmallResetButton(label: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.height(32.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        colors = ButtonDefaults.buttonColors()
+    ) {
+        Text("🔄 $label", fontSize = 12.sp)
+    }
 }

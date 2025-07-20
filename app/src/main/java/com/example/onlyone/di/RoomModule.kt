@@ -2,6 +2,7 @@ package com.example.onlyone.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.dao.FriendDao
 import com.example.dao.MessageDao
 import com.example.onlyone.repos.AppDatabase
 import dagger.Module
@@ -30,6 +31,11 @@ object RoomModule {
     @Provides
     fun provideMessageDao(db: AppDatabase): MessageDao {
         return db.messageDao()
+    }
+
+    @Provides
+    fun provideFriendDao(db: AppDatabase): FriendDao {
+        return db.friendDao()
     }
 }
 

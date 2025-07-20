@@ -34,3 +34,8 @@ data class PrivateUser(
     val outgoingFriendRequests: List<String> = emptyList()
 )
 
+data class UserSwipeStatus(
+    val uid: String = "",
+    val swipesUsed: Int = 0,
+    val swipesGranted: Int = 25
+)

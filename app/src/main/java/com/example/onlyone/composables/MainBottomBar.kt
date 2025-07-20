@@ -63,7 +63,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
             shape = RoundedCornerShape(32.dp),
             elevation = 8.dp,
             color = Color.Transparent
-        ){
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -131,7 +131,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
                 .offset(y = (-36).dp)
         ) {
             Button(
-                onClick = { /* Center action */ },
+                onClick = { navController.navigate("ChatScreen/none?isRandom=true") },
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent), // Transparent to show gradient inside
                 modifier = Modifier.size(72.dp),
@@ -165,7 +165,6 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
                     )
                 }
             }
-
         }
     }
 }

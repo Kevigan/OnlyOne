@@ -19,6 +19,8 @@ interface MessageDao {
     @Query("SELECT MAX(timestamp) FROM LocalMessage WHERE receiverId = :uid")
     suspend fun getLastTimestamp(uid: String): Long?
 
+    @Query("DELETE FROM LocalMessage")
+    suspend fun clearLocalMessages()
 
     //////////////// 💬 Daily write limit tracking /////////////////////
     @Query("SELECT * FROM WrittenTodayEntity")

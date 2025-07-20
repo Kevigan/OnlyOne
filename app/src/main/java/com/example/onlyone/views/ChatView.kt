@@ -16,6 +16,7 @@ import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.Message
 import com.example.onlyone.data.User
+import com.example.onlyone.repos.UserRepository
 import com.example.onlyone.viewModels.ChatViewModel
 import com.google.firebase.Timestamp
 
@@ -23,9 +24,10 @@ import com.google.firebase.Timestamp
 fun ChatView(
     user: User,
     targetUser: PublicUser,
-    isFriend: Boolean,
+    isRandom: Boolean,
     onNextUser: () -> Unit,
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    userRepository: UserRepository
 ) {
     var messageText by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -112,8 +114,8 @@ fun ChatView(
                 Text("Send")
             }
 
-            // 🔄 Show next only if NOT a friend
-            if (!isFriend) {
+            // 🔄 Show next only if isRandom
+            if (isRandom) {
                 IconButton(onClick = onNextUser) {
                     Icon(
                         imageVector = Icons.Default.ArrowForward,

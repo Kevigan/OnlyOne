@@ -1,12 +1,18 @@
 package com.example.onlyone
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -126,47 +132,72 @@ fun Navigation(
                     }
 
                     composable(
-                        route = "ChatScreen/{uid}/{isFriend}",
+                        route = "ChatScreen/{uid}?isRandom={isRandom}",
                         arguments = listOf(
                             navArgument("uid") { type = NavType.StringType },
-                            navArgument("isFriend") { type = NavType.BoolType }
+                            navArgument("isRandom") {
+                                type = NavType.BoolType
+                                defaultValue = false
+                            }
                         )
                     ) { backStackEntry ->
-                        val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
-                        val isFriend = backStackEntry.arguments?.getBoolean("isFriend") ?: false
-
+                        val uid = backStackEntry.arguments?.getString("uid") ?: "none"
+                        val isRandom = backStackEntry.arguments?.getBoolean("isRandom") ?: false
                         val currentUser by userViewModel.user.observeAsState()
-
                         val targetUser by chatViewModel.targetUser.collectAsState()
 
-                        // Load user only once (unless UID changes)
-                        LaunchedEffect(uid, isFriend) {
-                            if (chatViewModel.targetUser.value?.uid != uid) {
-                                chatViewModel.loadTargetUser(uid, isFriend, userViewModel)
+                        // 💡 Load data once user is known
+                        LaunchedEffect(isRandom, uid, currentUser?.uid) {
+                            if (currentUser == null) return@LaunchedEffect
+
+                            val currentUid = currentUser!!.uid
+                            Log.d("ChatScreen", "LaunchedEffect → isRandom=$isRandom, uid=$uid")
+
+                            if (isRandom) {
+                                if (chatViewModel.userQueue.value.isEmpty()) {
+                                    Log.d("ChatScreen", "→ Loading random user batch")
+                                    chatViewModel.loadRandomUserBatch(
+                                        currentUserId = currentUid,
+                                        userRepository = userViewModel.repository,
+                                        onNotEnoughSwipes = {
+                                            Log.w("ChatScreen", "⚠️ Not enough swipes")
+                                            // Optionally: navigate back or show dialog
+                                        },
+                                        onComplete = { success ->
+                                            Log.d("ChatScreen", "✅ Batch loaded: success=$success")
+                                        }
+                                    )
+                                }
+                            } else {
+                                Log.d("ChatScreen", "→ Loading target user uid=$uid")
+                                chatViewModel.loadTargetUser(uid, isRandom = false, userViewModel)
                             }
                         }
+                        Log.d("ChatScreen", "⏳ Waiting: currentUser=${currentUser?.uid}, targetUser=${targetUser?.uid}")
 
+                        // 👁️ Show ChatView if both users are ready
                         if (currentUser != null && targetUser != null) {
                             ChatView(
                                 user = currentUser!!,
                                 targetUser = targetUser!!,
-                                isFriend = isFriend,
+                                isRandom = isRandom,
+                                onNextUser = { chatViewModel.consumeNextUserFromQueue() },
                                 chatViewModel = chatViewModel,
-                                onNextUser = {
-                                    userViewModel.repository.getRandomUserExcluding(
-                                        excludeUid = currentUser!!.uid,
-                                        excludeList = listOf(targetUser!!.uid) + userViewModel.user.value?.friendList.orEmpty()
-                                    ) { randomUser ->
-                                        if (randomUser != null) {
-                                            val nextRoute = Screen.ChatScreen.createRoute(randomUser.uid, false)
-                                            backStackEntry.savedStateHandle.get<NavController>("navController")?.navigate(nextRoute)
-                                        } else {
-                                            // fallback or toast: no more users available
-                                        }
+                                userRepository = userViewModel.userRepository
+                            )
+                        } else if (currentUser != null && isRandom && chatViewModel.userQueue.value.isEmpty()) {
+                            // 🛑 No more users in queue
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("🎉 You've seen everyone for now!", style = MaterialTheme.typography.h2)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Button(onClick = { navController.popBackStack() }) {
+                                        Text("Back to Home")
                                     }
                                 }
-                            )
+                            }
                         } else {
+                            // ⏳ Still loading
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator()
                             }

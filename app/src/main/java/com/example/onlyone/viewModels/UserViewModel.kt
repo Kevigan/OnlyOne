@@ -4,20 +4,27 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.dao.FriendDao
+import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.User
 import com.example.onlyone.repos.UserRepository
 import com.google.android.gms.tasks.Task
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    val userRepository: UserRepository,
+    private val friendDao: FriendDao
 ) : ViewModel() {
     val repository: UserRepository
         get() = userRepository
@@ -25,14 +32,11 @@ class UserViewModel @Inject constructor(
     private val _user = MutableLiveData<User?>()
     val user: LiveData<User?> get() = _user
 
-    private val _friends = MutableStateFlow<List<PublicUser>>(emptyList())
-    val friends: StateFlow<List<PublicUser>> = _friends.asStateFlow()
+    private val _outgoingRequestUsernames = MutableStateFlow<Map<String, String>>(emptyMap())
+    val outgoingRequestUsernames: StateFlow<Map<String, String>> = _outgoingRequestUsernames.asStateFlow()
 
-    private val _outgoingRequestUsernames = MutableStateFlow<List<String>>(emptyList())
-    val outgoingRequestUsernames: StateFlow<List<String>> = _outgoingRequestUsernames.asStateFlow()
-
-    private val _incomingRequestUsernames = MutableStateFlow<List<String>>(emptyList())
-    val incomingRequestUsernames: StateFlow<List<String>> = _incomingRequestUsernames.asStateFlow()
+    private val _incomingRequestUsernames = MutableStateFlow<Map<String, String>>(emptyMap())
+    val incomingRequestUsernames: StateFlow<Map<String, String>> = _incomingRequestUsernames.asStateFlow()
 
     private var lastLoadedMessageUid: String? = null
 
@@ -49,72 +53,27 @@ class UserViewModel @Inject constructor(
         return userRepository.createUserProfile(uid, email, username)
     }
 
-    fun loadUser(uid: String) {
-        //Log.d("UserViewModel", "Loading user with UID: $uid")
-        userRepository.getFullUser(uid) { loadedUser ->
-            if (loadedUser != null) {
-                //Log.d("UserViewModel", "User loaded: ${loadedUser.username} (${loadedUser.uid})")
-                Log.d("UserViewModel", "Incoming Friend Requests: ${loadedUser.incomingFriendRequests.size}")
-                Log.d("UserViewModel", "Incoming Friend Requests2: ${_incomingRequestUsernames.value}")
-                //Log.d("UserViewModel", "User email: ${loadedUser.email}")
-            } else {
-                //Log.w("UserViewModel", "Failed to load user for UID: $uid")
-            }
-            _user.value = loadedUser
-            if (loadedUser != null) {
-                loadFriends(loadedUser.friendList)
-                loadIncomingRequestsUsernames(loadedUser.incomingFriendRequests)
-                //Log.d("UserViewModel", "User name: ${_incomingRequestUsernames.value}")
-            }
-            if (loadedUser != null) {
-                Log.d("UserViewModel", "Incoming Friend Requests: ${loadedUser.incomingFriendRequests.size}")
-            }
-            Log.d("UserViewModel", "Incoming Friend Requests2: ${_incomingRequestUsernames.value}")
-        }
-    }
+    fun loadUser() {
+        userRepository.getUserWithFriends(
+            onComplete = { user, friends, incoming, outgoing ->
+                _user.value = user
 
-    fun loadIncomingRequestsUsernames(incomingFriendRequests: List<String>, append: Boolean = false) {
-        if (incomingFriendRequests.isEmpty()) {
-            if (!append) {
-                _incomingRequestUsernames.value = emptyList() // Only clear if replacing
-            }
-            return
-        }
-
-        userRepository.getPublicUsers(incomingFriendRequests) { publicUsers ->
-            val newUsernames = publicUsers.map { it.username }
-
-            if (append) {
-                _incomingRequestUsernames.update { existing ->
-                    val new = newUsernames.filterNot { it in existing }
-                    existing + new
+                // Update Room if needed
+                viewModelScope.launch(Dispatchers.IO) {
+                    userRepository.syncFriendsToLocal(user.friendList, friends)
                 }
-            } else {
-                _incomingRequestUsernames.value = newUsernames
+
+                // Update request usernames
+                _incomingRequestUsernames.value = incoming.associate { it.uid to it.username }
+                _outgoingRequestUsernames.value = outgoing.associate { it.uid to it.username }
+
+                Log.d("UserViewModel", "✅ User loaded via Cloud Function")
+            },
+            onFailure = { error ->
+                Log.e("UserViewModel", "❌ Failed to load user via Cloud Function", error)
             }
-        }
+        )
     }
-
-    fun loadOutgoingRequestUsernames(uids: List<String>, append: Boolean = false) {
-        if (uids.isEmpty()) {
-            if (!append) _outgoingRequestUsernames.value = emptyList()
-            return
-        }
-
-        userRepository.getPublicUsers(uids) { users ->
-            val usernames = users.map { it.username }
-
-            if (append) {
-                _outgoingRequestUsernames.update { existing ->
-                    val new = usernames.filterNot { it in existing }
-                    existing + new
-                }
-            } else {
-                _outgoingRequestUsernames.value = usernames
-            }
-        }
-    }
-
 
     fun updateMood(mood: String) {
         val currentUser = _user.value ?: return
@@ -133,7 +92,7 @@ class UserViewModel @Inject constructor(
     fun sendFriendRequestByEmail(
         email: String,
         onSuccess: () -> Unit,
-        onFailure: (String) -> Unit // Changed to pass error reason
+        onFailure: (String) -> Unit
     ) {
         val currentUser = _user.value
         val fromUid = currentUser?.uid ?: return
@@ -165,10 +124,21 @@ class UserViewModel @Inject constructor(
                     outgoingFriendRequests = currentUser.outgoingFriendRequests + toUid
                 )
 
-                loadOutgoingRequestUsernames(listOf(toUid), append = true)
-                onSuccess()
-            }.addOnFailureListener {
-                onFailure("Failed to send friend request.")
+                // ✅ Now fetch username and update map
+                userRepository.getPublicUsers(listOf(toUid)) { users ->
+                    val user = users.firstOrNull()
+                    if (user != null) {
+                        _outgoingRequestUsernames.update { existing ->
+                            existing + (toUid to user.username)
+                        }
+                    } else {
+                        Log.w("FriendRequest", "⚠️ Could not fetch PublicUser for $toUid")
+                    }
+                    onSuccess()
+                }
+            }.addOnFailureListener { e ->
+                Log.e("FriendRequest", "❌ Failed to send friend request", e)
+                onFailure("Firestore error: ${e.message}")
             }
         }
     }
@@ -185,7 +155,8 @@ class UserViewModel @Inject constructor(
                 val updatedOutgoing = currentUser.outgoingFriendRequests - targetUid
                 _user.value = currentUser.copy(outgoingFriendRequests = updatedOutgoing)
 
-                loadOutgoingRequestUsernames(updatedOutgoing)
+                _outgoingRequestUsernames.update { it - targetUid }
+
                 onSuccess() // ✅ Notify success
             }
             .addOnFailureListener {
@@ -199,7 +170,6 @@ class UserViewModel @Inject constructor(
 
         userRepository.acceptFriendRequest(currentUser.uid, requesterUid)
             .addOnSuccessListener {
-                // ✅ Patch local state (no fetch from Firestore)
                 val updatedRequests = currentUser.incomingFriendRequests - requesterUid
                 val updatedFriendList = currentUser.friendList + requesterUid
 
@@ -208,44 +178,65 @@ class UserViewModel @Inject constructor(
                     friendList = updatedFriendList
                 )
 
-                // ✅ Trigger downstream recomposition
-                loadIncomingRequestsUsernames(updatedRequests)
-                loadFriends(listOf(requesterUid), append = true)
+                _incomingRequestUsernames.update { it - requesterUid }
+
+                viewModelScope.launch(Dispatchers.IO) {
+                    val publicUsers = userRepository.getPublicUsersSuspend(listOf(requesterUid))
+                    userRepository.syncFriendsToLocal(updatedFriendList, publicUsers)
+                }
             }
     }
+
+    fun deleteFriend(friendUid: String) {
+        val currentUser = _user.value ?: return
+
+        userRepository.deleteFriend(currentUser.uid, friendUid)
+            .addOnSuccessListener {
+                val updatedFriendList = currentUser.friendList - friendUid
+                _user.value = currentUser.copy(friendList = updatedFriendList)
+
+                // Remove from local Room DB
+                viewModelScope.launch(Dispatchers.IO) {
+                    userRepository.removeLocalFriend(friendUid)
+                }
+
+                Log.d("UserViewModel", "✅ Removed friend: $friendUid")
+            }
+            .addOnFailureListener { e ->
+                Log.e("UserViewModel", "❌ Failed to remove friend: $friendUid", e)
+            }
+    }
+
 
     fun declineFriendRequest(requesterUid: String) {
         val currentUser = _user.value ?: return
 
         userRepository.declineFriendRequest(currentUser.uid, requesterUid)
             .addOnSuccessListener {
-                // ✅ Patch local state
                 val updatedRequests = currentUser.incomingFriendRequests - requesterUid
                 _user.value = currentUser.copy(incomingFriendRequests = updatedRequests)
 
-                // ✅ Update UI state
-                loadIncomingRequestsUsernames(updatedRequests)
+                _incomingRequestUsernames.update { it - requesterUid }
             }
     }
 
-    fun loadFriends(friendIds: List<String>, append: Boolean = false) {
-        if (friendIds.isEmpty()) {
-            if (!append) {
-                _friends.value = emptyList() // clear fully only on replace
-            }
-            return
-        }
+    fun observeLocalFriends(): Flow<List<LocalFriend>> {
+        return friendDao.getAllFriends()
+    }
 
-        userRepository.getPublicUsers(friendIds) { newFriends ->
-            if (append) {
-                _friends.update { existingFriends ->
-                    // Only add friends who aren't already in the list
-                    val new = newFriends.filterNot { nf -> existingFriends.any { it.uid == nf.uid } }
-                    existingFriends + new
-                }
-            } else {
-                _friends.value = newFriends
-            }
+    suspend fun getLocalFriend(uid: String): LocalFriend? {
+        return userRepository.getLocalFriend(uid)
+    }
+
+    fun hardResetFriends(){
+        viewModelScope.launch {
+            userRepository.hardResetFriends()
+        }
+    }
+
+    fun hardResetLocalMessages(){
+        viewModelScope.launch {
+            userRepository.hardResetLocalMessages()
         }
     }
 }
