@@ -32,6 +32,7 @@ fun ChatView(
     var messageText by remember { mutableStateOf("") }
     val context = LocalContext.current
 
+
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -5,10 +5,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -29,11 +33,12 @@ import com.example.onlyone.Screen
 @Composable
 fun MainTopBar(onActionClick: () -> Unit) {
     val topBarHeight = 64.dp
+    Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+            .padding(horizontal = 1.dp)
             .border(
                 width = 0.1.dp,
                 color = Color.White.copy(alpha = 0.6f),

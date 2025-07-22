@@ -31,7 +31,8 @@ data class PrivateUser(
     val isPro: Boolean = false,
     val friendList: List<String> = emptyList(),
     val incomingFriendRequests: List<String> = emptyList(),
-    val outgoingFriendRequests: List<String> = emptyList()
+    val outgoingFriendRequests: List<String> = emptyList(),
+    val fcmToken: String = "" // ✅ NEW FIELD
 )
 
 data class UserSwipeStatus(

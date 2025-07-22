@@ -181,8 +181,9 @@ class UserViewModel @Inject constructor(
                 _incomingRequestUsernames.update { it - requesterUid }
 
                 viewModelScope.launch(Dispatchers.IO) {
-                    val publicUsers = userRepository.getPublicUsersSuspend(listOf(requesterUid))
-                    userRepository.syncFriendsToLocal(updatedFriendList, publicUsers)
+                    val fullFriendList = _user.value?.friendList ?: emptyList()
+                    val allPublicUsers = userRepository.getPublicUsersSuspend(fullFriendList)
+                    userRepository.syncFriendsToLocal(fullFriendList, allPublicUsers)
                 }
             }
     }

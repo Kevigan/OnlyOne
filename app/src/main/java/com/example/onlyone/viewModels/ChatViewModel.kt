@@ -3,6 +3,7 @@ package com.example.onlyone.viewModels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.onlyone.cloudMessaging.MessageNotifier
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.data.Message
 import com.example.onlyone.data.PublicUser
@@ -44,6 +45,7 @@ class ChatViewModel @Inject constructor(
     private val _isLoadingUser = MutableStateFlow(false)
     val isLoadingUser: StateFlow<Boolean> = _isLoadingUser.asStateFlow()
 
+    val messageFlow = MessageNotifier.newMessageFlow
 
     init {
         startResetCountdown()
@@ -100,15 +102,17 @@ class ChatViewModel @Inject constructor(
         chatRepository.addFeedback(messageId, feedback)
     }
 
-
     fun loadRandomUserBatch(
         currentUserId: String,
         userRepository: UserRepository,
         onNotEnoughSwipes: () -> Unit,
         onComplete: (Boolean) -> Unit
     ) {
+        _isLoadingUser.value = true // ⏳ Start loading
+
         userRepository.getSwipeStatus(currentUserId) { swipeStatus ->
             if (swipeStatus == null) {
+                _isLoadingUser.value = false
                 onNotEnoughSwipes()
                 onComplete(false)
                 return@getSwipeStatus
@@ -116,6 +120,7 @@ class ChatViewModel @Inject constructor(
 
             val swipesLeft = swipeStatus.swipesGranted - swipeStatus.swipesUsed
             if (swipesLeft <= 0) {
+                _isLoadingUser.value = false
                 onNotEnoughSwipes()
                 onComplete(false)
                 return@getSwipeStatus
@@ -126,6 +131,8 @@ class ChatViewModel @Inject constructor(
                 val writtenToday = writtenTodayList.first().map { it.receiverId }
 
                 userRepository.getRandomUsersFromCloud(writtenToday) { users ->
+                    _isLoadingUser.value = false // ✅ Done loading
+
                     if (!users.isNullOrEmpty()) {
                         _userQueue.value = users
                         _targetUser.value = users.first() // preload first for UI

@@ -37,7 +37,11 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.unit.sp
 import com.example.dao.FriendDao
+import com.example.onlyone.cloudMessaging.MessageNotifier
+import com.example.onlyone.cloudMessaging.RequestNotificationPermission
 import com.example.onlyone.composables.MoodStatusCardContent
+import com.example.onlyone.composables.TopSnackbar
+import kotlinx.coroutines.delay
 
 @Composable
 fun MainView(
@@ -55,11 +59,20 @@ fun MainView(
     val statusBarColor = MaterialTheme.colors.background
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
         if (uid != null && userViewModel.shouldLoadMessagesFor(uid)) {
             Log.d("MainView", "Syncing messages for $uid")
             chatViewModel.syncMessagesFromServer(uid)
+        }
+    }
+    LaunchedEffect(user?.uid) {
+        val uid = user?.uid
+        if (uid != null) {
+            chatViewModel.messageFlow.collect { (_, _) ->
+                chatViewModel.syncMessagesFromServer(uid)
+            }
         }
     }
 
