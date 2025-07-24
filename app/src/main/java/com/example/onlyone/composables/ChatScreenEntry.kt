@@ -69,7 +69,7 @@ fun ChatScreenEntry(
                 user = currentUser!!,
                 targetUser = targetUser!!,
                 isRandom = isRandom,
-                onNextUser = { chatViewModel.consumeNextUserFromQueue() },
+                onNextUser = { chatViewModel.consumeNextUserFromQueue(currentUser!!.uid) },
                 chatViewModel = chatViewModel,
                 userRepository = userViewModel.userRepository
             )

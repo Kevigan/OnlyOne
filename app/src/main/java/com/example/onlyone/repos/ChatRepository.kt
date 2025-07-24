@@ -48,7 +48,11 @@ class ChatRepository @Inject constructor(
         val msgWithId = message.copy(id = docId)
 
         val messageMap = msgWithId.toFirestoreMap()
+        Log.d("SendMessage", "Upload map: ${messageMap}")
+
         trackWrite("messages/$docId", "sendMessage")
+        Log.d("SendMessage", "Sending feedback: ${message.feedback}")
+
         return db.collection("messages").document(docId).set(messageMap)
     }
 
@@ -59,9 +63,43 @@ class ChatRepository @Inject constructor(
             .get()
     }
 
-    fun addFeedback(messageId: String, feedback: Int): Task<Void> {
-        trackWrite("messages/$messageId → feedback", "addFeedback")
-        return db.collection("messages").document(messageId).update("feedback", feedback)
+    suspend fun addFeedback(message: LocalMessage, feedback: Int) {
+        if (message.feedback != -10) {
+            Log.d("ChatRepo", "ℹ️ Feedback already set. Skipping update.")
+            return
+        }
+
+        try {
+            // 🔁 Await Firestore write
+            db.collection("messages").document(message.id)
+                .update("feedback", feedback)
+                .await()
+
+            // ✅ Then update Room
+            val updated = message.copy(feedback = feedback)
+            messageDao.insertAll(listOf(updated))
+            trackWrite("messages/${message.id} → feedback:$feedback", "addFeedback")
+        } catch (e: Exception) {
+            Log.e("ChatRepo", "❌ Failed to update feedback", e)
+        }
+    }
+
+    suspend fun markAsRead(message: LocalMessage) {
+        if (!message.read) {
+            try {
+                // Update Firestore
+                db.collection("messages").document(message.id)
+                    .update("read", true)
+                    .await()
+
+                // Update local Room DB
+                val updated = message.copy(read = true)
+                messageDao.insertAll(listOf(updated)) // replaces existing by ID
+                trackWrite("messages/${message.id} → read:true", "markAsRead")
+            } catch (e: Exception) {
+                Log.e("ChatRepo", "❌ Failed to mark message as read", e)
+            }
+        }
     }
 
     fun getRandomAvailableUserFromCloud(

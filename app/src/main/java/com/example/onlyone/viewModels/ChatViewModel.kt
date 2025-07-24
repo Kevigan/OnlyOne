@@ -3,6 +3,7 @@ package com.example.onlyone.viewModels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.dao.SwipeDao
 import com.example.onlyone.cloudMessaging.MessageNotifier
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.data.Message
@@ -26,6 +27,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
+    private val userRepository: UserRepository,
+    private val swipeDao: SwipeDao
 ) : ViewModel() {
 
     private val _targetUser = MutableStateFlow<PublicUser?>(null)
@@ -98,8 +101,18 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun addFeedback(messageId: String, feedback: Int) {
-        chatRepository.addFeedback(messageId, feedback)
+    fun addFeedback(message: LocalMessage, feedback: Int) {
+        viewModelScope.launch {
+            chatRepository.addFeedback(message, feedback)
+        }
+    }
+
+    fun markMessageAsRead(message: LocalMessage) {
+        viewModelScope.launch {
+            if (!message.read) {
+                chatRepository.markAsRead(message)
+            }
+        }
     }
 
     fun loadRandomUserBatch(
@@ -145,14 +158,26 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun consumeNextUserFromQueue() {
-        val currentList = _userQueue.value
-        if (currentList.isNotEmpty()) {
-            val newList = currentList.drop(1)
-            _userQueue.value = newList
-            _targetUser.value = newList.firstOrNull()
-        } else {
-            _targetUser.value = null
+    fun consumeNextUserFromQueue(currentUid: String) {
+        viewModelScope.launch {
+            val localSwipeStatus = swipeDao.getSwipeStatus(currentUid)
+            val swipesLeft = (localSwipeStatus?.swipesGranted ?: 25) - (localSwipeStatus?.swipesUsed ?: 0)
+
+            if (swipesLeft <= 0) {
+                Log.d("SwipeCheck", "🚫 No swipes left for $currentUid")
+                return@launch
+            }
+
+            val currentList = _userQueue.value
+            if (currentList.isNotEmpty()) {
+                val newList = currentList.drop(1)
+                _userQueue.value = newList
+                _targetUser.value = newList.firstOrNull()
+                Log.d("SwipeCheck", "🚫 swipes: $swipesLeft")
+                userRepository.incrementSwipeCount(currentUid)
+            } else {
+                _targetUser.value = null
+            }
         }
     }
 

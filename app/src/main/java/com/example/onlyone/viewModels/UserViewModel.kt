@@ -9,6 +9,7 @@ import com.example.dao.FriendDao
 import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.User
+import com.example.onlyone.data.UserSwipeStatus
 import com.example.onlyone.repos.UserRepository
 import com.google.android.gms.tasks.Task
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +38,10 @@ class UserViewModel @Inject constructor(
 
     private val _incomingRequestUsernames = MutableStateFlow<Map<String, String>>(emptyMap())
     val incomingRequestUsernames: StateFlow<Map<String, String>> = _incomingRequestUsernames.asStateFlow()
+
+    private val _swipeStatus = MutableStateFlow<UserSwipeStatus?>(null)
+    val swipeStatus: StateFlow<UserSwipeStatus?> = _swipeStatus.asStateFlow()
+
 
     private var lastLoadedMessageUid: String? = null
 
@@ -73,6 +78,12 @@ class UserViewModel @Inject constructor(
                 Log.e("UserViewModel", "❌ Failed to load user via Cloud Function", error)
             }
         )
+    }
+
+    fun loadSwipeStatus(uid: String) {
+        userRepository.getSwipeStatus(uid) { status ->
+            _swipeStatus.value = status
+        }
     }
 
     fun updateMood(mood: String) {

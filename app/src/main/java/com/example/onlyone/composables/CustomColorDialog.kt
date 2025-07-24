@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
@@ -30,6 +31,8 @@ import androidx.compose.ui.window.Dialog
 fun CustomColorOverlay(
     modifier: Modifier = Modifier,
     overlayColor: Color = Color.Transparent,
+    borderColor: Color = Color.White,
+    borderWidth : Dp = 0.1.dp,
     shape: Shape = RoundedCornerShape(32.dp),
     paddingBox1: PaddingValues = PaddingValues(horizontal = 4.dp), // outer Box padding
     paddingBox2: PaddingValues = PaddingValues(12.dp),             // inner Box padding
@@ -41,8 +44,8 @@ fun CustomColorOverlay(
             .fillMaxWidth()
             .padding(paddingBox1) // ✅ applied here
             .border(
-                width = 0.1.dp,
-                color = Color.White.copy(alpha = 0.6f),
+                width = borderWidth,
+                color = borderColor.copy(alpha = 0.6f),
                 shape = shape
             )
     ) {

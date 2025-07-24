@@ -102,6 +102,7 @@ fun ChatView(
                         content = messageText.trim(),
                         timestamp = Timestamp.now(),
                         senderAvatarId = 0,
+                        feedback = -10
                     )
                     chatViewModel.sendMessage(msg) { success ->
                         if (success) {

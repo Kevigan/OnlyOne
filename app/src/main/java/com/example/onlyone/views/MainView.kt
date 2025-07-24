@@ -2,6 +2,8 @@ package com.example.onlyone.views
 
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,11 +38,14 @@ import com.example.onlyone.viewModels.UserViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.dao.FriendDao
 import com.example.onlyone.cloudMessaging.MessageNotifier
 import com.example.onlyone.cloudMessaging.RequestNotificationPermission
 import com.example.onlyone.composables.MoodStatusCardContent
+import com.example.onlyone.composables.ReceivedMessageItemBig
 import com.example.onlyone.composables.TopSnackbar
+import com.example.onlyone.data.LocalMessage
 import kotlinx.coroutines.delay
 
 @Composable
@@ -57,8 +62,14 @@ fun MainView(
         .collectAsState(initial = emptyList())
     val millisUntilReset by chatViewModel.timeUntilReset.collectAsState()
     val statusBarColor = MaterialTheme.colors.background
+    val swipeStatus by userViewModel.swipeStatus.collectAsState()
+
+    var selectedMessage by remember { mutableStateOf<LocalMessage?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(user?.uid) {
+        user?.uid?.let { userViewModel.loadSwipeStatus(it) }
+    }
 
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
@@ -146,10 +157,10 @@ fun MainView(
                 onDismiss = {}
             ) {
                 UserStatsCardContent(
-                    messagesLeft = "12/25",
+                    messagesLeft = swipeStatus?.let { it.swipesGranted - it.swipesUsed } ?: 0,
                     pointsBank = "1820",
                     rank = "S-Rank",
-                    millisUntilReset = millisUntilReset // ✅ add this
+                    millisUntilReset = millisUntilReset
                 )
             }
 
@@ -172,7 +183,9 @@ fun MainView(
                             name = message.senderUsername, // Or resolve name from cache or ViewModel
                             message = message.content,
                             expiration = "24hrs", // TODO: Calculate expiration if needed
-                            onClick = { /* Handle open */ }
+                            onClick = { selectedMessage = message },
+                            isRead = message.read,
+                            feedback = message.feedback ?: -10
                         )
                     }
                 }
@@ -204,6 +217,28 @@ fun MainView(
         )
     }
 
+    if (selectedMessage != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x80000000)) // semi-transparent backdrop
+                .clickable(onClick = { selectedMessage = null }) // dismiss on outside tap
+        ) {
+            ReceivedMessageItemBig(
+                chatViewModel = chatViewModel,
+                message = selectedMessage!!,
+                onFeedbackSelected = { feedback ->
+                    chatViewModel.addFeedback(selectedMessage!!, feedback)
+                    selectedMessage = null
+                },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                shape = 20
+            )
+        }
+    }
 }
 
 @Composable

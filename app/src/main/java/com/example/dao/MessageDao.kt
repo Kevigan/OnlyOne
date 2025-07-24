@@ -22,6 +22,10 @@ interface MessageDao {
     @Query("DELETE FROM LocalMessage")
     suspend fun clearLocalMessages()
 
+    @Query("SELECT * FROM LocalMessage WHERE id = :messageId LIMIT 1")
+    suspend fun getMessageById(messageId: String): LocalMessage?
+
+
     //////////////// 💬 Daily write limit tracking /////////////////////
     @Query("SELECT * FROM WrittenTodayEntity")
     suspend fun getWrittenToday(): List<WrittenTodayEntity>

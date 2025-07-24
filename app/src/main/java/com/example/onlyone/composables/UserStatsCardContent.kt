@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun UserStatsCardContent(
-    messagesLeft: String,
+    messagesLeft: Int,
     pointsBank: String,
     rank: String,
-    millisUntilReset: Long // 👈 Add this new param
+    millisUntilReset: Long
 ) {
     val hours = (millisUntilReset / 1000) / 3600
     val minutes = ((millisUntilReset / 1000) % 3600) / 60
@@ -44,10 +44,7 @@ fun UserStatsCardContent(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 🟢 Left column: stats
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "Messages left: $messagesLeft",
@@ -61,12 +58,12 @@ fun UserStatsCardContent(
                     color = Color.White.copy(alpha = 0.7f)
                 )
             }
-
             Text("Points in bank: $pointsBank", color = Color.White)
             Text("Rank: $rank", color = Color.White)
         }
     }
 }
+
 
 
 

@@ -1,29 +1,25 @@
 package com.example.onlyone
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
-import androidx.compose.material.SnackbarDuration
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -36,9 +32,8 @@ import com.example.onlyone.cloudMessaging.MessageNotifier
 import com.example.onlyone.cloudMessaging.RequestNotificationPermission
 import com.example.onlyone.composables.ChatScreenEntry
 import com.example.onlyone.composables.MainBottomBar
-import com.example.onlyone.composables.MainTopBar
-import com.example.onlyone.composables.ReceivedMessageItem
 import com.example.onlyone.composables.TopSnackbar
+import com.example.onlyone.connection.ConnectivityListener
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.UserViewModel
@@ -63,6 +58,22 @@ fun Navigation(
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
     val bannerMessage = remember { mutableStateOf("") }
+    val listener = remember { ConnectivityListener(context) }
+    val isConnected by listener.isConnected.collectAsState()
+    val lastConnectionState = remember { mutableStateOf(true) } // store previous state
+    val showToast = remember { mutableStateOf(false) }
+
+
+    LaunchedEffect(Unit) {
+        listener.startListening()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            listener.stopListening()
+        }
+    }
+
     LaunchedEffect(true) {
         MessageNotifier.newMessageFlow.collect { (title, body) ->
             bannerMessage.value = "$title: $body"
@@ -70,6 +81,23 @@ fun Navigation(
             bannerMessage.value = ""
         }
     }
+
+    LaunchedEffect(isConnected) {
+        if (!isConnected && lastConnectionState.value) {
+            showToast.value = true
+            lastConnectionState.value = false
+            Log.d("Connectivity", "🔌 Lost connection — showing toast")
+
+            Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
+
+            delay(5000) // keep it shown for 5s before hiding again (optional)
+            showToast.value = false
+        } else if (isConnected && !lastConnectionState.value) {
+            lastConnectionState.value = true
+            Log.d("Connectivity", "✅ Connection restored")
+        }
+    }
+
 
     if (currentRoute == Screen.MainScreen.route && currentUser != null) {
         RequestNotificationPermission()

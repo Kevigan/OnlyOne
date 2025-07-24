@@ -36,17 +36,23 @@ fun ReceivedMessageItem(
     name: String,
     message: String,
     expiration: String,
-    onClick: () -> Unit // ← new
+    isRead: Boolean,
+    feedback: Int,
+    onClick: () -> Unit
 ) {
+    val borderColor = if (isRead) Color.White else Color(0xFF6FCF97) // greenish when unread
+    val borderWidth = if(isRead) 0.1.dp else 2.dp
     CustomColorOverlay(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(percent = 45),
         overlayColor = Color.Gray,
+        borderColor = borderColor, // ✅ use dynamic color
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
         paddingBox2 = PaddingValues(6.dp),
+        borderWidth = borderWidth
     ) {
         Column(
             modifier = Modifier
@@ -63,7 +69,6 @@ fun ReceivedMessageItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // 👤 Avatar
                     Image(
                         painter = painterResource(id = avatarResId),
                         contentDescription = "Avatar for $name",
@@ -82,18 +87,19 @@ fun ReceivedMessageItem(
                     )
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { /* thumbs up */ }, modifier = Modifier.size(24.dp)) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_thumb_up_off_alt_24),
-                            contentDescription = "Thumbs up",
-                            tint = Color.White
-                        )
-                    }
+                val (iconRes, tint, description) = when (feedback) {
+                    1 -> Triple(R.drawable.baseline_thumb_up_off_alt_24, Color.Green, "You gave thumbs up")
+                    0 -> Triple(R.drawable.baseline_sentiment_neutral_24, Color.Gray, "You gave neutral feedback")
+                    -1 -> Triple(R.drawable.baseline_thumb_down_off_alt_24, Color.Red, "You gave thumbs down")
+                    else -> Triple(R.drawable.baseline_thumb_up_off_alt_24, Color.White, "No feedback given")
                 }
+
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = description,
+                    tint = tint,
+                    modifier = Modifier.size(24.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(3.dp))
@@ -106,7 +112,7 @@ fun ReceivedMessageItem(
                 Text(
                     text = message,
                     style = MaterialTheme.typography.body2,
-                    fontSize = 16.sp, // 👈 custom font size
+                    fontSize = 16.sp,
                     color = Color.White.copy(alpha = 0.85f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -120,13 +126,13 @@ fun ReceivedMessageItem(
                 ) {
                     Text(
                         text = "exp. in",
-                        fontSize = 8.sp, // 👈 smaller font
+                        fontSize = 8.sp,
                         style = MaterialTheme.typography.caption,
                         color = Color.White.copy(alpha = 0.7f)
                     )
                     Text(
                         text = expiration,
-                        fontSize = 10.sp, // 👈 slightly bigger for emphasis
+                        fontSize = 10.sp,
                         style = MaterialTheme.typography.body2,
                         color = Color.White
                     )

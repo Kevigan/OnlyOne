@@ -3,7 +3,9 @@ package com.example.onlyone.repos
 import android.util.Log
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
+import com.example.dao.SwipeDao
 import com.example.onlyone.data.LocalFriend
+import com.example.onlyone.data.LocalSwipeStatus
 import com.example.onlyone.data.PrivateUser
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.User
@@ -33,7 +35,8 @@ import kotlin.coroutines.suspendCoroutine
 class UserRepository @Inject constructor(
     private val db: FirebaseFirestore,
     private val friendDao: FriendDao,
-    private val messageDao: MessageDao
+    private val messageDao: MessageDao,
+    private val swipeDao: SwipeDao
 ) {
     private val publicUserCache = mutableMapOf<String, PublicUser>()
 
@@ -333,7 +336,6 @@ class UserRepository @Inject constructor(
         friendDao.deleteByUid(uid)
     }
 
-
     fun getRandomUsersFromCloud(
         excludedIds: List<String>,
         onResult: (List<PublicUser>) -> Unit
@@ -390,26 +392,62 @@ class UserRepository @Inject constructor(
     // Add more: reportUser(), updatePoints(), etc.
 
     fun getSwipeStatus(uid: String, onComplete: (UserSwipeStatus?) -> Unit) {
-        db.collection("swipes").document(uid)
-            .get()
-            .addOnSuccessListener { doc ->
-                val status = doc.toObject(UserSwipeStatus::class.java)
-                if (status != null) {
-                    Log.d(
-                        "SwipeStatus",
-                        "✅ swipesUsed=${status.swipesUsed}, swipesGranted=${status.swipesGranted}"
+        CoroutineScope(Dispatchers.IO).launch {
+            val local = swipeDao.getSwipeStatus(uid)
+            if (local != null) {
+                Log.d("SwipeStatus", "📦 Loaded from Room: $local")
+                onComplete(
+                    UserSwipeStatus(
+                        uid = local.uid,
+                        swipesUsed = local.swipesUsed,
+                        swipesGranted = local.swipesGranted
                     )
-                } else {
-                    Log.w(
-                        "SwipeStatus",
-                        "⚠️ Swipe status document is null or malformed for uid=$uid"
-                    )
-                }
-                onComplete(status)
+                )
+            } else {
+                // fallback to Firestore
+                db.collection("swipes").document(uid)
+                    .get()
+                    .addOnSuccessListener { doc ->
+                        val status = doc.toObject(UserSwipeStatus::class.java)
+                        if (status != null) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                swipeDao.insertSwipeStatus(
+                                    LocalSwipeStatus(status.uid, status.swipesUsed, status.swipesGranted)
+                                )
+                            }
+                        }
+                        onComplete(status)
+                    }
+                    .addOnFailureListener {
+                        Log.e("SwipeStatus", "❌ Firestore failed", it)
+                        onComplete(null)
+                    }
             }
-            .addOnFailureListener { e ->
-                Log.e("SwipeStatus", "❌ Failed to fetch swipe status for uid=$uid", e)
-                onComplete(null)
+        }
+    }
+
+    fun incrementSwipeCount(uid: String): Task<Void> {
+        val swipeRef = db.collection("swipes").document(uid)
+
+        return swipeRef.update("swipesUsed", FieldValue.increment(1))
+            .addOnSuccessListener {
+                // ✅ Fetch updated swipe count from Firestore and update Room
+                db.collection("swipes").document(uid).get()
+                    .addOnSuccessListener { doc ->
+                        val updated = doc.toObject(UserSwipeStatus::class.java)
+                        if (updated != null) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                swipeDao.insertSwipeStatus(
+                                    LocalSwipeStatus(
+                                        uid = updated.uid,
+                                        swipesUsed = updated.swipesUsed,
+                                        swipesGranted = updated.swipesGranted
+                                    )
+                                )
+                                Log.d("SwipeSync", "✅ Local swipes updated after increment")
+                            }
+                        }
+                    }
             }
     }
 
