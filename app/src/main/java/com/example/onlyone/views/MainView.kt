@@ -46,6 +46,7 @@ import com.example.onlyone.composables.MoodStatusCardContent
 import com.example.onlyone.composables.ReceivedMessageItemBig
 import com.example.onlyone.composables.TopSnackbar
 import com.example.onlyone.data.LocalMessage
+import com.example.onlyone.utils.DailyResetTimer
 import kotlinx.coroutines.delay
 
 @Composable
@@ -60,25 +61,31 @@ fun MainView(
     val user by userViewModel.user.observeAsState()
     val localMessages by chatViewModel.observeLocalMessages(user?.uid.orEmpty())
         .collectAsState(initial = emptyList())
-    val millisUntilReset by chatViewModel.timeUntilReset.collectAsState()
+    val millisUntilReset by DailyResetTimer.timeUntilReset.collectAsState()
     val statusBarColor = MaterialTheme.colors.background
     val swipeStatus by userViewModel.swipeStatus.collectAsState()
 
     var selectedMessage by remember { mutableStateOf<LocalMessage?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var isSyncing by remember { mutableStateOf(false) }
+    var syncFailed by remember { mutableStateOf(false) }
 
     LaunchedEffect(user?.uid) {
-        user?.uid?.let { userViewModel.loadSwipeStatus(it) }
+        user?.uid?.let { userViewModel.checkAndResetSwipeLimit() }
     }
-
+//for app start
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
         if (uid != null && userViewModel.shouldLoadMessagesFor(uid)) {
-            Log.d("MainView", "Syncing messages for $uid")
-            chatViewModel.syncMessagesFromServer(uid)
+            isSyncing = true
+            syncFailed = false
+            val success = chatViewModel.syncMessagesFromServer(uid)
+            isSyncing = false
+            syncFailed = !success
         }
     }
-    LaunchedEffect(user?.uid) {
+
+    LaunchedEffect(user?.uid) {//for when new message reveived
         val uid = user?.uid
         if (uid != null) {
             chatViewModel.messageFlow.collect { (_, _) ->
@@ -141,7 +148,7 @@ fun MainView(
                 paddingBox2 = PaddingValues(1.dp),
                 shape = RoundedCornerShape(24.dp),
                 onDismiss = {}
-            ){
+            ) {
                 MoodStatusCardContent(
                     moodStatus = user?.moodStatus.orEmpty(),
                     avatarResId = R.drawable.baseline_tag_faces_24,
@@ -172,21 +179,73 @@ fun MainView(
                     .fillMaxWidth()
                     .weight(5f)
             ) {
-                Text("Received Messages", style = MaterialTheme.typography.h6, color = Color.White)
-                Spacer(modifier = Modifier.height(8.dp))
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    items(localMessages) { message ->
-                        ReceivedMessageItem(
-                            avatarResId = R.drawable.baseline_tag_faces_24, // TODO: Use sender avatar if needed
-                            name = message.senderUsername, // Or resolve name from cache or ViewModel
-                            message = message.content,
-                            expiration = "24hrs", // TODO: Calculate expiration if needed
-                            onClick = { selectedMessage = message },
-                            isRead = message.read,
-                            feedback = message.feedback ?: -10
+                    item {
+                        Text(
+                            "Received Messages",
+                            style = MaterialTheme.typography.h6,
+                            color = Color.White
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    when {
+                        isSyncing -> {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            }
+                        }
+
+                        syncFailed -> {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "⚠️ Couldn't load messages. Check your connection.",
+                                        color = Color.Red,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        localMessages.isEmpty() -> {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("No messages yet.", color = Color.Gray, fontSize = 14.sp)
+                                }
+                            }
+                        }
+
+                        else -> {
+                            items(localMessages) { message ->
+                                ReceivedMessageItem(
+                                    avatarResId = R.drawable.baseline_tag_faces_24,
+                                    name = message.senderUsername,
+                                    message = message.content,
+                                    expiration = "24hrs",
+                                    onClick = { selectedMessage = message },
+                                    isRead = message.read,
+                                    feedback = message.feedback ?: -10
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -226,6 +285,7 @@ fun MainView(
         ) {
             ReceivedMessageItemBig(
                 chatViewModel = chatViewModel,
+                userViewModel = userViewModel,
                 message = selectedMessage!!,
                 onFeedbackSelected = { feedback ->
                     chatViewModel.addFeedback(selectedMessage!!, feedback)

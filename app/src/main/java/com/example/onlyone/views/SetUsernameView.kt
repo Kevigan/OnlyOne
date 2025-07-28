@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.navigation.NavController
 import com.example.onlyone.Screen
 import com.example.onlyone.viewModels.UserViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 
 @Composable
 fun SetUsernameView(
@@ -73,16 +75,28 @@ fun SetUsernameView(
                             Toast.makeText(context, "Username is already taken", Toast.LENGTH_SHORT).show()
                             isSaving = false
                         } else {
-                            // Call the `createUserProfile` function via `UserRepository`
-                            userViewModel.repository.createUserProfile(uid, email, username)
-                                .addOnSuccessListener {
-                                    userViewModel.loadUser()
-                                    navController.navigate(Screen.MainScreen.route) {
-                                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                                    }
+                            // ✅ Fetch FCM token first
+                            FirebaseMessaging.getInstance().token
+                                .addOnSuccessListener { token ->
+                                    userViewModel.repository.createUserProfile(
+                                        email = email,
+                                        username = username,
+                                        fcmToken = token,
+                                        onSuccess = {
+                                            userViewModel.loadUser()
+                                            navController.navigate(Screen.MainScreen.route) {
+                                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                            }
+                                        },
+                                        onFailure = { error ->
+                                            Toast.makeText(context, "Failed to save user profile", Toast.LENGTH_SHORT).show()
+                                            Log.e("SetUsername", "❌ Profile creation failed", error)
+                                            isSaving = false
+                                        }
+                                    )
                                 }
                                 .addOnFailureListener {
-                                    Toast.makeText(context, "Failed to save user profile", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Failed to get FCM token", Toast.LENGTH_SHORT).show()
                                     isSaving = false
                                 }
                         }

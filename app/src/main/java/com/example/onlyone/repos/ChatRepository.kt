@@ -11,7 +11,9 @@ import com.example.onlyone.data.WrittenTodayEntity
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.functions.FirebaseFunctionsException
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
+import java.util.Date
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -43,24 +46,36 @@ class ChatRepository @Inject constructor(
         Log.d("ChatFirestore_Track", "[ChatRepo] Write #$writeCount: $path${if (from.isNotBlank()) " ($from)" else ""}")
     }
 
-    fun sendMessage(message: Message): Task<Void> {
-        val docId = db.collection("messages").document().id
-        val msgWithId = message.copy(id = docId)
+    suspend fun sendMessage(message: Message): Boolean {
+        return try {
+            val data = mapOf(
+                "receiverId" to message.receiverId,
+                "content" to message.content,
+                "senderUsername" to message.senderUsername,
+                "senderMood" to message.senderMood,
+                "senderAvatarId" to message.senderAvatarId,
+                "messageId" to message.id // 💡 client-stable message ID
+            )
 
-        val messageMap = msgWithId.toFirestoreMap()
-        Log.d("SendMessage", "Upload map: ${messageMap}")
+            val result = Firebase.functions("europe-west3")
+                .getHttpsCallable("sendMessage")
+                .call(data)
+                .await()
 
-        trackWrite("messages/$docId", "sendMessage")
-        Log.d("SendMessage", "Sending feedback: ${message.feedback}")
-
-        return db.collection("messages").document(docId).set(messageMap)
-    }
-
-    fun getMessagesToUser(uid: String): Task<QuerySnapshot> {
-        trackRead("messages?recipientId=$uid", "getMessagesToUser")
-        return db.collection("messages")
-            .whereEqualTo("receiverId", uid)
-            .get()
+            Log.d("SendMessage", "✅ Cloud Function success: ${result.data}")
+            true
+        } catch (e: FirebaseFunctionsException) {
+            if (e.code == FirebaseFunctionsException.Code.ALREADY_EXISTS) {
+                Log.w("SendMessage", "🛑 Already messaged today — skipping")
+                true // Treat as successful to prevent fallback
+            } else {
+                Log.e("SendMessage", "❌ Cloud Function failed", e)
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("SendMessage", "❌ Unexpected failure", e)
+            false
+        }
     }
 
     suspend fun addFeedback(message: LocalMessage, feedback: Int) {
@@ -86,6 +101,12 @@ class ChatRepository @Inject constructor(
 
     suspend fun markAsRead(message: LocalMessage) {
         if (!message.read) {
+            if (message.id.isBlank()) {
+                Log.e("ChatRepo", "❌ Invalid message ID (blank)")
+                return
+            }
+            Log.d("MARK_READ", "markAsRead() called with id='${message.id}', content='${message.content}'")
+
             try {
                 // Update Firestore
                 db.collection("messages").document(message.id)
@@ -102,34 +123,28 @@ class ChatRepository @Inject constructor(
         }
     }
 
-    fun getRandomAvailableUserFromCloud(
-        excludedIds: List<String>,
-        onResult: (PublicUser?) -> Unit
-    ) {
-        trackRead("functions/getRandomEligibleUser", "getRandomAvailableUserFromCloud")
+    suspend fun addFeedbackOffline(messageId: String, feedback: Int) {
+        try {
+            // Update feedback in Firestore
+            db.collection("messages").document(messageId)
+                .update("feedback", feedback)
+                .await()
 
-        val function = Firebase.functions("europe-west3").getHttpsCallable("getRandomEligibleUser")
-        val data = mapOf("excludedIds" to excludedIds)
-
-        function.call(data)
-            .addOnSuccessListener { result ->
-                val userMap = result.data as? Map<*, *> ?: return@addOnSuccessListener onResult(null)
-
-                val user = PublicUser(
-                    uid = userMap["uid"] as? String ?: return@addOnSuccessListener onResult(null),
-                    username = userMap["username"] as? String ?: "",
-                    moodStatus = userMap["moodStatus"] as? String ?: "",
-                    avatarId = (userMap["avatarId"] as? Number)?.toInt() ?: 0,
-                    points = (userMap["points"] as? Number)?.toInt() ?: 0
-                )
-
-                onResult(user)
+            // Update local Room entry (optional: ensure it exists)
+            val localMessage = messageDao.getMessageById(messageId)
+            if (localMessage != null) {
+                val updated = localMessage.copy(feedback = feedback)
+                messageDao.insertAll(listOf(updated))
             }
-            .addOnFailureListener {
-                Log.e("ChatRepo", "❌ Cloud function getRandomEligibleUser failed", it)
-                onResult(null)
-            }
+
+            trackWrite("messages/$messageId → feedback:$feedback", "addFeedbackOffline")
+        } catch (e: Exception) {
+            Log.e("ChatRepo", "❌ addFeedbackOffline failed", e)
+            throw e
+        }
     }
+
+
 
     /////////////ROOM Database///////////////
 
@@ -143,28 +158,37 @@ class ChatRepository @Inject constructor(
         return messageDao.observeWrittenToday()
     }
 
-    suspend fun syncMessages(uid: String) {
-        val lastTimestampMillis = messageDao.getLastTimestamp(uid) ?: 0L
-        val lastTimestamp = Timestamp(lastTimestampMillis / 1000, ((lastTimestampMillis % 1000) * 1_000_000).toInt())
+    suspend fun syncMessages(uid: String): Boolean {
+        val now = System.currentTimeMillis()
+        val cutoffMillis = now - 24 * 60 * 60 * 1000
+        val cutoff = Timestamp(Date(cutoffMillis))
 
-        try {
+        return try {
+            messageDao.deleteExpiredMessages(cutoffMillis)
+
             val snapshot = db.collection("messages")
                 .whereEqualTo("receiverId", uid)
-                .whereGreaterThan("timestamp", lastTimestamp)
+                .whereGreaterThan("timestamp", cutoff)
                 .get()
                 .await()
 
             val newMessages = snapshot.documents.mapNotNull { doc ->
-                val msg = doc.toObject(Message::class.java)
-                msg
+                doc.toObject(Message::class.java)?.copy(id = doc.id)
+            }
+
+            // 🔍 Add this log right after newMessages is created
+            newMessages.forEach {
+                Log.d("IDCHECK", "Parsed Message: id='${it.id}', content='${it.content}'")
             }
 
             val localMessages = newMessages.map { it.toLocal() }
-            messageDao.insertAll(localMessages)
 
-            trackRead("messages (new only)", "syncMessages")
+            messageDao.insertAll(localMessages)
+            trackRead("messages (fresh only)", "syncMessages")
+            true
         } catch (e: Exception) {
             Log.e("ChatRepo", "syncMessages failed", e)
+            false
         }
     }
 

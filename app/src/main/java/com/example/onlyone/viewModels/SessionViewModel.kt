@@ -47,21 +47,40 @@ class SessionViewModel @Inject constructor(
             .addOnSuccessListener { result ->
                 val user = result.user ?: return@addOnSuccessListener
                 val uid = user.uid
-                val displayName = email.substringBefore("@") // default display name from email
-                val isNewUser = true // As this is a new registration
+                val displayName = email.substringBefore("@")
+                val isNewUser = true
 
-                // Delegate user creation to UserRepository
-                userRepository.createUserProfile(uid, email, displayName)
-                    .addOnSuccessListener {
-                        syncFcmToken()
-                        onSuccess(uid, displayName, email, isNewUser)
+                FirebaseMessaging.getInstance().token
+                    .addOnSuccessListener { token ->
+                        userRepository.createUserProfile(
+                            email = email,
+                            username = displayName,
+                            fcmToken = token,
+                            onSuccess = {
+                                onSuccess(uid, displayName, email, isNewUser)
+                            },
+                            onFailure = { exception ->
+                                onFailure(exception)
+                            }
+                        )
                     }
-                    .addOnFailureListener { exception ->
-                        onFailure(exception) // Handle errors from UserRepository
+                    .addOnFailureListener { tokenError ->
+                        // fallback: continue without token
+                        userRepository.createUserProfile(
+                            email = email,
+                            username = displayName,
+                            fcmToken = null,
+                            onSuccess = {
+                                onSuccess(uid, displayName, email, isNewUser)
+                            },
+                            onFailure = { exception ->
+                                onFailure(exception)
+                            }
+                        )
                     }
             }
             .addOnFailureListener { exception ->
-                onFailure(exception) // Handle errors from Firebase Auth registration
+                onFailure(exception)
             }
     }
 
@@ -80,7 +99,7 @@ class SessionViewModel @Inject constructor(
                 firestore.collection("users_public").document(uid).get()
                     .addOnSuccessListener { doc ->
                         val isNewUser = !doc.exists()
-                        syncFcmToken()
+                        userRepository.syncFcmToken()
                         onSuccess(uid, displayName, email, isNewUser)
                     }
                     .addOnFailureListener { onFailure(it) }
@@ -107,7 +126,7 @@ class SessionViewModel @Inject constructor(
 
                     firestore.collection("users_public").document(uid).get()
                         .addOnSuccessListener { doc ->
-                            syncFcmToken()
+                            userRepository.syncFcmToken()
                             val isNewUser = !doc.exists()
 
                             // ✅ Just report isNewUser, don't create anything here
@@ -121,31 +140,6 @@ class SessionViewModel @Inject constructor(
             onError(e)
         }
     }
-
-    fun syncFcmToken() {
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("FCM", "❌ Fetching FCM token failed", task.exception)
-                return@addOnCompleteListener
-            }
-
-            val token = task.result
-            val currentUid = auth.currentUser?.uid
-
-            if (currentUid != null && token != null) {
-                firestore.collection("users_private")
-                    .document(currentUid)
-                    .update("fcmToken", token)
-                    .addOnSuccessListener {
-                        Log.d("FCM", "✅ Token saved to Firestore: $token")
-                    }
-                    .addOnFailureListener {
-                        Log.e("FCM", "❌ Failed to save token", it)
-                    }
-            }
-        }
-    }
-
 
     fun signOut(googleSignInClient: GoogleSignInClient? = null) {
         auth.signOut()

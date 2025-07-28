@@ -48,9 +48,15 @@ fun FriendItem(
     onDecline: (() -> Unit)? = null,
     onWriteClick: (() -> Unit)? = null,
     showDelete: Boolean = false,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    onBlock: (() -> Unit)? = null, // ✅ new block callback
+    onUnblock: (() -> Unit)? = null,
+    onUnblockAndRequest: (() -> Unit)? = null
+
 ) {
     var deleteDialogVisible by remember { mutableStateOf(false) }
+    var blockDialogVisible by remember { mutableStateOf(false) }
+    var unblockDialogVisible by remember { mutableStateOf(false) }
 
     CustomColorOverlay(
         modifier = Modifier.fillMaxWidth(),
@@ -111,7 +117,6 @@ fun FriendItem(
                         )
                     }
                 }
-
                 // ❌ Delete icon
                 if (showDelete && onDelete != null) {
                     IconButton(onClick = { deleteDialogVisible = true }) {
@@ -121,6 +126,29 @@ fun FriendItem(
                             tint = Color.Red
                         )
                     }
+                }
+            }
+
+            // 🛑 Block icon
+            if (onBlock != null) {
+                IconButton(onClick = { blockDialogVisible = true }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_block_24),
+                        contentDescription = "Block User",
+                        tint = Color.Yellow,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            if (onUnblock != null || onUnblockAndRequest != null) {
+                IconButton(onClick = { unblockDialogVisible = true }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_block_24),
+                        contentDescription = "Unblock User",
+                        tint = Color.Yellow,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
@@ -154,6 +182,55 @@ fun FriendItem(
                     dismissButton = {
                         TextButton(onClick = { deleteDialogVisible = false }) {
                             Text("No")
+                        }
+                    }
+                )
+            }
+
+            if (blockDialogVisible) {
+                AlertDialog(
+                    onDismissRequest = { blockDialogVisible = false },
+                    title = { Text("Block User") },
+                    text = {
+                        Text("Are you sure you want to block $name? This will also remove them from your friends list if they are a friend.")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            blockDialogVisible = false
+                            onBlock?.invoke()
+                        }) {
+                            Text("Block", color = Color.Red)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { blockDialogVisible = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            if (unblockDialogVisible) {
+                AlertDialog(
+                    onDismissRequest = { unblockDialogVisible = false },
+                    title = { Text("Unblock User") },
+                    text = {
+                        Text("Do you want to unblock $name?\n\nYou can also send them a friend request immediately after unblocking.")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            unblockDialogVisible = false
+                            onUnblock?.invoke()
+                        }) {
+                            Text("Unblock")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            unblockDialogVisible = false
+                            onUnblockAndRequest?.invoke()
+                        }) {
+                            Text("Unblock + Request")
                         }
                     }
                 )

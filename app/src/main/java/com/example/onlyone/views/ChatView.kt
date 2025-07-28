@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -12,12 +13,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.Message
 import com.example.onlyone.data.User
 import com.example.onlyone.repos.UserRepository
 import com.example.onlyone.viewModels.ChatViewModel
+import com.example.onlyone.utils.buildMessageId
 import com.google.firebase.Timestamp
 
 @Composable
@@ -27,11 +30,13 @@ fun ChatView(
     isRandom: Boolean,
     onNextUser: () -> Unit,
     chatViewModel: ChatViewModel,
-    userRepository: UserRepository
+    userRepository: UserRepository,
+    navController: NavController
 ) {
     var messageText by remember { mutableStateOf("") }
     val context = LocalContext.current
-
+    val isSending by chatViewModel.isSending.collectAsState()
+    val maxLength = user.maxMessageLength
 
     Column(
         modifier = Modifier
@@ -78,13 +83,14 @@ fun ChatView(
         // 📝 Chat input
         OutlinedTextField(
             value = messageText,
-            onValueChange = { messageText = it },
-            label = { Text("Write your message") },
+            onValueChange = {
+                if (it.length <= maxLength) messageText = it
+            },
+            label = { Text("Write your message (${messageText.length}/$maxLength)") },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         )
-
         Spacer(modifier = Modifier.height(12.dp))
 
         // ✅ Send + (optional) Next button
@@ -95,25 +101,49 @@ fun ChatView(
         ) {
             Button(
                 onClick = {
+                    if (messageText.trim().length > user.maxMessageLength) {
+                        Toast.makeText(context, "Your message is too long!", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    val messageId = buildMessageId(user.uid, targetUser.uid) // stable per day
                     val msg = Message(
+                        id = messageId,
                         senderUsername = user.username,
                         senderId = user.uid,
                         receiverId = targetUser.uid,
                         content = messageText.trim(),
                         timestamp = Timestamp.now(),
-                        senderAvatarId = 0,
+                        senderAvatarId = user.avatarId,
+                        senderMood = user.moodStatus,
                         feedback = -10
                     )
+
                     chatViewModel.sendMessage(msg) { success ->
                         if (success) {
                             messageText = ""
+                            Toast.makeText(context, "Message sent 😊", Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "❌ Couldn't send message. Try again when you're back online.",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
-                        // Optional: Show toast or error
                     }
                 },
-                enabled = messageText.isNotBlank()
+                enabled = messageText.isNotBlank() && !isSending
             ) {
-                Text("Send")
+                if (isSending) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Send")
+                }
             }
 
             // 🔄 Show next only if isRandom

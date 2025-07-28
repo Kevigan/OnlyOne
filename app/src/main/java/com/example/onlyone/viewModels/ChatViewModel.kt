@@ -11,6 +11,7 @@ import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.WrittenTodayEntity
 import com.example.onlyone.repos.ChatRepository
 import com.example.onlyone.repos.UserRepository
+import com.example.onlyone.utils.DailyResetTimer
 import com.example.onlyone.utils.toPublicUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -39,9 +40,6 @@ class ChatViewModel @Inject constructor(
 
     val writtenTodayList: Flow<List<WrittenTodayEntity>> = chatRepository.observeWrittenToday()
 
-    private val _timeUntilReset = MutableStateFlow(getMillisUntilNextUtcMidnight())
-    val timeUntilReset: StateFlow<Long> = _timeUntilReset.asStateFlow()
-
     private val _userQueue = MutableStateFlow<List<PublicUser>>(emptyList())
     val userQueue: StateFlow<List<PublicUser>> = _userQueue.asStateFlow()
 
@@ -50,54 +48,31 @@ class ChatViewModel @Inject constructor(
 
     val messageFlow = MessageNotifier.newMessageFlow
 
+    private val _isSending = MutableStateFlow(false)
+    val isSending: StateFlow<Boolean> = _isSending.asStateFlow()
+
     init {
-        startResetCountdown()
-    }
-
-    private fun startResetCountdown() {
-        viewModelScope.launch {
-            while (true) {
-                val millis = getMillisUntilNextUtcMidnight()
-                _timeUntilReset.value = millis
-
-                if (millis <= 1_000L) {
-                    resetWrittenTodayIfNeeded()
-                }
-
-                delay(60_000) // check every 60 seconds
-            }
+        DailyResetTimer.start {
+            resetWrittenTodayIfNeeded()
         }
     }
 
-    private fun getMillisUntilNextUtcMidnight(): Long {
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-        calendar.add(Calendar.DATE, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis - System.currentTimeMillis()
-    }
-
     fun sendMessage(message: Message, onComplete: (Boolean) -> Unit) {
-        chatRepository.sendMessage(message)
-            .addOnCompleteListener {
-                val success = it.isSuccessful
-                if (success) {
-                    viewModelScope.launch {
-                        chatRepository.recordWrittenUser(message.receiverId)
-                    }
-                }
-                onComplete(success)
-            }
-            .addOnFailureListener { e ->
-                Log.e("SendMessage", "❌ Firestore write failed: ${e.message}", e)
-            }
-    }
+        _isSending.value = true
 
-    fun checkDailyMessageLimit(uid: String, onResult: (Int) -> Unit) {
-        chatRepository.getMessagesToUser(uid).addOnSuccessListener {
-            onResult(it.size())
+        viewModelScope.launch {
+            val success = chatRepository.sendMessage(message)
+
+            if (success) {
+                val alreadySent = chatRepository.hasAlreadyWrittenTo(message.receiverId)
+                if (!alreadySent) {
+                    chatRepository.recordWrittenUser(message.receiverId)
+                    Log.d("SendMessage", "📝 Marked user as written to: ${message.receiverId}")
+                }
+            }
+
+            onComplete(success)
+            _isSending.value = false
         }
     }
 
@@ -174,7 +149,13 @@ class ChatViewModel @Inject constructor(
                 _userQueue.value = newList
                 _targetUser.value = newList.firstOrNull()
                 Log.d("SwipeCheck", "🚫 swipes: $swipesLeft")
-                userRepository.incrementSwipeCount(currentUid)
+                userRepository.incrementSwipeCount { success ->
+                    if (!success) {
+                        Log.e("SwipeCheck", "❌ Failed to increment swipe count")
+                        // You could show a toast or UI message here
+                    }
+                }
+
             } else {
                 _targetUser.value = null
             }
@@ -227,10 +208,8 @@ class ChatViewModel @Inject constructor(
         return chatRepository.observeMessagesForUser(uid)
     }
 
-    fun syncMessagesFromServer(uid: String) {
-        viewModelScope.launch {
-            chatRepository.syncMessages(uid)
-        }
+    suspend fun syncMessagesFromServer(uid: String): Boolean {
+        return chatRepository.syncMessages(uid)
     }
 
     fun resetWrittenTodayIfNeeded() {

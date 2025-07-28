@@ -11,6 +11,7 @@ import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.User
 import com.example.onlyone.data.UserSwipeStatus
 import com.example.onlyone.repos.UserRepository
+import com.example.onlyone.utils.DailyResetTimer
 import com.google.android.gms.tasks.Task
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -39,11 +40,21 @@ class UserViewModel @Inject constructor(
     private val _incomingRequestUsernames = MutableStateFlow<Map<String, String>>(emptyMap())
     val incomingRequestUsernames: StateFlow<Map<String, String>> = _incomingRequestUsernames.asStateFlow()
 
+    private val _blockedUsers = MutableStateFlow<List<PublicUser>>(emptyList())
+    val blockedUsers: StateFlow<List<PublicUser>> = _blockedUsers
+
     private val _swipeStatus = MutableStateFlow<UserSwipeStatus?>(null)
     val swipeStatus: StateFlow<UserSwipeStatus?> = _swipeStatus.asStateFlow()
 
 
     private var lastLoadedMessageUid: String? = null
+
+    init {
+        DailyResetTimer.start {
+            checkAndResetSwipeLimit()
+        }
+    }
+
 
     fun shouldLoadMessagesFor(uid: String): Boolean {
         return if (uid != lastLoadedMessageUid) {
@@ -54,13 +65,9 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun createUserProfile(uid: String, email: String, username: String): Task<Void> {
-        return userRepository.createUserProfile(uid, email, username)
-    }
-
     fun loadUser() {
         userRepository.getUserWithFriends(
-            onComplete = { user, friends, incoming, outgoing ->
+            onComplete = { user, friends, incoming, outgoing, blocked ->
                 _user.value = user
 
                 // Update Room if needed
@@ -71,6 +78,9 @@ class UserViewModel @Inject constructor(
                 // Update request usernames
                 _incomingRequestUsernames.value = incoming.associate { it.uid to it.username }
                 _outgoingRequestUsernames.value = outgoing.associate { it.uid to it.username }
+
+                // ✅ Update blocked list
+                _blockedUsers.value = blocked
 
                 Log.d("UserViewModel", "✅ User loaded via Cloud Function")
             },
@@ -86,6 +96,19 @@ class UserViewModel @Inject constructor(
         }
     }
 
+    fun checkAndResetSwipeLimit() {
+        val uid = _user.value?.uid ?: return
+
+        userRepository.maybeResetSwipes { reset ->
+            Log.d("SwipeReset", if (reset) "✅ Swipes reset for today" else "ℹ️ No reset needed")
+
+            // Always re-sync swipe data from Firestore, even if no reset
+            userRepository.syncSwipeStatusFromCloud(uid) {
+                loadSwipeStatus(uid) // updates UI
+            }
+        }
+    }
+
     fun updateMood(mood: String) {
         val currentUser = _user.value ?: return
 
@@ -94,11 +117,57 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun blockUser(blockedUid: String) {
-        _user.value?.uid?.let {
-            userRepository.blockUser(it, blockedUid)
+    fun blockUser(targetUid: String) {
+        val currentUser = _user.value ?: return
+
+        userRepository.blockAndUnfriendUser(currentUser.uid, targetUid) { success, error ->
+            if (success) {
+                val updatedBlockList = currentUser.blockList + targetUid
+                val updatedFriendList = currentUser.friendList - targetUid
+                val updatedIncoming = currentUser.incomingFriendRequests - targetUid
+                val updatedOutgoing = currentUser.outgoingFriendRequests - targetUid
+
+                _user.value = currentUser.copy(
+                    blockList = updatedBlockList,
+                    friendList = updatedFriendList,
+                    incomingFriendRequests = updatedIncoming,
+                    outgoingFriendRequests = updatedOutgoing
+                )
+
+                _incomingRequestUsernames.update { it - targetUid }
+                _outgoingRequestUsernames.update { it - targetUid }
+
+                viewModelScope.launch {
+                    userRepository.removeLocalFriend(targetUid)
+
+                    // 🔄 Now refresh public profiles for blocked tab
+                    userRepository.getPublicUsers(updatedBlockList) { publicUsers ->
+                        _blockedUsers.value = publicUsers
+                    }
+                }
+
+                Log.d("UserViewModel", "✅ Blocked user: $targetUid")
+            } else {
+                Log.e("UserViewModel", "❌ Failed to block user: $error")
+            }
         }
     }
+
+    fun unblockUser(targetUid: String) {
+        userRepository.unblockUser(targetUid) { success ->
+            if (success) {
+                _user.value = _user.value?.copy(
+                    blockList = _user.value?.blockList?.filterNot { it == targetUid } ?: emptyList()
+                )
+                _blockedUsers.value = _blockedUsers.value.filterNot { it.uid == targetUid }
+
+                Log.d("UserViewModel", "✅ Unblocked user: $targetUid")
+            } else {
+                Log.e("UserViewModel", "❌ Failed to unblock user: $targetUid")
+            }
+        }
+    }
+
 
     fun sendFriendRequestByEmail(
         email: String,
@@ -128,31 +197,62 @@ class UserViewModel @Inject constructor(
                 onFailure("Friend request already sent.")
                 return@findUserByEmail
             }
+            Log.d("FriendRequest", "📤 Sending friend request from $fromUid to $toUid")
 
             // ✅ Send friend request
-            userRepository.sendFriendRequest(fromUid, toUid).addOnSuccessListener {
-                _user.value = currentUser.copy(
-                    outgoingFriendRequests = currentUser.outgoingFriendRequests + toUid
-                )
+            userRepository.sendFriendRequest(fromUid, toUid) { success, errorMessage ->
+                if (success) {
+                    _user.value = currentUser.copy(
+                        outgoingFriendRequests = currentUser.outgoingFriendRequests + toUid
+                    )
 
-                // ✅ Now fetch username and update map
-                userRepository.getPublicUsers(listOf(toUid)) { users ->
-                    val user = users.firstOrNull()
-                    if (user != null) {
-                        _outgoingRequestUsernames.update { existing ->
-                            existing + (toUid to user.username)
+                    userRepository.getPublicUsers(listOf(toUid)) { users ->
+                        val user = users.firstOrNull()
+                        if (user != null) {
+                            _outgoingRequestUsernames.update { existing ->
+                                existing + (toUid to user.username)
+                            }
                         }
-                    } else {
-                        Log.w("FriendRequest", "⚠️ Could not fetch PublicUser for $toUid")
+                        onSuccess()
                     }
-                    onSuccess()
+                } else {
+                    Log.e("FriendRequest", "❌ sendFriendRequest failed: $errorMessage")
+                    onFailure(errorMessage ?: "Unknown error")
                 }
-            }.addOnFailureListener { e ->
-                Log.e("FriendRequest", "❌ Failed to send friend request", e)
-                onFailure("Firestore error: ${e.message}")
             }
         }
     }
+
+    fun sendFriendRequestDirect(targetUid: String) {
+        val currentUser = _user.value ?: return
+
+        // Already a friend?
+        if (currentUser.friendList.contains(targetUid)) {
+            Log.w("FriendRequest", "🚫 Already friends with $targetUid")
+            return
+        }
+
+        // Already sent?
+        if (currentUser.outgoingFriendRequests.contains(targetUid)) {
+            Log.w("FriendRequest", "🚫 Friend request already sent to $targetUid")
+            return
+        }
+
+        userRepository.sendFriendRequest(
+            fromUid = currentUser.uid,
+            toUid = targetUid
+        ) { success, errorMessage ->
+            if (success) {
+                Log.d("FriendRequest", "✅ Sent friend request to $targetUid")
+                _user.value = currentUser.copy(
+                    outgoingFriendRequests = currentUser.outgoingFriendRequests + targetUid
+                )
+            } else {
+                Log.e("FriendRequest", "❌ Failed to send request: $errorMessage")
+            }
+        }
+    }
+
 
     fun cancelOutgoingFriendRequest(
         targetUid: String,
@@ -161,26 +261,26 @@ class UserViewModel @Inject constructor(
     ) {
         val currentUser = _user.value ?: return
 
-        userRepository.cancelOutgoingFriendRequest(currentUser.uid, targetUid)
-            .addOnSuccessListener {
+        userRepository.cancelOutgoingFriendRequest(currentUser.uid, targetUid) { success, error ->
+            if (success) {
                 val updatedOutgoing = currentUser.outgoingFriendRequests - targetUid
                 _user.value = currentUser.copy(outgoingFriendRequests = updatedOutgoing)
 
                 _outgoingRequestUsernames.update { it - targetUid }
 
-                onSuccess() // ✅ Notify success
-            }
-            .addOnFailureListener {
-                Log.w("UserViewModel", "Failed to cancel outgoing request to $targetUid", it)
+                onSuccess()
+            } else {
+                Log.e("UserViewModel", "❌ Failed to cancel outgoing request: $error")
                 onFailure()
             }
+        }
     }
 
     fun acceptFriendRequest(requesterUid: String) {
         val currentUser = _user.value ?: return
 
-        userRepository.acceptFriendRequest(currentUser.uid, requesterUid)
-            .addOnSuccessListener {
+        userRepository.acceptFriendRequest(currentUser.uid, requesterUid) { success, error ->
+            if (success) {
                 val updatedRequests = currentUser.incomingFriendRequests - requesterUid
                 val updatedFriendList = currentUser.friendList + requesterUid
 
@@ -196,40 +296,58 @@ class UserViewModel @Inject constructor(
                     val allPublicUsers = userRepository.getPublicUsersSuspend(fullFriendList)
                     userRepository.syncFriendsToLocal(fullFriendList, allPublicUsers)
                 }
+            } else {
+                Log.e("FriendAccept", "❌ Failed to accept request: $error")
             }
+        }
     }
 
     fun deleteFriend(friendUid: String) {
         val currentUser = _user.value ?: return
 
-        userRepository.deleteFriend(currentUser.uid, friendUid)
-            .addOnSuccessListener {
+        userRepository.deleteFriend(currentUser.uid, friendUid) { success, error ->
+            if (success) {
                 val updatedFriendList = currentUser.friendList - friendUid
                 _user.value = currentUser.copy(friendList = updatedFriendList)
 
-                // Remove from local Room DB
                 viewModelScope.launch(Dispatchers.IO) {
                     userRepository.removeLocalFriend(friendUid)
                 }
 
                 Log.d("UserViewModel", "✅ Removed friend: $friendUid")
+            } else {
+                Log.e("UserViewModel", "❌ Failed to remove friend: $error")
             }
-            .addOnFailureListener { e ->
-                Log.e("UserViewModel", "❌ Failed to remove friend: $friendUid", e)
-            }
+        }
     }
-
 
     fun declineFriendRequest(requesterUid: String) {
         val currentUser = _user.value ?: return
 
-        userRepository.declineFriendRequest(currentUser.uid, requesterUid)
-            .addOnSuccessListener {
+        userRepository.declineFriendRequest(currentUser.uid, requesterUid) { success, error ->
+            if (success) {
                 val updatedRequests = currentUser.incomingFriendRequests - requesterUid
                 _user.value = currentUser.copy(incomingFriendRequests = updatedRequests)
-
                 _incomingRequestUsernames.update { it - requesterUid }
+            } else {
+                Log.e("FriendDecline", "❌ Failed to decline request: $error")
             }
+        }
+    }
+
+    fun upgradeMaxMessageLength(
+        levels: Int,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        userRepository.upgradeMaxMessageLength(
+            levels = levels,
+            onSuccess = { _, _ ->
+                loadUser() // refresh user data from Firestore
+                onSuccess()
+            },
+            onFailure = onFailure
+        )
     }
 
     fun observeLocalFriends(): Flow<List<LocalFriend>> {

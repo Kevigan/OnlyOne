@@ -59,7 +59,7 @@ fun Navigation(
     val context = LocalContext.current
     val bannerMessage = remember { mutableStateOf("") }
     val listener = remember { ConnectivityListener(context) }
-    val isConnected by listener.isConnected.collectAsState()
+    val isConnected by listener.isConnected.collectAsState(initial = null)
     val lastConnectionState = remember { mutableStateOf(true) } // store previous state
     val showToast = remember { mutableStateOf(false) }
 
@@ -83,21 +83,17 @@ fun Navigation(
     }
 
     LaunchedEffect(isConnected) {
-        if (!isConnected && lastConnectionState.value) {
+        if (isConnected == false && lastConnectionState.value) {
             showToast.value = true
             lastConnectionState.value = false
-            Log.d("Connectivity", "🔌 Lost connection — showing toast")
-
             Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
-
-            delay(5000) // keep it shown for 5s before hiding again (optional)
+            delay(5000)
             showToast.value = false
-        } else if (isConnected && !lastConnectionState.value) {
+        } else if (isConnected == true && !lastConnectionState.value) {
             lastConnectionState.value = true
-            Log.d("Connectivity", "✅ Connection restored")
+            Toast.makeText(context, "Back to life..", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     if (currentRoute == Screen.MainScreen.route && currentUser != null) {
         RequestNotificationPermission()
@@ -196,7 +192,8 @@ fun Navigation(
                             uid = uid,
                             isRandom = isRandom,
                             userViewModel = userViewModel,
-                            chatViewModel = chatViewModel
+                            chatViewModel = chatViewModel,
+                            navController = navController
                         )
                     }
 

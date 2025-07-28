@@ -11,11 +11,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,15 +32,18 @@ import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.viewModels.ChatViewModel
+import com.example.onlyone.viewModels.UserViewModel
 
 @Composable
 fun ReceivedMessageItemBig(
     chatViewModel: ChatViewModel,
+    userViewModel: UserViewModel,
     message: LocalMessage,
     onFeedbackSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     shape: Int = 45
 ) {
+    var showBlockDialog by remember { mutableStateOf(false) }
     LaunchedEffect(message.id) {
         chatViewModel.markMessageAsRead(message)
     }
@@ -126,7 +135,44 @@ fun ReceivedMessageItemBig(
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_block_24),
+                    contentDescription = "Block User",
+                    tint = Color.Yellow,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { showBlockDialog = true }
+                )
+            }
         }
+
+        if (showBlockDialog) {
+            AlertDialog(
+                onDismissRequest = { showBlockDialog = false },
+                title = { Text("Block User?") },
+                text = { Text("Are you sure you want to block this user? You will no longer see messages from them.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showBlockDialog = false
+                        userViewModel.blockUser(message.senderId)
+                    }) {
+                        Text("Block", color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showBlockDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
     }
 }
 

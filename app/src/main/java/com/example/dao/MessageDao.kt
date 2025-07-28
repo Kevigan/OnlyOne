@@ -25,6 +25,9 @@ interface MessageDao {
     @Query("SELECT * FROM LocalMessage WHERE id = :messageId LIMIT 1")
     suspend fun getMessageById(messageId: String): LocalMessage?
 
+    @Query("DELETE FROM LocalMessage WHERE timestamp < :cutoff")
+    suspend fun deleteExpiredMessages(cutoff: Long)
+
 
     //////////////// 💬 Daily write limit tracking /////////////////////
     @Query("SELECT * FROM WrittenTodayEntity")

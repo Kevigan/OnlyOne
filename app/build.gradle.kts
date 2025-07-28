@@ -66,6 +66,10 @@ android {
 }
 
 dependencies {
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     implementation("androidx.compose.runtime:runtime-livedata")
     implementation("androidx.compose.material:material-icons-extended")
@@ -74,6 +78,8 @@ dependencies {
     // Hilt core
     implementation("com.google.dagger:hilt-android:2.50")
     kapt("com.google.dagger:hilt-compiler:2.50")
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    kapt("androidx.hilt:hilt-compiler:1.1.0")
 
     // Hilt with Jetpack Compose navigation
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")

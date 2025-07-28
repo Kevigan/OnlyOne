@@ -12,8 +12,8 @@ class ConnectivityListener(context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    private val _isConnected = MutableStateFlow(false)
-    val isConnected: StateFlow<Boolean> = _isConnected
+    private val _isConnected = MutableStateFlow<Boolean?>(null)
+    val isConnected: StateFlow<Boolean?> = _isConnected
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {

@@ -6,26 +6,23 @@ import com.example.dao.MessageDao
 import com.example.dao.SwipeDao
 import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.LocalSwipeStatus
-import com.example.onlyone.data.PrivateUser
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.User
 import com.example.onlyone.data.UserSwipeStatus
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -36,12 +33,36 @@ class UserRepository @Inject constructor(
     private val db: FirebaseFirestore,
     private val friendDao: FriendDao,
     private val messageDao: MessageDao,
-    private val swipeDao: SwipeDao
+    private val swipeDao: SwipeDao,
+    private val auth: FirebaseAuth
 ) {
     private val publicUserCache = mutableMapOf<String, PublicUser>()
 
     private var readCount = 0
     private var writeCount = 0
+    fun syncFcmToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM", "❌ Fetching FCM token failed", task.exception)
+                return@addOnCompleteListener
+            }
+
+            val token = task.result
+            val currentUid = auth.currentUser?.uid
+
+            if (currentUid != null && token != null) {
+                db.collection("users_private")
+                    .document(currentUid)
+                    .update("fcmToken", token)
+                    .addOnSuccessListener {
+                        Log.d("FCM", "✅ Token saved to Firestore: $token")
+                    }
+                    .addOnFailureListener {
+                        Log.e("FCM", "❌ Failed to save token", it)
+                    }
+            }
+        }
+    }
 
     fun trackRead(path: String, from: String = "") {
         readCount++
@@ -64,8 +85,16 @@ class UserRepository @Inject constructor(
         Log.d(tag, "📦 Total Firestore Writes: $writeCount")
     }
 
-    fun getUserWithFriends(onComplete: (User, List<PublicUser>, List<PublicUser>, List<PublicUser>) -> Unit, onFailure: (Exception) -> Unit) {
-
+    fun getUserWithFriends(
+        onComplete: (
+            User,
+            List<PublicUser>, // friends
+            List<PublicUser>, // incoming
+            List<PublicUser>, // outgoing
+            List<PublicUser>  // blocked
+        ) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
         trackRead("functions/getUserWithFriends", "getUserWithFriends")
 
         Firebase.functions("europe-west3")
@@ -78,13 +107,15 @@ class UserRepository @Inject constructor(
                 val friendsList = data["friends"] as? List<*> ?: emptyList<Any>()
                 val incomingList = data["incomingRequests"] as? List<*> ?: emptyList<Any>()
                 val outgoingList = data["outgoingRequests"] as? List<*> ?: emptyList<Any>()
+                val blockedList = data["blockedUsers"] as? List<*> ?: emptyList<Any>() // ✅ new line
 
                 val user = parseUser(userMap)
                 val friends = friendsList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
                 val incoming = incomingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
                 val outgoing = outgoingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
+                val blocked = blockedList.mapNotNull { parsePublicUser(it as? Map<*, *>) } // ✅ new line
 
-                onComplete(user, friends, incoming, outgoing)
+                onComplete(user, friends, incoming, outgoing, blocked)
             }
             .addOnFailureListener(onFailure)
     }
@@ -102,7 +133,9 @@ class UserRepository @Inject constructor(
             avatarId = (map["avatarId"] as? Number)?.toInt() ?: 0,
             friendList = map["friendList"] as? List<String> ?: emptyList(),
             incomingFriendRequests = map["incomingFriendRequests"] as? List<String> ?: emptyList(),
-            outgoingFriendRequests = map["outgoingFriendRequests"] as? List<String> ?: emptyList()
+            outgoingFriendRequests = map["outgoingFriendRequests"] as? List<String> ?: emptyList(),
+            maxMessageLength = (map["maxMessageLength"] as? Number)?.toInt() ?: 25, // ✅
+            gold = (map["gold"] as? Number)?.toInt() ?: 0
         )
     }
 
@@ -117,57 +150,38 @@ class UserRepository @Inject constructor(
         )
     }
 
-
-    fun createUserProfile(uid: String, email: String, username: String): Task<Void> {
-        trackWrite("users_public/$uid (new user)")
-        trackWrite("users_private/$uid (new user)")
-        trackWrite("swipes/$uid (new user)") // ✅ New tracking
-
-        val publicUser = PublicUser(
-            uid = uid,
-            username = username,
-            moodStatus = "",
-            avatarId = 0,
-            points = 0
+    fun createUserProfile(
+        email: String,
+        username: String,
+        fcmToken: String?,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val data = hashMapOf(
+            "email" to email,
+            "username" to username,
+            "fcmToken" to (fcmToken ?: "")
         )
 
-        val privateUser = PrivateUser(
-            uid = uid,
-            email = email.lowercase(),
-            blockList = emptyList(),
-            reportCount = 0,
-            isPro = false,
-            friendList = emptyList(),
-            incomingFriendRequests = emptyList(),
-            outgoingFriendRequests = emptyList()
-        )
-
-        val swipeStatus = UserSwipeStatus(
-            uid = uid,
-            swipesUsed = 0,
-            swipesGranted = 25
-        )
-
-        val publicRef = db.collection("users_public").document(uid)
-        val privateRef = db.collection("users_private").document(uid)
-        val swipeRef = db.collection("swipes").document(uid)
-
-        val batch = db.batch()
-        batch.set(publicRef, publicUser)
-        batch.set(privateRef, privateUser)
-        batch.set(swipeRef, swipeStatus) // ✅ Add swipe status to batch
-
-        return batch.commit()
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("createUserProfile")
+            .call(data)
+            .addOnSuccessListener { result ->
+                val success = (result.data as? Map<*, *>)?.get("success") as? Boolean ?: false
+                if (success) {
+                    onSuccess()
+                } else {
+                    onFailure(Exception("Cloud Function returned success = false"))
+                }
+            }
+            .addOnFailureListener { error ->
+                onFailure(error)
+            }
     }
 
     fun getPublicUser(uid: String): Task<DocumentSnapshot> {
         trackRead("users_public/$uid", "getPublicUser")
         return db.collection("users_public").document(uid).get()
-    }
-
-    fun getPrivateUser(uid: String): Task<DocumentSnapshot> {
-        trackRead("users_private/$uid", "getPrivateUser")
-        return db.collection("users_private").document(uid).get()
     }
 
     fun isUsernameTaken(username: String, onResult: (Boolean) -> Unit) {
@@ -184,21 +198,53 @@ class UserRepository @Inject constructor(
             }
     }
 
-    fun createUser(user: User): Task<Void> {
-        trackWrite("users_public/${user.uid}", "createUser")
-        return db.collection("users_public").document(user.uid).set(user)
-    }
-
     fun updateMood(uid: String, mood: String): Task<Void> {
         trackWrite("users_public/$uid → moodStatus", "updateMood")
         return db.collection("users_public").document(uid).update("moodStatus", mood)
     }
 
-    fun blockUser(currentUid: String, blockedUid: String): Task<Void> {
-        trackWrite("users_private/$currentUid → blockList", "blockUser")
-        return db.collection("users_private").document(currentUid)
-            .update("blockList", FieldValue.arrayUnion(blockedUid))
+    fun blockAndUnfriendUser(
+        currentUid: String,
+        blockedUid: String,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        val data = mapOf("blockedUid" to blockedUid)
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("blockAndUnfriendUser")
+            .call(data)
+            .addOnSuccessListener { result ->
+                Log.d("BlockUser", "✅ Blocked (and unfriended if needed) via cloud")
+
+                // optional: check return value if you want to inspect result.data
+                val response = result.data as? Map<*, *>
+                val unfriended = response?.get("unfriended") as? Boolean ?: false
+                Log.d("BlockUser", "→ Was unfriended: $unfriended")
+
+                onComplete(true, null)
+            }
+            .addOnFailureListener { e ->
+                Log.e("BlockUser", "❌ Failed to block user: ${e.message}", e)
+                onComplete(false, e.message)
+            }
     }
+
+    fun unblockUser(targetUid: String, onComplete: (Boolean) -> Unit) {
+        val data = mapOf("targetUid" to targetUid)
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("unblockUser")
+            .call(data)
+            .addOnSuccessListener {
+                Log.d("UnblockUser", "✅ Unblocked user $targetUid")
+                onComplete(true)
+            }
+            .addOnFailureListener { e ->
+                Log.e("UnblockUser", "❌ Failed to unblock user: ${e.message}", e)
+                onComplete(false)
+            }
+    }
+
 
     fun findUserByEmail(email: String, onResult: (String?) -> Unit) {
         trackRead("functions/getUidByEmail", "findUserByEmail")
@@ -262,75 +308,107 @@ class UserRepository @Inject constructor(
             }
     }
 
-    fun sendFriendRequest(fromUid: String, toUid: String): Task<Void> {
-        trackWrite("users_private/$fromUid → outgoingFriendRequests")
-        trackWrite("users_private/$toUid → incomingFriendRequests")
+    fun sendFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) {
+        val data = mapOf("toUid" to toUid)
 
-        val fromRef = db.collection("users_private").document(fromUid)
-        val toRef = db.collection("users_private").document(toUid)
-
-        val batch = db.batch()
-        batch.update(fromRef, "outgoingFriendRequests", FieldValue.arrayUnion(toUid))
-        batch.update(toRef, "incomingFriendRequests", FieldValue.arrayUnion(fromUid))
-        return batch.commit()
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("sendFriendRequest")
+            .call(data)
+            .addOnSuccessListener {
+                Log.d("FriendRequest", "✅ Friend request sent via cloud")
+                onComplete(true, null)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FriendRequest", "❌ Failed: ${e.message}", e)
+                onComplete(false, e.message)
+            }
     }
 
-    fun cancelOutgoingFriendRequest(fromUid: String, toUid: String): Task<Void> {
-        trackWrite("users_private/$fromUid → outgoingFriendRequests (remove)")
-        trackWrite("users_private/$toUid → incomingFriendRequests (remove)")
+    fun cancelOutgoingFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) {
+        val data = mapOf("toUid" to toUid)
 
-        val fromRef = db.collection("users_private").document(fromUid)
-        val toRef = db.collection("users_private").document(toUid)
-
-        val batch = db.batch()
-        batch.update(fromRef, "outgoingFriendRequests", FieldValue.arrayRemove(toUid))
-        batch.update(toRef, "incomingFriendRequests", FieldValue.arrayRemove(fromUid))
-
-        return batch.commit()
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("cancelOutgoingFriendRequest")
+            .call(data)
+            .addOnSuccessListener {
+                Log.d("FriendCancel", "✅ Outgoing request canceled via cloud")
+                onComplete(true, null)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FriendCancel", "❌ Failed to cancel outgoing request: ${e.message}", e)
+                onComplete(false, e.message)
+            }
     }
 
-    fun acceptFriendRequest(currentUid: String, requesterUid: String): Task<Void> {
-        trackWrite("users_private/$currentUid → friendList, incomingFriendRequests")
-        trackWrite("users_private/$requesterUid → friendList, outgoingFriendRequests")
+    fun acceptFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) {
+        val data = mapOf("requesterUid" to requesterUid)
 
-        val currentRef = db.collection("users_private").document(currentUid)
-        val requesterRef = db.collection("users_private").document(requesterUid)
-
-        val batch = db.batch()
-        batch.update(currentRef, "friendList", FieldValue.arrayUnion(requesterUid))
-        batch.update(requesterRef, "friendList", FieldValue.arrayUnion(currentUid))
-
-        batch.update(currentRef, "incomingFriendRequests", FieldValue.arrayRemove(requesterUid))
-        batch.update(requesterRef, "outgoingFriendRequests", FieldValue.arrayRemove(currentUid))
-        return batch.commit()
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("acceptFriendRequest")
+            .call(data)
+            .addOnSuccessListener {
+                Log.d("FriendAccept", "✅ Friend accepted via cloud")
+                onComplete(true, null)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FriendAccept", "❌ Failed to accept friend: ${e.message}", e)
+                onComplete(false, e.message)
+            }
     }
 
-    fun declineFriendRequest(currentUid: String, requesterUid: String): Task<Void> {
-        trackWrite("users_private/$currentUid → incomingFriendRequests (remove)")
-        trackWrite("users_private/$requesterUid → outgoingFriendRequests (remove)")
+    fun declineFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) {
+        val data = mapOf("requesterUid" to requesterUid)
 
-        val currentRef = db.collection("users_private").document(currentUid)
-        val requesterRef = db.collection("users_private").document(requesterUid)
-
-        val batch = db.batch()
-        batch.update(currentRef, "incomingFriendRequests", FieldValue.arrayRemove(requesterUid))
-        batch.update(requesterRef, "outgoingFriendRequests", FieldValue.arrayRemove(currentUid))
-        return batch.commit()
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("declineFriendRequest")
+            .call(data)
+            .addOnSuccessListener {
+                Log.d("FriendDecline", "✅ Declined request via cloud")
+                onComplete(true, null)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FriendDecline", "❌ Failed to decline request: ${e.message}", e)
+                onComplete(false, e.message)
+            }
     }
 
-    fun deleteFriend(currentUid: String, targetUid: String): Task<Void> {
-        trackWrite("users_private/$currentUid → friendList (remove)")
-        trackWrite("users_private/$targetUid → friendList (remove)")
+    fun deleteFriend(currentUid: String, targetUid: String, onComplete: (Boolean, String?) -> Unit) {
+        val data = mapOf("targetUid" to targetUid)
 
-        val currentRef = db.collection("users_private").document(currentUid)
-        val targetRef = db.collection("users_private").document(targetUid)
-
-        val batch = db.batch()
-        batch.update(currentRef, "friendList", FieldValue.arrayRemove(targetUid))
-        batch.update(targetRef, "friendList", FieldValue.arrayRemove(currentUid))
-
-        return batch.commit()
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("deleteFriend")
+            .call(data)
+            .addOnSuccessListener {
+                Log.d("FriendDelete", "✅ Friend deleted via cloud")
+                onComplete(true, null)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FriendDelete", "❌ Failed to delete friend: ${e.message}", e)
+                onComplete(false, e.message)
+            }
     }
+
+    fun upgradeMaxMessageLength(
+        levels: Int,
+        onSuccess: (Int, Int) -> Unit, // newLength, remainingPoints
+        onFailure: (Exception) -> Unit
+    ) {
+        val data = mapOf("levels" to levels)
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("upgradeMessageLength")
+            .call(data)
+            .addOnSuccessListener { result ->
+                val dataMap = result.data as? Map<*, *> ?: return@addOnSuccessListener
+                val newLength = (dataMap["newLength"] as? Number)?.toInt() ?: 0
+                val remainingGold = (dataMap["remainingGold"] as? Number)?.toInt() ?: 0
+                onSuccess(newLength, remainingGold)
+            }
+            .addOnFailureListener { error ->
+                onFailure(error)
+            }
+    }
+
 
     suspend fun removeLocalFriend(uid: String) {
         friendDao.deleteByUid(uid)
@@ -426,28 +504,81 @@ class UserRepository @Inject constructor(
         }
     }
 
-    fun incrementSwipeCount(uid: String): Task<Void> {
-        val swipeRef = db.collection("swipes").document(uid)
-
-        return swipeRef.update("swipesUsed", FieldValue.increment(1))
+    fun incrementSwipeCount(onComplete: (Boolean) -> Unit) {
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("incrementSwipeCount")
+            .call()
             .addOnSuccessListener {
-                // ✅ Fetch updated swipe count from Firestore and update Room
-                db.collection("swipes").document(uid).get()
-                    .addOnSuccessListener { doc ->
-                        val updated = doc.toObject(UserSwipeStatus::class.java)
-                        if (updated != null) {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                swipeDao.insertSwipeStatus(
-                                    LocalSwipeStatus(
-                                        uid = updated.uid,
-                                        swipesUsed = updated.swipesUsed,
-                                        swipesGranted = updated.swipesGranted
-                                    )
-                                )
-                                Log.d("SwipeSync", "✅ Local swipes updated after increment")
-                            }
-                        }
+                Log.d("SwipeIncrement", "✅ Cloud swipe increment success")
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    val local = swipeDao.getSwipeStatus(Firebase.auth.currentUser!!.uid)
+                    if (local != null) {
+                        val updated = local.copy(swipesUsed = local.swipesUsed + 1)
+                        swipeDao.insertSwipeStatus(updated)
+                        Log.d("SwipeIncrement", "✅ Local swipes incremented to ${updated.swipesUsed}")
                     }
+                    onComplete(true)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("SwipeIncrement", "❌ Swipe increment failed: ${e.message}", e)
+                onComplete(false)
+            }
+    }
+
+    fun maybeResetSwipes(onComplete: (Boolean) -> Unit) {
+        val uid = Firebase.auth.currentUser?.uid ?: return onComplete(false)
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("resetDailySwipes")
+            .call()
+            .addOnSuccessListener { result ->
+                val data = result.data as? Map<*, *>
+                val reset = data?.get("reset") as? Boolean ?: false
+
+                Log.d("SwipeReset", if (reset) "✅ Cloud reset succeeded" else "ℹ️ Cloud check: no reset")
+
+                // 🔄 Always refresh local copy
+                updateLocalSwipeStatusFromFirestore(uid) {
+                    onComplete(reset)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("SwipeReset", "❌ Failed to call reset function", e)
+                onComplete(false)
+            }
+    }
+
+    fun syncSwipeStatusFromCloud(uid: String, onComplete: () -> Unit) {
+        updateLocalSwipeStatusFromFirestore(uid, onComplete)
+    }
+
+    private fun updateLocalSwipeStatusFromFirestore(uid: String, onComplete: () -> Unit) {
+        db.collection("swipes").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val status = doc.toObject(UserSwipeStatus::class.java)
+                if (status != null) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        swipeDao.insertSwipeStatus(
+                            LocalSwipeStatus(
+                                uid = status.uid,
+                                swipesUsed = status.swipesUsed,
+                                swipesGranted = status.swipesGranted
+                            )
+                        )
+                        Log.d("SwipeSync", "✅ Room updated with fresh swipe data")
+                        onComplete()
+                    }
+                } else {
+                    Log.w("SwipeSync", "⚠️ No swipe status found in Firestore")
+                    onComplete()
+                }
+            }
+            .addOnFailureListener {
+                Log.e("SwipeSync", "❌ Firestore read failed", it)
+                onComplete()
             }
     }
 
@@ -491,13 +622,8 @@ class UserRepository @Inject constructor(
         friendDao.clearFriends()
     }
 
-
     suspend fun hardResetLocalMessages() {
         messageDao.clearLocalMessages()
     }
 
 }
-
-
-//getRandomEligibleUsers
-//getRandomEligibleUsers

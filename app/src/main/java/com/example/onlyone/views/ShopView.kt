@@ -17,15 +17,26 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
@@ -63,6 +74,8 @@ fun ShopView(userViewModel: UserViewModel) {
         R.drawable.ic_launcher_foreground,
         R.drawable.ic_launcher_foreground,
     )
+    val user by userViewModel.user.observeAsState()
+    var showDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -167,6 +180,94 @@ fun ShopView(userViewModel: UserViewModel) {
                             .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                     )
                 }
+            }
+        }
+        if (user != null) {
+            val currentLength = user!!.maxMessageLength
+            val userGold = user!!.gold
+
+            // 🔵 Display current max message length and upgrade button
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Message Length Limit",
+                style = MaterialTheme.typography.h6,
+                color = Color.White,
+                modifier = Modifier.padding(start = 6.dp, bottom = 4.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Current: $currentLength chars",
+                    style = MaterialTheme.typography.body1,
+                    color = Color.White
+                )
+
+                Button(onClick = { showDialog = true }) {
+                    Text("Upgrade")
+                }
+            }
+
+            // 🔴 Upgrade dialog
+            if (showDialog) {
+                var upgradeAmount by remember { mutableStateOf("1") }
+
+                val parsedAmount = upgradeAmount.toIntOrNull() ?: 0
+                val cost = parsedAmount * 10
+                val canAfford = parsedAmount > 0 && userGold >= cost
+
+                AlertDialog(
+                    onDismissRequest = { showDialog = false },
+                    title = { Text("Upgrade Message Length") },
+                    text = {
+                        Column {
+                            OutlinedTextField(
+                                value = upgradeAmount,
+                                onValueChange = { upgradeAmount = it },
+                                label = { Text("Levels to upgrade") },
+                                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Your gold: ${user?.gold ?: 0}")
+                            Text(
+                                "Cost: $cost",
+                                color = if (canAfford) Color(0xFF4CAF50) else Color.Red
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val levels = parsedAmount
+                                if (levels > 0 && canAfford) {
+                                    // call upgrade function multiple times or implement batch upgrade
+                                    repeat(levels) {
+                                        userViewModel.upgradeMaxMessageLength(
+                                            levels = parsedAmount,
+                                            onSuccess = { /* show success */ },
+                                            onFailure = { /* show error */ }
+                                        )
+                                    }
+                                    showDialog = false
+                                }
+                            },
+                            enabled = canAfford
+                        ) {
+                            Text("Confirm")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
         }
     }

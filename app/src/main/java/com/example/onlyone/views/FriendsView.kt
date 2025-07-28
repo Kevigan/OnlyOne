@@ -10,13 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.AlertDialog
-import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -26,10 +23,9 @@ import androidx.compose.material.TabRow
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -38,12 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.R
-import com.example.onlyone.Screen
+import com.example.onlyone.composables.BlinkingIcon
 import com.example.onlyone.composables.FriendItem
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.viewModels.ChatViewModel
@@ -68,7 +64,7 @@ fun FriendsView(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
 
-    val tabTitles = listOf("Friends", "Incoming", "Outgoing")
+    val tabTitles = listOf("Friends", "Incoming", "Outgoing", "Blocked")
 
     Column(
         modifier = Modifier
@@ -83,7 +79,21 @@ fun FriendsView(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Connections", style = MaterialTheme.typography.h5)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Connections", style = MaterialTheme.typography.h5)
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = {
+                        userViewModel.loadUser() // 🔄 Re-fetch user data
+                        Toast.makeText(context, "Refreshing connections...", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Reload Connections"
+                    )
+                }
+            }
 
             IconButton(onClick = { showAddDialog = true }) {
                 Icon(
@@ -98,16 +108,28 @@ fun FriendsView(
         // 🔹 Tabs
         TabRow(selectedTabIndex = selectedTabIndex) {
             tabTitles.forEachIndexed { index, baseTitle ->
-                val label = when (baseTitle) {
-                    "Incoming" -> if (incomingCount > 0) "Incoming ($incomingCount)" else "Incoming"
-                    "Outgoing" -> if (outgoingCount > 0) "Outgoing ($outgoingCount)" else "Outgoing"
-                    else -> baseTitle
+                val label: @Composable () -> Unit = {
+                    when (baseTitle) {
+                        "Incoming" -> BlinkingIcon(
+                            painter = painterResource(id = R.drawable.baseline_arrow_back_24),
+                            contentDescription = "Incoming",
+                            shouldBlink = incomingCount > 0
+                        )
+                        "Outgoing" -> Icon(
+                            painter = painterResource(id = R.drawable.baseline_arrow_forward_24),
+                            contentDescription = "Outgoing"
+                        )
+                        "Blocked" -> Icon(
+                            painter = painterResource(id = R.drawable.baseline_block_24),
+                            contentDescription = "Blocked"
+                        )
+                        else -> Text("Friends")
+                    }
                 }
-
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { selectedTabIndex = index },
-                    text = { Text(label) }
+                    text = label
                 )
             }
         }
@@ -141,7 +163,8 @@ fun FriendsView(
                                 }
                             },
                             showDelete = true,
-                            onDelete = { userViewModel.deleteFriend(friend.uid) }
+                            onDelete = { userViewModel.deleteFriend(friend.uid) },
+                            onBlock = { userViewModel.blockUser(friend.uid) } // ✅ Add this line
                         )
                     }
                 }
@@ -158,15 +181,15 @@ fun FriendsView(
                     ) {
                         items(incomingUids) { uid ->
                             val username = incomingRequests[uid] ?: "Unknown"
-
                             FriendItem(
                                 name = username,
                                 status = "Wants to connect",
-                                avatarResId = mapAvatarIdToDrawable(0), // You can enhance this with avatar lookup later
+                                avatarResId = mapAvatarIdToDrawable(0),
                                 showAccept = true,
                                 showDecline = true,
                                 onAccept = { userViewModel.acceptFriendRequest(uid) },
-                                onDecline = { userViewModel.declineFriendRequest(uid) }
+                                onDecline = { userViewModel.declineFriendRequest(uid) },
+                                onBlock = { userViewModel.blockUser(uid) } // ✅ Add block support
                             )
                         }
                     }
@@ -207,6 +230,34 @@ fun FriendsView(
                     }
                 }
             }
+            3 -> {
+                val blockedUsers = userViewModel.blockedUsers.collectAsState(initial = emptyList()).value
+
+                if (blockedUsers.isEmpty()) {
+                    Text("No blocked users.", modifier = Modifier.padding(12.dp))
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    ) {
+                        items(blockedUsers) { user ->
+                            FriendItem(
+                                avatarResId = mapAvatarIdToDrawable(user.avatarId),
+                                name = user.username,
+                                status = "Blocked",
+                                isLocked = true,
+                                onUnblock = { userViewModel.unblockUser(user.uid) },
+                                onUnblockAndRequest = {
+                                    userViewModel.unblockUser(user.uid)
+                                    userViewModel.sendFriendRequestDirect(user.uid)
+                                }
+                            )
+
+                        }
+                    }
+                }
+            }
+
         }
     }
 

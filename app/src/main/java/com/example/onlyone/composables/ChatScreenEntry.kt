@@ -19,6 +19,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.UserViewModel
 import com.example.onlyone.views.ChatView
@@ -29,7 +30,8 @@ fun ChatScreenEntry(
     uid: String,
     isRandom: Boolean,
     userViewModel: UserViewModel,
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    navController: NavController
 ) {
     val currentUser by userViewModel.user.observeAsState()
     val targetUser by chatViewModel.targetUser.collectAsState()
@@ -71,7 +73,8 @@ fun ChatScreenEntry(
                 isRandom = isRandom,
                 onNextUser = { chatViewModel.consumeNextUserFromQueue(currentUser!!.uid) },
                 chatViewModel = chatViewModel,
-                userRepository = userViewModel.userRepository
+                userRepository = userViewModel.userRepository,
+                navController = navController
             )
         }
 
