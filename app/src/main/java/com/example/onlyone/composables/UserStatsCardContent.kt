@@ -32,8 +32,12 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun UserStatsCardContent(
     messagesLeft: Int,
-    pointsBank: String,
-    rank: String,
+    points: String,
+    pointsRank: Int,
+    gold: Int,
+    runesRare: Int,
+    runesSuperRare: Int,
+    runesMegaRare: Int,
     millisUntilReset: Long
 ) {
     val hours = (millisUntilReset / 1000) / 3600
@@ -45,6 +49,7 @@ fun UserStatsCardContent(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // 📨 Messages + Reset Timer
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "Messages left: $messagesLeft",
@@ -58,11 +63,42 @@ fun UserStatsCardContent(
                     color = Color.White.copy(alpha = 0.7f)
                 )
             }
-            Text("Points in bank: $pointsBank", color = Color.White)
-            Text("Rank: $rank", color = Color.White)
+
+            // 🎯 Points & Rank
+            Text("Points: $points", color = Color.White)
+            Text("Rank: ${getUserRank(pointsRank)}", color = Color.White)
+
+            // 🪙 Gold
+            Text("Gold: $gold", color = Color.White)
+
+            // 🧙‍♂️ Runes (only show if owned)
+            val runeList = listOfNotNull(
+                if (runesRare > 0) "$runesRare rare" else null,
+                if (runesSuperRare > 0) "$runesSuperRare super" else null,
+                if (runesMegaRare > 0) "$runesMegaRare mega" else null
+            )
+
+            if (runeList.isNotEmpty()) {
+                Text("Runes: ${runeList.joinToString(" | ")}", color = Color.White)
+            }
         }
     }
 }
+fun getUserRank(points: Int): String {
+    return when {
+        points >= 1050 -> "S-Class"
+        points >= 900 -> "A-Class 2"
+        points >= 750 -> "A-Class 3"
+        points >= 600 -> "B-Class 1"
+        points >= 450 -> "B-Class 2"
+        points >= 300 -> "B-Class 3"
+        points >= 200 -> "C-Class 1"
+        points >= 100 -> "C-Class 2"
+        points >= 50 -> "C-Class 3"
+        else -> "Trainee"
+    }
+}
+
 
 
 

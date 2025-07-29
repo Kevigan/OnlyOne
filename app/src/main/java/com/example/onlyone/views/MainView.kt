@@ -165,8 +165,12 @@ fun MainView(
             ) {
                 UserStatsCardContent(
                     messagesLeft = swipeStatus?.let { it.swipesGranted - it.swipesUsed } ?: 0,
-                    pointsBank = "1820",
-                    rank = "S-Rank",
+                    points = (user?.points ?: 0).toString(),
+                    pointsRank = user?.points ?: 0,
+                    gold = user?.gold ?: 0,
+                    runesRare = user?.runes_rare ?: 0,
+                    runesSuperRare = user?.runes_super_rare ?: 0,
+                    runesMegaRare = user?.runes_mega_rare ?: 0,
                     millisUntilReset = millisUntilReset
                 )
             }

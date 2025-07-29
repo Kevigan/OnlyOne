@@ -3,9 +3,6 @@ package com.example.onlyone.viewModels
 import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.onlyone.data.PrivateUser
-import com.example.onlyone.data.PublicUser
-import com.example.onlyone.data.User
 import com.example.onlyone.repos.UserRepository
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient

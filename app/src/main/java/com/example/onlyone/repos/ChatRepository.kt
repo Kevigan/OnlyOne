@@ -5,6 +5,7 @@ import com.example.dao.MessageDao
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.utils.toFirestoreMap
 import com.example.onlyone.data.Message
+import com.example.onlyone.data.MessageResult
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.UserSwipeStatus
 import com.example.onlyone.data.WrittenTodayEntity
@@ -46,7 +47,7 @@ class ChatRepository @Inject constructor(
         Log.d("ChatFirestore_Track", "[ChatRepo] Write #$writeCount: $path${if (from.isNotBlank()) " ($from)" else ""}")
     }
 
-    suspend fun sendMessage(message: Message): Boolean {
+    suspend fun sendMessage(message: Message): MessageResult {
         return try {
             val data = mapOf(
                 "receiverId" to message.receiverId,
@@ -54,7 +55,7 @@ class ChatRepository @Inject constructor(
                 "senderUsername" to message.senderUsername,
                 "senderMood" to message.senderMood,
                 "senderAvatarId" to message.senderAvatarId,
-                "messageId" to message.id // 💡 client-stable message ID
+                "messageId" to message.id
             )
 
             val result = Firebase.functions("europe-west3")
@@ -62,19 +63,28 @@ class ChatRepository @Inject constructor(
                 .call(data)
                 .await()
 
-            Log.d("SendMessage", "✅ Cloud Function success: ${result.data}")
-            true
-        } catch (e: FirebaseFunctionsException) {
-            if (e.code == FirebaseFunctionsException.Code.ALREADY_EXISTS) {
-                Log.w("SendMessage", "🛑 Already messaged today — skipping")
-                true // Treat as successful to prevent fallback
-            } else {
-                Log.e("SendMessage", "❌ Cloud Function failed", e)
-                false
+            val response = result.data as? Map<*, *> ?: return MessageResult.Error
+
+            val success = response["success"] as? Boolean ?: false
+            val alreadySent = response["alreadySent"] as? Boolean ?: false
+
+            return when {
+                alreadySent -> MessageResult.AlreadySent
+                success -> {
+                    val rewards = response["rewards"] as? Map<*, *>
+                    val gold = rewards?.get("gold") as? Int ?: 0
+                    val points = rewards?.get("points") as? Int ?: 0
+                    val rune = rewards?.get("runeEarned") as? String
+
+                    Log.d("SendMessage", "✅ Rewards: $gold gold, $points points, rune: $rune")
+
+                    MessageResult.Success(gold, points, rune?.takeIf { it != "none" })
+                }
+                else -> MessageResult.Error
             }
         } catch (e: Exception) {
-            Log.e("SendMessage", "❌ Unexpected failure", e)
-            false
+            Log.e("SendMessage", "❌ Cloud Function failed", e)
+            MessageResult.Error
         }
     }
 

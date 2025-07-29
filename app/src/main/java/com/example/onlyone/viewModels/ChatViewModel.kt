@@ -7,6 +7,7 @@ import com.example.dao.SwipeDao
 import com.example.onlyone.cloudMessaging.MessageNotifier
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.data.Message
+import com.example.onlyone.data.MessageResult
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.WrittenTodayEntity
 import com.example.onlyone.repos.ChatRepository
@@ -57,21 +58,25 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun sendMessage(message: Message, onComplete: (Boolean) -> Unit) {
+    fun sendMessage(
+        message: Message,
+        userViewModel: UserViewModel,
+        onComplete: (MessageResult) -> Unit
+    ) {
         _isSending.value = true
 
         viewModelScope.launch {
-            val success = chatRepository.sendMessage(message)
+            val result = chatRepository.sendMessage(message)
 
-            if (success) {
+            if (result is MessageResult.Success) {
                 val alreadySent = chatRepository.hasAlreadyWrittenTo(message.receiverId)
                 if (!alreadySent) {
                     chatRepository.recordWrittenUser(message.receiverId)
                     Log.d("SendMessage", "📝 Marked user as written to: ${message.receiverId}")
                 }
             }
-
-            onComplete(success)
+            userViewModel.loadUser()
+            onComplete(result)
             _isSending.value = false
         }
     }

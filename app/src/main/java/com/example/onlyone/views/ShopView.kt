@@ -247,13 +247,11 @@ fun ShopView(userViewModel: UserViewModel) {
                                 val levels = parsedAmount
                                 if (levels > 0 && canAfford) {
                                     // call upgrade function multiple times or implement batch upgrade
-                                    repeat(levels) {
-                                        userViewModel.upgradeMaxMessageLength(
-                                            levels = parsedAmount,
-                                            onSuccess = { /* show success */ },
-                                            onFailure = { /* show error */ }
-                                        )
-                                    }
+                                    userViewModel.upgradeMaxMessageLength(
+                                        levels = parsedAmount,
+                                        onSuccess = { showDialog = false },
+                                        onFailure = { /* show error */ }
+                                    )
                                     showDialog = false
                                 }
                             },

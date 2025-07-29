@@ -17,10 +17,12 @@ import androidx.navigation.NavController
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.Message
+import com.example.onlyone.data.MessageResult
 import com.example.onlyone.data.User
 import com.example.onlyone.repos.UserRepository
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.utils.buildMessageId
+import com.example.onlyone.viewModels.UserViewModel
 import com.google.firebase.Timestamp
 
 @Composable
@@ -30,7 +32,7 @@ fun ChatView(
     isRandom: Boolean,
     onNextUser: () -> Unit,
     chatViewModel: ChatViewModel,
-    userRepository: UserRepository,
+    userViewModel: UserViewModel,
     navController: NavController
 ) {
     var messageText by remember { mutableStateOf("") }
@@ -119,17 +121,30 @@ fun ChatView(
                         feedback = -10
                     )
 
-                    chatViewModel.sendMessage(msg) { success ->
-                        if (success) {
-                            messageText = ""
-                            Toast.makeText(context, "Message sent 😊", Toast.LENGTH_SHORT).show()
-                            navController.popBackStack()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "❌ Couldn't send message. Try again when you're back online.",
-                                Toast.LENGTH_LONG
-                            ).show()
+                    chatViewModel.sendMessage(msg, userViewModel = userViewModel) { result ->
+                        when (result) {
+                            is MessageResult.Success -> {
+                                messageText = ""
+
+                                val rewardText = "Earned: +${result.gold} gold, +${result.points} points"
+                                val runeText = result.rune?.let { "\n🎉 Lucky drop: $it rune!" } ?: ""
+
+                                Toast.makeText(
+                                    context,
+                                    "$rewardText$runeText",
+                                    Toast.LENGTH_LONG
+                                ).show()
+
+                                navController.popBackStack()
+                            }
+
+                            is MessageResult.AlreadySent -> {
+                                Toast.makeText(context, "You already messaged this user today.", Toast.LENGTH_LONG).show()
+                            }
+
+                            is MessageResult.Error -> {
+                                Toast.makeText(context, "❌ Couldn't send message. Try again later.", Toast.LENGTH_LONG).show()
+                            }
                         }
                     }
                 },

@@ -16,7 +16,12 @@ data class User(
     val incomingFriendRequests: List<String> = emptyList(),
     val outgoingFriendRequests: List<String> = emptyList(),
     val maxMessageLength: Int = 25, // ✅ new field
-    val gold: Int = 0
+    val gold: Int = 0,
+
+    // 🧙 New Rune Fields
+    val runes_rare: Int = 0,
+    val runes_super_rare: Int = 0,
+    val runes_mega_rare: Int = 0
 )
 
 data class PublicUser(
@@ -25,20 +30,6 @@ data class PublicUser(
     val moodStatus: String = "",
     val avatarId: Int = 0,
     val points: Int = 0
-)
-
-data class PrivateUser(
-    val uid: String = "",
-    val email: String = "",
-    val blockList: List<String> = emptyList(),
-    val reportCount: Int = 0,
-    val isPro: Boolean = false,
-    val friendList: List<String> = emptyList(),
-    val incomingFriendRequests: List<String> = emptyList(),
-    val outgoingFriendRequests: List<String> = emptyList(),
-    val fcmToken: String? = null,
-    val maxMessageLength: Int = 25,
-    val gold: Int = 0
 )
 
 data class UserSwipeStatus(

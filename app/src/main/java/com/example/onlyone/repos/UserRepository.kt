@@ -114,6 +114,7 @@ class UserRepository @Inject constructor(
                 val incoming = incomingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
                 val outgoing = outgoingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
                 val blocked = blockedList.mapNotNull { parsePublicUser(it as? Map<*, *>) } // ✅ new line
+                Log.d("UserPoints", "🔥 user points: ${user.points}")
 
                 onComplete(user, friends, incoming, outgoing, blocked)
             }
@@ -121,6 +122,9 @@ class UserRepository @Inject constructor(
     }
 
     private fun parseUser(map: Map<*, *>): User {
+        val vpoints = (map["points"] as? Number)?.toInt() ?: 0
+        Log.d("UserPoints", "🔥 user points from map = $vpoints")
+
         return User(
             uid = map["uid"] as? String ?: "",
             username = map["username"] as? String ?: "",
@@ -135,8 +139,11 @@ class UserRepository @Inject constructor(
             incomingFriendRequests = map["incomingFriendRequests"] as? List<String> ?: emptyList(),
             outgoingFriendRequests = map["outgoingFriendRequests"] as? List<String> ?: emptyList(),
             maxMessageLength = (map["maxMessageLength"] as? Number)?.toInt() ?: 25, // ✅
-            gold = (map["gold"] as? Number)?.toInt() ?: 0
-        )
+            gold = (map["gold"] as? Number)?.toInt() ?: 0,
+            runes_rare = (map["runes_rare"] as? Number)?.toInt() ?: 0,
+            runes_super_rare = (map["runes_super_rare"] as? Number)?.toInt() ?: 0,
+            runes_mega_rare = (map["runes_mega_rare"] as? Number)?.toInt() ?: 0,
+            )
     }
 
     private fun parsePublicUser(map: Map<*, *>?): PublicUser? {
