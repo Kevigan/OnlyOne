@@ -4,8 +4,10 @@ import android.util.Log
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
 import com.example.dao.SwipeDao
+import com.example.dao.UserSettingsDao
 import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.LocalSwipeStatus
+import com.example.onlyone.data.LocalUserSettings
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.User
 import com.example.onlyone.data.UserSwipeStatus
@@ -34,6 +36,7 @@ class UserRepository @Inject constructor(
     private val friendDao: FriendDao,
     private val messageDao: MessageDao,
     private val swipeDao: SwipeDao,
+    private val userSettingsDao: UserSettingsDao,
     private val auth: FirebaseAuth
 ) {
     private val publicUserCache = mutableMapOf<String, PublicUser>()
@@ -208,6 +211,10 @@ class UserRepository @Inject constructor(
     fun updateMood(uid: String, mood: String): Task<Void> {
         trackWrite("users_public/$uid → moodStatus", "updateMood")
         return db.collection("users_public").document(uid).update("moodStatus", mood)
+    }
+
+    fun updateChatLanguage(uid: String, language: String): Task<Void> {
+        return db.collection("users_public").document(uid).update("chatLanguage", language)
     }
 
     fun blockAndUnfriendUser(
@@ -589,8 +596,30 @@ class UserRepository @Inject constructor(
             }
     }
 
+    fun updateNotificationSetting(
+        uid: String,
+        key: String,
+        enabled: Boolean,
+        onSuccess: () -> Unit = {},
+        onFailure: (Exception) -> Unit = {}
+    ) {
+        val path = "notifications.$key" // e.g. notifications.message
+        db.collection("users_private").document(uid)
+            .update(path, enabled)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onFailure(it) }
+    }
 
     /////////////ROOM Database///////////////
+
+
+    suspend fun saveAppLanguage(uid: String, language: String) {
+        userSettingsDao.saveSettings(LocalUserSettings(uid, language))
+    }
+
+    suspend fun getAppLanguage(uid: String): String {
+        return userSettingsDao.getSettings(uid)?.language ?: "en"
+    }
 
 
     suspend fun syncFriendsToLocal(uids: List<String>, publicFriends: List<PublicUser>) {
@@ -631,6 +660,27 @@ class UserRepository @Inject constructor(
 
     suspend fun hardResetLocalMessages() {
         messageDao.clearLocalMessages()
+    }
+
+    suspend fun getLocalNotificationSettings(uid: String): Pair<Boolean, Boolean> {
+        val settings = userSettingsDao.getSettings(uid)
+        return Pair(
+            settings?.notifyMessages ?: true,
+            settings?.notifyFeedback ?: true
+        )
+    }
+
+    suspend fun saveLocalNotificationSettings(uid: String, message: Boolean, feedback: Boolean) {
+        val existing = userSettingsDao.getSettings(uid)
+        val newSettings = existing?.copy(
+            notifyMessages = message,
+            notifyFeedback = feedback
+        ) ?: LocalUserSettings(
+            uid = uid,
+            notifyMessages = message,
+            notifyFeedback = feedback
+        )
+        userSettingsDao.saveSettings(newSettings)
     }
 
 }

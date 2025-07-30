@@ -11,24 +11,52 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.room.Room
 import com.example.onlyone.R
+import com.example.onlyone.repos.AppDatabase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         remoteMessage.notification?.let {
-            if (isAppInForeground(this)) {
-                // App is running in foreground → update UI via Flow
-                MessageNotifier.newMessageFlow.tryEmit(it.title to it.body)
-            } else {
-                // App is in background or off → show system notification
-                showNotification(it.title, it.body)
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+            // 🔄 Check local Room settings before showing
+            val db = Room.databaseBuilder(
+                applicationContext,
+                AppDatabase::class.java,
+                "onlyone_db"
+            ).build()
+
+            val dao = db.userSettingsDao()
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val settings = dao.getSettings(uid)
+
+                val messageAllowed = settings?.notifyMessages ?: true
+                if (!messageAllowed) {
+                    Log.d("FCM", "🔕 Local setting: message notifications disabled — skipping")
+                    return@launch
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (isAppInForeground(this@MyFirebaseMessagingService)) {
+                        MessageNotifier.newMessageFlow.tryEmit(it.title to it.body)
+                    } else {
+                        showNotification(it.title, it.body)
+                    }
+                }
             }
         }
     }
+
 
     // Helper to check foreground state
     private fun isAppInForeground(context: Context): Boolean {

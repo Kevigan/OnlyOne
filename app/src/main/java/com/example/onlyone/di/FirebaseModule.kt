@@ -2,6 +2,7 @@ package com.example.onlyone.di
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
 import com.example.dao.SwipeDao
+import com.example.dao.UserSettingsDao
 import com.example.onlyone.repos.ChatRepository
 import com.example.onlyone.repos.UserRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -31,9 +32,10 @@ object FirebaseModule {
         friendDao: FriendDao,
         messageDao: MessageDao,
         swipeDao: SwipeDao,
-        auth: FirebaseAuth // ✅ add this
+        userSettingsDao: UserSettingsDao,
+        auth: FirebaseAuth
     ): UserRepository {
-        return UserRepository(db, friendDao, messageDao, swipeDao, auth)
+        return UserRepository(db, friendDao, messageDao, swipeDao, userSettingsDao, auth)
     }
 
     @Provides

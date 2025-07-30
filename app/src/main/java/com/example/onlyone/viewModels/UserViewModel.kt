@@ -117,6 +117,13 @@ class UserViewModel @Inject constructor(
         }
     }
 
+    fun updateChatLanguage(language: String) {
+        val currentUser = _user.value ?: return
+        userRepository.updateChatLanguage(currentUser.uid, language).addOnSuccessListener {
+            _user.value = currentUser.copy(chatLanguage = language)
+        }
+    }
+
     fun blockUser(targetUid: String) {
         val currentUser = _user.value ?: return
 
@@ -350,6 +357,16 @@ class UserViewModel @Inject constructor(
         )
     }
 
+    fun updateNotificationPreference(key: String, enabled: Boolean) {
+        val currentUser = _user.value ?: return
+        userRepository.updateNotificationSetting(
+            uid = currentUser.uid,
+            key = key,
+            enabled = enabled
+        )
+    }
+
+
     fun observeLocalFriends(): Flow<List<LocalFriend>> {
         return friendDao.getAllFriends()
     }
@@ -369,4 +386,35 @@ class UserViewModel @Inject constructor(
             userRepository.hardResetLocalMessages()
         }
     }
+
+    fun saveAppLanguage(language: String) {
+        val currentUser = _user.value ?: return
+        viewModelScope.launch {
+            userRepository.saveAppLanguage(currentUser.uid, language)
+        }
+    }
+
+    fun getAppLanguage(onResult: (String) -> Unit) {
+        val currentUser = _user.value ?: return
+        viewModelScope.launch {
+            val lang = userRepository.getAppLanguage(currentUser.uid)
+            onResult(lang)
+        }
+    }
+
+    fun saveNotificationToggles(message: Boolean, feedback: Boolean) {
+        val uid = _user.value?.uid ?: return
+        viewModelScope.launch {
+            userRepository.saveLocalNotificationSettings(uid, message, feedback)
+        }
+    }
+
+    fun getNotificationToggles(onResult: (Boolean, Boolean) -> Unit) {
+        val uid = _user.value?.uid ?: return
+        viewModelScope.launch {
+            val (message, feedback) = userRepository.getLocalNotificationSettings(uid)
+            onResult(message, feedback)
+        }
+    }
+
 }
