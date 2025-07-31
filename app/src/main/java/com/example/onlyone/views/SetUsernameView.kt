@@ -2,13 +2,18 @@ package com.example.onlyone.views
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -31,11 +36,17 @@ fun SetUsernameView(
     uid: String,
     email: String,
     userViewModel: UserViewModel,
-    navController: NavController
+    navController: NavController,
+    isGoogleUser: Boolean = false // 👈 new param
 ) {
     val context = LocalContext.current
     var username by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
+
+    // 🔤 Language dropdown state
+    val languageOptions = listOf("en", "de", "fr", "es", "it")
+    var selectedLanguage by remember { mutableStateOf("en") }
+    var languageDropdownExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -55,56 +66,93 @@ fun SetUsernameView(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Text("Select your chat language")
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .clickable { languageDropdownExpanded = true }) {
+
+            OutlinedTextField(
+                value = selectedLanguage,
+                onValueChange = {},
+                label = { Text("Chat Language") },
+                readOnly = true,
+                enabled = false, // disables internal tap logic
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            DropdownMenu(
+                expanded = languageDropdownExpanded,
+                onDismissRequest = { languageDropdownExpanded = false }
+            ) {
+                languageOptions.forEach { lang ->
+                    DropdownMenuItem(onClick = {
+                        selectedLanguage = lang
+                        languageDropdownExpanded = false
+                    }) {
+                        Text(lang)
+                    }
+                }
+            }
+        }
+
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         Button(
             onClick = {
-                if (username.isBlank()) {
-                    Toast.makeText(context, "Username cannot be empty", Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-
-                isSaving = true
-
-                val db = FirebaseFirestore.getInstance()
-
-                // 🔍 Check if username already exists
-                db.collection("users_public")
-                    .whereEqualTo("username", username)
-                    .get()
-                    .addOnSuccessListener { snapshot ->
-                        if (!snapshot.isEmpty) {
-                            Toast.makeText(context, "Username is already taken", Toast.LENGTH_SHORT).show()
-                            isSaving = false
-                        } else {
-                            // ✅ Fetch FCM token first
-                            FirebaseMessaging.getInstance().token
-                                .addOnSuccessListener { token ->
-                                    userViewModel.repository.createUserProfile(
-                                        email = email,
-                                        username = username,
-                                        fcmToken = token,
-                                        onSuccess = {
-                                            userViewModel.loadUser()
-                                            navController.navigate(Screen.MainScreen.route) {
-                                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                                            }
-                                        },
-                                        onFailure = { error ->
-                                            Toast.makeText(context, "Failed to save user profile", Toast.LENGTH_SHORT).show()
-                                            Log.e("SetUsername", "❌ Profile creation failed", error)
-                                            isSaving = false
-                                        }
-                                    )
-                                }
-                                .addOnFailureListener {
-                                    Toast.makeText(context, "Failed to get FCM token", Toast.LENGTH_SHORT).show()
+                if (isGoogleUser) {
+                    FirebaseMessaging.getInstance().token
+                        .addOnSuccessListener { token ->
+                            userViewModel.repository.createUserProfile(
+                                email = email,
+                                username = username,
+                                fcmToken = token,
+                                chatLanguage = selectedLanguage,
+                                onSuccess = {
+                                    userViewModel.saveSearchUserLanguage(selectedLanguage)
+                                    userViewModel.loadUser()
+                                    navController.navigate(Screen.MainScreen.route) {
+                                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                    }
+                                },
+                                onFailure = { error ->
+                                    Toast.makeText(context, "Failed to create user profile", Toast.LENGTH_SHORT).show()
+                                    Log.e("SetUsername", "❌ Profile creation failed", error)
                                     isSaving = false
                                 }
+                            )
                         }
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(context, "Error checking username", Toast.LENGTH_SHORT).show()
-                        isSaving = false
-                    }
+                        .addOnFailureListener { error ->
+                            Toast.makeText(context, "Failed to get FCM token", Toast.LENGTH_SHORT).show()
+                            Log.e("SetUsername", "❌ FCM token fetch failed", error)
+                            isSaving = false
+                        }
+                } else {
+                    // ✏️ Just update username & chat language (Email users)
+                    userViewModel.saveSearchUserLanguage(selectedLanguage)
+
+                    userViewModel.updatePublicProfile(
+                        uid = uid,
+                        updates = mapOf(
+                            "username" to username,
+                            "chatLanguage" to selectedLanguage
+                        ),
+                        onSuccess = {
+                            userViewModel.loadUser()
+                            navController.navigate(Screen.MainScreen.route) {
+                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                            }
+                        },
+                        onFailure = { error ->
+                            Toast.makeText(context, "Failed to update profile", Toast.LENGTH_SHORT).show()
+                            Log.e("SetUsername", "❌ Profile update failed", error)
+                            isSaving = false
+                        }
+                    )
+                }
+
             },
             enabled = !isSaving
         ) {
@@ -112,4 +160,5 @@ fun SetUsernameView(
         }
     }
 }
+
 

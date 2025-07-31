@@ -13,6 +13,8 @@ import com.example.onlyone.data.UserSwipeStatus
 import com.example.onlyone.repos.UserRepository
 import com.example.onlyone.utils.DailyResetTimer
 import com.google.android.gms.tasks.Task
+import com.google.firebase.functions.ktx.functions
+import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -115,6 +117,10 @@ class UserViewModel @Inject constructor(
         userRepository.updateMood(currentUser.uid, mood).addOnSuccessListener {
             _user.value = currentUser.copy(moodStatus = mood)
         }
+    }
+
+    fun updatePublicProfile(uid: String, updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+        repository.updateUserPublicProfile(uid, updates, onSuccess, onFailure)
     }
 
     fun updateChatLanguage(language: String) {
@@ -260,7 +266,6 @@ class UserViewModel @Inject constructor(
         }
     }
 
-
     fun cancelOutgoingFriendRequest(
         targetUid: String,
         onSuccess: () -> Unit = {},
@@ -366,7 +371,6 @@ class UserViewModel @Inject constructor(
         )
     }
 
-
     fun observeLocalFriends(): Flow<List<LocalFriend>> {
         return friendDao.getAllFriends()
     }
@@ -402,6 +406,21 @@ class UserViewModel @Inject constructor(
         }
     }
 
+    fun saveSearchUserLanguage(lang: String) {
+        val uid = _user.value?.uid ?: return
+        viewModelScope.launch {
+            userRepository.saveSearchUserLanguage(uid, lang)
+        }
+    }
+
+    fun getSearchUserLanguage(onResult: (String) -> Unit) {
+        val uid = _user.value?.uid ?: return
+        viewModelScope.launch {
+            val lang = userRepository.getSearchUserLanguage(uid)
+            onResult(lang)
+        }
+    }
+
     fun saveNotificationToggles(message: Boolean, feedback: Boolean) {
         val uid = _user.value?.uid ?: return
         viewModelScope.launch {
@@ -415,6 +434,20 @@ class UserViewModel @Inject constructor(
             val (message, feedback) = userRepository.getLocalNotificationSettings(uid)
             onResult(message, feedback)
         }
+    }
+
+
+    ///////debug///////
+    fun createFakeUsers(count: Int) {
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("createFakeUsers")
+            .call(mapOf("debug" to true, "count" to count))
+            .addOnSuccessListener { result ->
+                Log.d("FakeUsers", "✅ Created: ${(result.data as? Map<*, *>)?.get("created")}")
+            }
+            .addOnFailureListener { error ->
+                Log.e("FakeUsers", "❌ Failed to create fake users", error)
+            }
     }
 
 }

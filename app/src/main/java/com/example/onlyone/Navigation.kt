@@ -169,10 +169,28 @@ fun Navigation(
                         )
                     }
 
-                    composable(Screen.SetUsernameScreen.route) { backStackEntry ->
+                    composable(
+                        route = Screen.SetUsernameScreen.route,
+                        arguments = listOf(
+                            navArgument("uid") { type = NavType.StringType },
+                            navArgument("email") { type = NavType.StringType },
+                            navArgument("google") {
+                                type = NavType.BoolType
+                                defaultValue = false
+                            }
+                        )
+                    ) { backStackEntry ->
                         val uid = backStackEntry.arguments?.getString("uid") ?: ""
                         val email = backStackEntry.arguments?.getString("email") ?: ""
-                        SetUsernameView(uid = uid, email = email, userViewModel = userViewModel, navController = navController)
+                        val isGoogleUser = backStackEntry.arguments?.getBoolean("google") ?: false
+
+                        SetUsernameView(
+                            uid = uid,
+                            email = email,
+                            userViewModel = userViewModel,
+                            navController = navController,
+                            isGoogleUser = isGoogleUser // ✅ Pass this
+                        )
                     }
 
                     composable(

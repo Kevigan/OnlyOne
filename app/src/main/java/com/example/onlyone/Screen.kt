@@ -8,9 +8,12 @@ sealed class Screen(val route: String, val title: String){
     object LoginScreen : Screen("login_screen", "Login")
     object SplashScreen : Screen("splash_screen", "Splash")
 
-    object SetUsernameScreen : Screen("SetUsername/{uid}/{email}", "Set Username") {
-        fun createRoute(uid: String, email: String): String {
-            return "SetUsername/$uid/$email"
+    object SetUsernameScreen : Screen(
+        route = "SetUsername/{uid}/{email}?google={google}",
+        title = "Set Username"
+    ) {
+        fun createRoute(uid: String, email: String, isGoogleUser: Boolean = false): String {
+            return "SetUsername/$uid/$email?google=$isGoogleUser"
         }
     }
 

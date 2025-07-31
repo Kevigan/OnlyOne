@@ -17,8 +17,10 @@ import com.example.onlyone.utils.toPublicUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -51,6 +53,10 @@ class ChatViewModel @Inject constructor(
 
     private val _isSending = MutableStateFlow(false)
     val isSending: StateFlow<Boolean> = _isSending.asStateFlow()
+
+    private val _toastEvent = MutableSharedFlow<String>()
+    val toastEvent = _toastEvent.asSharedFlow()
+
 
     init {
         DailyResetTimer.start {
@@ -123,14 +129,17 @@ class ChatViewModel @Inject constructor(
             viewModelScope.launch {
                 val writtenToday = writtenTodayList.first().map { it.receiverId }
 
-                userRepository.getRandomUsersFromCloud(writtenToday) { users ->
+                val chatLanguage = userRepository.getSearchUserLanguage(currentUserId)
+                userRepository.getRandomUsersFromCloud(writtenToday, chatLanguage = chatLanguage) { users ->
                     _isLoadingUser.value = false // ✅ Done loading
 
                     if (!users.isNullOrEmpty()) {
                         _userQueue.value = users
-                        _targetUser.value = users.first() // preload first for UI
+                        _targetUser.value = users.first()
                         onComplete(true)
                     } else {
+                        _targetUser.value = null // ✅ explicitly set to null
+                        _userQueue.value = emptyList()
                         onComplete(false)
                     }
                 }
@@ -145,26 +154,43 @@ class ChatViewModel @Inject constructor(
 
             if (swipesLeft <= 0) {
                 Log.d("SwipeCheck", "🚫 No swipes left for $currentUid")
+                _toastEvent.emit("🚫 You have no more swipes left today.")
                 return@launch
             }
 
+            val desiredLanguage = userRepository.getSearchUserLanguage(currentUid)
+
             val currentList = _userQueue.value
-            if (currentList.isNotEmpty()) {
-                val newList = currentList.drop(1)
-                _userQueue.value = newList
-                _targetUser.value = newList.firstOrNull()
-                Log.d("SwipeCheck", "🚫 swipes: $swipesLeft")
+            Log.d("ChatSwipe", "🧭 Queue size: ${currentList.size}, Desired: $desiredLanguage")
+
+            // Remove the CURRENT target user first
+            val remainingUsers = currentList.drop(1)
+
+            // Find the next valid match in the remaining users
+            val nextMatch = remainingUsers.firstOrNull {
+                it.chatLanguage == desiredLanguage || desiredLanguage == "any"
+            }
+
+            if (nextMatch != null) {
+                _userQueue.value = remainingUsers
+                _targetUser.value = nextMatch
+
                 userRepository.incrementSwipeCount { success ->
                     if (!success) {
                         Log.e("SwipeCheck", "❌ Failed to increment swipe count")
-                        // You could show a toast or UI message here
                     }
                 }
-
             } else {
+                _userQueue.value = emptyList()
                 _targetUser.value = null
+                Log.d("ChatViewModel", "🛑 No valid user matches selected chat language.")
             }
         }
+    }
+
+    fun clearQueue() {
+        _userQueue.value = emptyList()
+        _targetUser.value = null
     }
 
     fun loadTargetUser(

@@ -1,7 +1,9 @@
 package com.example.onlyone.composables
 
 import android.annotation.SuppressLint
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,11 +20,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.UserViewModel
 import com.example.onlyone.views.ChatView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
@@ -37,6 +44,16 @@ fun ChatScreenEntry(
     val targetUser by chatViewModel.targetUser.collectAsState()
     val loadingUsers by chatViewModel.isLoadingUser.collectAsState()
 
+    val context = LocalContext.current
+    val toastEvents = chatViewModel.toastEvent
+
+    LaunchedEffect(Unit) {
+        toastEvents.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
     LaunchedEffect(isRandom, uid, currentUser?.uid) {
         if (currentUser == null) return@LaunchedEffect
 
@@ -49,9 +66,7 @@ fun ChatScreenEntry(
                 chatViewModel.loadRandomUserBatch(
                     currentUserId = currentUid,
                     userRepository = userViewModel.repository,
-                    onNotEnoughSwipes = {
-                        Log.w("ChatScreen", "⚠️ Not enough swipes")
-                    },
+                    onNotEnoughSwipes = {/* no longer needed */ },
                     onComplete = { success ->
                         Log.d("ChatScreen", "✅ Batch loaded: success=$success")
                     }

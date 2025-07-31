@@ -60,7 +60,7 @@ fun LoginView(
             resultData = result.data,
             onSuccess = { uid, name, email, isNewUser ->
                 if (isNewUser) {
-                    navController.navigate("SetUsername/$uid/$email")
+                    navController.navigate("SetUsername/$uid/$email?google=true")
                 } else {
                     userViewModel.loadUser()
                     navController.navigate(Screen.MainScreen.route) {

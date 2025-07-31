@@ -53,6 +53,7 @@ class SessionViewModel @Inject constructor(
                             email = email,
                             username = displayName,
                             fcmToken = token,
+                            chatLanguage = "any",
                             onSuccess = {
                                 onSuccess(uid, displayName, email, isNewUser)
                             },
@@ -67,6 +68,7 @@ class SessionViewModel @Inject constructor(
                             email = email,
                             username = displayName,
                             fcmToken = null,
+                            chatLanguage = "any",
                             onSuccess = {
                                 onSuccess(uid, displayName, email, isNewUser)
                             },

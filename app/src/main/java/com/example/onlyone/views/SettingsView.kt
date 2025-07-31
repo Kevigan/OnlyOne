@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -136,6 +138,17 @@ fun SettingsView(userViewModel: UserViewModel) {
                     }
                 }
             }
+
+            Button(
+                onClick = {
+                    userViewModel.createFakeUsers(count = 20)
+                },
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red),
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text("Create 20 Fake Users", color = Color.White)
+            }
+
         }
     }
 }

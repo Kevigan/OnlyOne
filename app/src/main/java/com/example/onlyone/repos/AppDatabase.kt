@@ -16,7 +16,7 @@ import com.example.onlyone.data.WrittenTodayEntity
 
 @Database(
     entities = [LocalMessage::class, WrittenTodayEntity::class, LocalFriend::class, LocalSwipeStatus::class, LocalUserSettings::class],
-    version = 6
+    version = 7
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao

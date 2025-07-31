@@ -134,6 +134,7 @@ class UserRepository @Inject constructor(
             email = map["email"] as? String ?: "",
             moodStatus = map["moodStatus"] as? String ?: "",
             points = (map["points"] as? Number)?.toInt() ?: 0,
+            chatLanguage = map["chatLanguage"] as? String ?: "en",
             isPro = map["isPro"] as? Boolean ?: false,
             blockList = map["blockList"] as? List<String> ?: emptyList(),
             reportCount = (map["reportCount"] as? Number)?.toInt() ?: 0,
@@ -156,7 +157,8 @@ class UserRepository @Inject constructor(
             username = map["username"] as? String ?: "",
             moodStatus = map["moodStatus"] as? String ?: "",
             avatarId = (map["avatarId"] as? Number)?.toInt() ?: 0,
-            points = (map["points"] as? Number)?.toInt() ?: 0
+            points = (map["points"] as? Number)?.toInt() ?: 0,
+            chatLanguage = map["chatLanguage"] as? String ?: "en"
         )
     }
 
@@ -164,13 +166,15 @@ class UserRepository @Inject constructor(
         email: String,
         username: String,
         fcmToken: String?,
+        chatLanguage: String = "any",
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
         val data = hashMapOf(
             "email" to email,
             "username" to username,
-            "fcmToken" to (fcmToken ?: "")
+            "fcmToken" to (fcmToken ?: ""),
+            "chatLanguage" to chatLanguage
         )
 
         Firebase.functions("europe-west3")
@@ -212,6 +216,19 @@ class UserRepository @Inject constructor(
         trackWrite("users_public/$uid → moodStatus", "updateMood")
         return db.collection("users_public").document(uid).update("moodStatus", mood)
     }
+
+    fun updateUserPublicProfile(
+        uid: String,
+        updates: Map<String, Any>,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        db.collection("users_public").document(uid)
+            .update(updates)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onFailure(it) }
+    }
+
 
     fun updateChatLanguage(uid: String, language: String): Task<Void> {
         return db.collection("users_public").document(uid).update("chatLanguage", language)
@@ -258,7 +275,6 @@ class UserRepository @Inject constructor(
                 onComplete(false)
             }
     }
-
 
     fun findUserByEmail(email: String, onResult: (String?) -> Unit) {
         trackRead("functions/getUidByEmail", "findUserByEmail")
@@ -430,11 +446,12 @@ class UserRepository @Inject constructor(
 
     fun getRandomUsersFromCloud(
         excludedIds: List<String>,
+        chatLanguage: String = "any",
         onResult: (List<PublicUser>) -> Unit
     ) {
         val function = Firebase.functions("europe-west3") // ✅ Add this
             .getHttpsCallable("getRandomEligibleUsers")
-        val data = mapOf("excludedIds" to excludedIds)
+        val data = mapOf("excludedIds" to excludedIds,  "chatLanguage" to chatLanguage)
 
         Log.d("RandomUser", "📤 Calling cloud function with excludedIds=$excludedIds")
 
@@ -456,6 +473,7 @@ class UserRepository @Inject constructor(
                     val moodStatus = item["moodStatus"] as? String
                     val avatarId = (item["avatarId"] as? Number)?.toInt()
                     val points = (item["points"] as? Number)?.toInt()
+                    val chatLanguage = item["chatLanguage"] as? String ?: "en"
 
                     if (uid == null) {
                         Log.w("RandomUser", "⚠️ Skipping user with missing uid: $item")
@@ -468,6 +486,7 @@ class UserRepository @Inject constructor(
                         uid = uid,
                         username = username ?: "",
                         moodStatus = moodStatus ?: "",
+                        chatLanguage = chatLanguage,
                         avatarId = avatarId ?: 0,
                         points = points ?: 0
                     )
@@ -621,6 +640,17 @@ class UserRepository @Inject constructor(
         return userSettingsDao.getSettings(uid)?.language ?: "en"
     }
 
+    suspend fun saveSearchUserLanguage(uid: String, lang: String) {
+        val existing = userSettingsDao.getSettings(uid)
+        val updated = existing?.copy(searchUserLanguage = lang)
+            ?: LocalUserSettings(uid = uid, searchUserLanguage = lang)
+        userSettingsDao.saveSettings(updated)
+    }
+
+    suspend fun getSearchUserLanguage(uid: String): String {
+        return userSettingsDao.getSettings(uid)?.searchUserLanguage ?: "any"
+    }
+
 
     suspend fun syncFriendsToLocal(uids: List<String>, publicFriends: List<PublicUser>) {
         val newLocalFriends = publicFriends.map {
@@ -648,7 +678,6 @@ class UserRepository @Inject constructor(
         suspendCoroutine { cont ->
             getPublicUsers(uids) { users -> cont.resume(users) }
         }
-
 
     suspend fun getLocalFriend(uid: String): LocalFriend? {
         return friendDao.getFriendByUid(uid)
