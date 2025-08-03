@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -43,47 +44,62 @@ fun UserStatsCardContent(
     val hours = (millisUntilReset / 1000) / 3600
     val minutes = ((millisUntilReset / 1000) % 3600) / 60
 
-    Row(
-        modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    val runeList = listOfNotNull(
+        if (runesRare > 0) "$runesRare rare" else null,
+        if (runesSuperRare > 0) "$runesSuperRare super" else null,
+        if (runesMegaRare > 0) "$runesMegaRare mega" else null
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // 📨 Messages + Reset Timer
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Messages left: $messagesLeft",
-                    fontSize = 18.sp,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "(reset in: ${hours}h ${minutes}m UTC)",
-                    fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
+        // 🔹 Line 1: Messages left + Reset time
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Messages left: $messagesLeft",
+                fontSize = 18.sp,
+                color = Color.White
+            )
+            Text(
+                text = "Reset in: ${hours}h ${minutes}m UTC",
+                fontSize = 14.sp,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
+
+        // 🔹 Line 2: Two Columns
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Column 1: Gold, Points, Rank
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Gold: $gold", color = Color.White)
+                Text("Points: $points", color = Color.White)
+                Text("Rank: ${getUserRank(pointsRank)}", color = Color.White)
             }
 
-            // 🎯 Points & Rank
-            Text("Points: $points", color = Color.White)
-            Text("Rank: ${getUserRank(pointsRank)}", color = Color.White)
-
-            // 🪙 Gold
-            Text("Gold: $gold", color = Color.White)
-
-            // 🧙‍♂️ Runes (only show if owned)
-            val runeList = listOfNotNull(
-                if (runesRare > 0) "$runesRare rare" else null,
-                if (runesSuperRare > 0) "$runesSuperRare super" else null,
-                if (runesMegaRare > 0) "$runesMegaRare mega" else null
-            )
-
+            // Column 2: Runes (if any)
             if (runeList.isNotEmpty()) {
-                Text("Runes: ${runeList.joinToString(" | ")}", color = Color.White)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text("Runes:", color = Color.White)
+                    runeList.forEach { rune ->
+                        Text(rune, color = Color.White)
+                    }
+                }
             }
         }
     }
 }
+
 fun getUserRank(points: Int): String {
     return when {
         points >= 1050 -> "S-Class"

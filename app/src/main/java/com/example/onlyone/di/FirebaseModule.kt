@@ -1,10 +1,9 @@
 package com.example.onlyone.di
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
-import com.example.dao.SwipeDao
 import com.example.dao.UserSettingsDao
 import com.example.onlyone.repos.ChatRepository
-import com.example.onlyone.repos.UserRepository
+import com.example.onlyone.repos.userRepos.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -24,19 +23,6 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
-
-    @Provides
-    @Singleton
-    fun provideUserRepository(
-        db: FirebaseFirestore,
-        friendDao: FriendDao,
-        messageDao: MessageDao,
-        swipeDao: SwipeDao,
-        userSettingsDao: UserSettingsDao,
-        auth: FirebaseAuth
-    ): UserRepository {
-        return UserRepository(db, friendDao, messageDao, swipeDao, userSettingsDao, auth)
-    }
 
     @Provides
     @Singleton

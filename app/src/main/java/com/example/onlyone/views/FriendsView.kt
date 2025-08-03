@@ -42,6 +42,7 @@ import com.example.onlyone.R
 import com.example.onlyone.composables.BlinkingIcon
 import com.example.onlyone.composables.FriendItem
 import com.example.onlyone.composables.mapAvatarIdToDrawable
+import com.example.onlyone.utils.toPublicUser
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.UserViewModel
 
@@ -138,14 +139,14 @@ fun FriendsView(
         // 🔹 Tab content
         when (selectedTabIndex) {
             0 -> {
-                Log.d("FriendsView", "Rendering Friends tab with ${localFriends.size} friends")
+               // Log.d("FriendsView", "Rendering Friends tab with ${localFriends.size} friends")
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(horizontal = 12.dp)
                 ) {
                     items(localFriends) { friend ->
-                        Log.d("FriendsView", "Rendering friend: ${friend.username}, uid=${friend.uid}")
+                        //Log.d("FriendsView", "Rendering friend: ${friend.username}, uid=${friend.uid}")
 
                         FriendItem(
                             avatarResId = mapAvatarIdToDrawable(friend.avatarId),
@@ -153,10 +154,11 @@ fun FriendsView(
                             status = friend.moodStatus,
                             isLocked = friend.uid in writtenIds,
                             onWriteClick = {
-                                Log.d("FriendsView", "Write clicked for ${friend.username} (${friend.uid})")
+                                //Log.d("FriendsView", "Write clicked for ${friend.username} (${friend.uid})")
                                 if (friend.uid !in writtenIds) {
+                                    userViewModel.setTargetUser(friend.toPublicUser())
                                     val route = "ChatScreen/${friend.uid}?isRandom=false"
-                                    Log.d("FriendsView", "Navigating to $route")
+                                    Log.d("FriendsView", "friend.uid: ${friend.uid}")
                                     navController.navigate(route)
                                 } else {
                                     Log.d("FriendsView", "User already written to today")
@@ -257,7 +259,6 @@ fun FriendsView(
                     }
                 }
             }
-
         }
     }
 

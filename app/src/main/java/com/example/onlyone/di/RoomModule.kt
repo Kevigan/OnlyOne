@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
-import com.example.dao.SwipeDao
 import com.example.dao.UserSettingsDao
 import com.example.onlyone.repos.AppDatabase
 import dagger.Module
@@ -35,9 +34,6 @@ object RoomModule {
 
     @Provides
     fun provideFriendDao(db: AppDatabase): FriendDao = db.friendDao()
-
-    @Provides
-    fun provideSwipeDao(db: AppDatabase): SwipeDao = db.swipeDao()
 
     @Provides
     fun provideUserSettingsDao(db: AppDatabase): UserSettingsDao = db.userSettingsDao()

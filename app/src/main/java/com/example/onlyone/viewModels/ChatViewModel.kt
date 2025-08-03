@@ -3,7 +3,6 @@ package com.example.onlyone.viewModels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.dao.SwipeDao
 import com.example.onlyone.cloudMessaging.MessageNotifier
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.data.Message
@@ -11,32 +10,23 @@ import com.example.onlyone.data.MessageResult
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.WrittenTodayEntity
 import com.example.onlyone.repos.ChatRepository
-import com.example.onlyone.repos.UserRepository
+import com.example.onlyone.repos.userRepos.UserRepository
 import com.example.onlyone.utils.DailyResetTimer
-import com.example.onlyone.utils.toPublicUser
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Calendar
-import java.util.TimeZone
 import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val userRepository: UserRepository,
-    private val swipeDao: SwipeDao
 ) : ViewModel() {
-
-    private val _targetUser = MutableStateFlow<PublicUser?>(null)
-    val targetUser: StateFlow<PublicUser?> = _targetUser.asStateFlow()
 
     private val _receivedMessages = MutableStateFlow<List<Message>>(emptyList())
     val receivedMessages: StateFlow<List<Message>> = _receivedMessages
@@ -45,9 +35,6 @@ class ChatViewModel @Inject constructor(
 
     private val _userQueue = MutableStateFlow<List<PublicUser>>(emptyList())
     val userQueue: StateFlow<List<PublicUser>> = _userQueue.asStateFlow()
-
-    private val _isLoadingUser = MutableStateFlow(false)
-    val isLoadingUser: StateFlow<Boolean> = _isLoadingUser.asStateFlow()
 
     val messageFlow = MessageNotifier.newMessageFlow
 
@@ -101,99 +88,7 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun loadRandomUserBatch(
-        currentUserId: String,
-        userRepository: UserRepository,
-        onNotEnoughSwipes: () -> Unit,
-        onComplete: (Boolean) -> Unit
-    ) {
-        _isLoadingUser.value = true // ⏳ Start loading
-
-        userRepository.getSwipeStatus(currentUserId) { swipeStatus ->
-            if (swipeStatus == null) {
-                _isLoadingUser.value = false
-                onNotEnoughSwipes()
-                onComplete(false)
-                return@getSwipeStatus
-            }
-
-            val swipesLeft = swipeStatus.swipesGranted - swipeStatus.swipesUsed
-            if (swipesLeft <= 0) {
-                _isLoadingUser.value = false
-                onNotEnoughSwipes()
-                onComplete(false)
-                return@getSwipeStatus
-            }
-
-            // ✅ Continue if swipes available
-            viewModelScope.launch {
-                val writtenToday = writtenTodayList.first().map { it.receiverId }
-
-                val chatLanguage = userRepository.getSearchUserLanguage(currentUserId)
-                userRepository.getRandomUsersFromCloud(writtenToday, chatLanguage = chatLanguage) { users ->
-                    _isLoadingUser.value = false // ✅ Done loading
-
-                    if (!users.isNullOrEmpty()) {
-                        _userQueue.value = users
-                        _targetUser.value = users.first()
-                        onComplete(true)
-                    } else {
-                        _targetUser.value = null // ✅ explicitly set to null
-                        _userQueue.value = emptyList()
-                        onComplete(false)
-                    }
-                }
-            }
-        }
-    }
-
-    fun consumeNextUserFromQueue(currentUid: String) {
-        viewModelScope.launch {
-            val localSwipeStatus = swipeDao.getSwipeStatus(currentUid)
-            val swipesLeft = (localSwipeStatus?.swipesGranted ?: 25) - (localSwipeStatus?.swipesUsed ?: 0)
-
-            if (swipesLeft <= 0) {
-                Log.d("SwipeCheck", "🚫 No swipes left for $currentUid")
-                _toastEvent.emit("🚫 You have no more swipes left today.")
-                return@launch
-            }
-
-            val desiredLanguage = userRepository.getSearchUserLanguage(currentUid)
-
-            val currentList = _userQueue.value
-            Log.d("ChatSwipe", "🧭 Queue size: ${currentList.size}, Desired: $desiredLanguage")
-
-            // Remove the CURRENT target user first
-            val remainingUsers = currentList.drop(1)
-
-            // Find the next valid match in the remaining users
-            val nextMatch = remainingUsers.firstOrNull {
-                it.chatLanguage == desiredLanguage || desiredLanguage == "any"
-            }
-
-            if (nextMatch != null) {
-                _userQueue.value = remainingUsers
-                _targetUser.value = nextMatch
-
-                userRepository.incrementSwipeCount { success ->
-                    if (!success) {
-                        Log.e("SwipeCheck", "❌ Failed to increment swipe count")
-                    }
-                }
-            } else {
-                _userQueue.value = emptyList()
-                _targetUser.value = null
-                Log.d("ChatViewModel", "🛑 No valid user matches selected chat language.")
-            }
-        }
-    }
-
-    fun clearQueue() {
-        _userQueue.value = emptyList()
-        _targetUser.value = null
-    }
-
-    fun loadTargetUser(
+    /*fun loadTargetUser(
         uid: String,
         isRandom: Boolean,
         userViewModel: UserViewModel
@@ -229,7 +124,7 @@ class ChatViewModel @Inject constructor(
                     _targetUser.value = null
                 }
         }
-    }
+    }*/
 
 
 

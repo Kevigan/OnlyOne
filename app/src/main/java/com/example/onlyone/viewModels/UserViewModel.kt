@@ -6,21 +6,23 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dao.FriendDao
+import com.example.dao.MessageDao
 import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PublicUser
-import com.example.onlyone.data.User
-import com.example.onlyone.data.UserSwipeStatus
-import com.example.onlyone.repos.UserRepository
-import com.example.onlyone.utils.DailyResetTimer
-import com.google.android.gms.tasks.Task
+import com.example.onlyone.data.UserComposite
+import com.example.onlyone.data.UserEngagementStatus
+import com.example.onlyone.repos.userRepos.UserRepository
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,13 +30,14 @@ import javax.inject.Inject
 @HiltViewModel
 class UserViewModel @Inject constructor(
     val userRepository: UserRepository,
-    private val friendDao: FriendDao
+    private val friendDao: FriendDao,
+    private val messageDao: MessageDao,
 ) : ViewModel() {
     val repository: UserRepository
         get() = userRepository
 
-    private val _user = MutableLiveData<User?>()
-    val user: LiveData<User?> get() = _user
+    private val _user = MutableLiveData<UserComposite?>()
+    val user: LiveData<UserComposite?> get() = _user
 
     private val _outgoingRequestUsernames = MutableStateFlow<Map<String, String>>(emptyMap())
     val outgoingRequestUsernames: StateFlow<Map<String, String>> = _outgoingRequestUsernames.asStateFlow()
@@ -45,18 +48,44 @@ class UserViewModel @Inject constructor(
     private val _blockedUsers = MutableStateFlow<List<PublicUser>>(emptyList())
     val blockedUsers: StateFlow<List<PublicUser>> = _blockedUsers
 
-    private val _swipeStatus = MutableStateFlow<UserSwipeStatus?>(null)
-    val swipeStatus: StateFlow<UserSwipeStatus?> = _swipeStatus.asStateFlow()
+    private val _engagementStatus = MutableStateFlow<UserEngagementStatus?>(null)
+    val engagementStatus: StateFlow<UserEngagementStatus?> = _engagementStatus.asStateFlow()
 
+    private val _userQueue = MutableStateFlow<List<PublicUser>>(emptyList())
+    val userQueue: StateFlow<List<PublicUser>> = _userQueue.asStateFlow()
+
+    private val _targetUser = MutableStateFlow<PublicUser?>(null)
+    val targetUser: StateFlow<PublicUser?> = _targetUser.asStateFlow()
+
+    private val _isLoadingUserBatch = MutableStateFlow(false)
+    val isLoadingUserBatch: StateFlow<Boolean> = _isLoadingUserBatch.asStateFlow()
+
+    private val _toastEvent = MutableSharedFlow<String>()
+    val toastEvent = _toastEvent.asSharedFlow()
+
+    private val _lastUserLoadResult = MutableStateFlow<RandomUserLoadResult?>(null)
+    val lastUserLoadResult: StateFlow<RandomUserLoadResult?> = _lastUserLoadResult.asStateFlow()
 
     private var lastLoadedMessageUid: String? = null
+    private var hasLoadedInitialBatch = false
 
-    init {
+    /*init {
         DailyResetTimer.start {
             checkAndResetSwipeLimit()
         }
+    }*/
+
+    fun loadRandomUserBatchIfNeeded(showToasts: Boolean = false) {
+        if (hasLoadedInitialBatch) return
+        hasLoadedInitialBatch = true
+        viewModelScope.launch {
+            loadRandomUserBatch(showToasts)
+        }
     }
 
+    fun setTargetUser(user: PublicUser) {
+        _targetUser.value = user
+    }
 
     fun shouldLoadMessagesFor(uid: String): Boolean {
         return if (uid != lastLoadedMessageUid) {
@@ -68,9 +97,10 @@ class UserViewModel @Inject constructor(
     }
 
     fun loadUser() {
-        userRepository.getUserWithFriends(
-            onComplete = { user, friends, incoming, outgoing, blocked ->
+        userRepository.fetchFullUserSession(
+            onComplete = { user, friends, incoming, outgoing, blocked, engagementStatus ->
                 _user.value = user
+                _engagementStatus.value = engagementStatus // ✅ Set engagement state
 
                 // Update Room if needed
                 viewModelScope.launch(Dispatchers.IO) {
@@ -81,10 +111,9 @@ class UserViewModel @Inject constructor(
                 _incomingRequestUsernames.value = incoming.associate { it.uid to it.username }
                 _outgoingRequestUsernames.value = outgoing.associate { it.uid to it.username }
 
-                // ✅ Update blocked list
                 _blockedUsers.value = blocked
 
-                Log.d("UserViewModel", "✅ User loaded via Cloud Function")
+                Log.d("UserViewModel", "✅ User + engagement loaded via Cloud Function")
             },
             onFailure = { error ->
                 Log.e("UserViewModel", "❌ Failed to load user via Cloud Function", error)
@@ -92,23 +121,15 @@ class UserViewModel @Inject constructor(
         )
     }
 
-    fun loadSwipeStatus(uid: String) {
-        userRepository.getSwipeStatus(uid) { status ->
-            _swipeStatus.value = status
-        }
-    }
-
-    fun checkAndResetSwipeLimit() {
-        val uid = _user.value?.uid ?: return
-
-        userRepository.maybeResetSwipes { reset ->
-            Log.d("SwipeReset", if (reset) "✅ Swipes reset for today" else "ℹ️ No reset needed")
-
-            // Always re-sync swipe data from Firestore, even if no reset
-            userRepository.syncSwipeStatusFromCloud(uid) {
-                loadSwipeStatus(uid) // updates UI
+    fun loadFriendById(uid: String) {
+        /*viewModelScope.launch {
+            val user = userRepository.getPublicUser(uid)
+            if (user != null) {
+                _targetUser.value = user
+            } else {
+                _toastEvent.emit("❌ Could not load friend.")
             }
-        }
+        }*/
     }
 
     fun updateMood(mood: String) {
@@ -119,9 +140,9 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun updatePublicProfile(uid: String, updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    /*fun updatePublicProfile(uid: String, updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         repository.updateUserPublicProfile(uid, updates, onSuccess, onFailure)
-    }
+    }*/
 
     fun updateChatLanguage(language: String) {
         val currentUser = _user.value ?: return
@@ -154,9 +175,9 @@ class UserViewModel @Inject constructor(
                     userRepository.removeLocalFriend(targetUid)
 
                     // 🔄 Now refresh public profiles for blocked tab
-                    userRepository.getPublicUsers(updatedBlockList) { publicUsers ->
+                    /*userRepository.getPublicUsers(updatedBlockList) { publicUsers ->
                         _blockedUsers.value = publicUsers
-                    }
+                    }*/
                 }
 
                 Log.d("UserViewModel", "✅ Blocked user: $targetUid")
@@ -180,7 +201,6 @@ class UserViewModel @Inject constructor(
             }
         }
     }
-
 
     fun sendFriendRequestByEmail(
         email: String,
@@ -219,17 +239,21 @@ class UserViewModel @Inject constructor(
                         outgoingFriendRequests = currentUser.outgoingFriendRequests + toUid
                     )
 
-                    userRepository.getPublicUsers(listOf(toUid)) { users ->
-                        val user = users.firstOrNull()
-                        if (user != null) {
-                            _outgoingRequestUsernames.update { existing ->
-                                existing + (toUid to user.username)
+                    userRepository.getPublicUser(toUid)
+                        .addOnSuccessListener { doc ->
+                            val user = doc.toObject(PublicUser::class.java)
+                            if (user != null) {
+                                _outgoingRequestUsernames.update { existing ->
+                                    existing + (toUid to user.username)
+                                }
                             }
+                            onSuccess()
                         }
-                        onSuccess()
-                    }
+                        .addOnFailureListener {
+                            Log.e("FriendRequest", "⚠️ Failed to fetch user after sending request", it)
+                            onSuccess() // Still call success even if username couldn't be resolved
+                        }
                 } else {
-                    Log.e("FriendRequest", "❌ sendFriendRequest failed: $errorMessage")
                     onFailure(errorMessage ?: "Unknown error")
                 }
             }
@@ -305,8 +329,8 @@ class UserViewModel @Inject constructor(
 
                 viewModelScope.launch(Dispatchers.IO) {
                     val fullFriendList = _user.value?.friendList ?: emptyList()
-                    val allPublicUsers = userRepository.getPublicUsersSuspend(fullFriendList)
-                    userRepository.syncFriendsToLocal(fullFriendList, allPublicUsers)
+                    /*val allPublicUsers = userRepository.getPublicUsersSuspend(fullFriendList)
+                    userRepository.syncFriendsToLocal(fullFriendList, allPublicUsers)*/
                 }
             } else {
                 Log.e("FriendAccept", "❌ Failed to accept request: $error")
@@ -362,14 +386,156 @@ class UserViewModel @Inject constructor(
         )
     }
 
-    fun updateNotificationPreference(key: String, enabled: Boolean) {
+    fun updateNotificationPreference(
+        key: String,
+        enabled: Boolean,
+        onSuccess: () -> Unit = {},
+        onFailure: (Exception) -> Unit = {}
+    ) {
         val currentUser = _user.value ?: return
         userRepository.updateNotificationSetting(
             uid = currentUser.uid,
             key = key,
-            enabled = enabled
+            enabled = enabled,
+            onSuccess = onSuccess,
+            onFailure = onFailure
         )
     }
+
+
+    ///////RandomUsers///////////
+    suspend fun loadRandomUserBatch(showToasts: Boolean = false): RandomUserLoadResult {
+        _isLoadingUserBatch.value = true
+
+        val result = try {
+            val currentUser = _user.value
+            val engagement = _engagementStatus.value
+
+            if (currentUser == null || engagement == null) {
+                val fallback = RandomUserLoadResult.NoSwipesLeft
+                _lastUserLoadResult.value = fallback
+                return fallback
+            }
+
+            val swipesLeft = currentUser.maxSwipes - engagement.swipesUsed
+            if (swipesLeft <= 0) {
+                if (showToasts) _toastEvent.emit("🚫 No swipes left today.")
+                val noSwipes = RandomUserLoadResult.NoSwipesLeft
+                _lastUserLoadResult.value = noSwipes
+                return noSwipes
+            }
+
+            val writtenToday = userRepository.observeWrittenToday().first().map { it.receiverId }
+            val searchLanguage = userRepository.getSearchUserLanguage(currentUser.uid)
+
+            val randomUsers = userRepository.loadRandomUserBatchSuspend(
+                excludedIds = writtenToday,
+                chatLanguage = searchLanguage
+            )
+
+            if (randomUsers.isNotEmpty()) {
+                _userQueue.value = randomUsers
+                _targetUser.value = randomUsers.first()
+                RandomUserLoadResult.Success.also { _lastUserLoadResult.value = it }
+            } else {
+                _userQueue.value = emptyList()
+                _targetUser.value = null
+
+                if (showToasts) {
+                    if (searchLanguage != "any") {
+                        _toastEvent.emit("No users found in selected language.")
+                    } else {
+                        _toastEvent.emit("🎉 You've seen everyone for now.")
+                    }
+                }
+
+                RandomUserLoadResult.NoUsersFound.also { _lastUserLoadResult.value = it }
+            }
+
+        } finally {
+            _isLoadingUserBatch.value = false
+        }
+
+        return result
+    }
+
+    fun consumeNextUserFromQueue() {
+        val user = _user.value
+        val engagement = _engagementStatus.value
+
+        if (user == null || engagement == null) return
+
+        viewModelScope.launch {
+            val swipesLeft = user.maxSwipes - engagement.swipesUsed
+            Log.d("UserViewModel", "🧮 swipesLeft=${swipesLeft}")
+            if (swipesLeft <= 0) {
+                _toastEvent.emit("🚫 No swipes left today.")
+                return@launch
+            }
+
+            val desiredLanguage = userRepository.getSearchUserLanguage(user.uid)
+            val remainingUsers = _userQueue.value.drop(1)
+            val nextMatch = remainingUsers.firstOrNull {
+                it.chatLanguage == desiredLanguage || desiredLanguage == "any"
+            }
+
+            Log.e("UserViewModel", "❌ engagement=${engagement.swipesUsed}")
+            Log.e("UserViewModel", "❌ desiredLanguage=$desiredLanguage")
+            Log.e("UserViewModel", "❌ remainingUsers=${remainingUsers.size}")
+
+            // ✅ Call Cloud Function to increment swipe
+            val success = userRepository.incrementSwipeCount()
+            if (!success) {
+                Log.e("UserViewModel", "❌ Failed to increment swipe count")
+            }
+
+            // ✅ Locally increment swipesUsed
+            _engagementStatus.value = engagement.copy(
+                swipesUsed = engagement.swipesUsed + 1
+            )
+
+            if (_engagementStatus.value?.swipesUsed == user.maxSwipes) {
+                Log.d("UserViewModel", "🔁 refreshEngagementStatus...")
+                refreshEngagementStatus()
+            }
+
+            if (nextMatch != null) {
+                _userQueue.value = remainingUsers
+                _targetUser.value = nextMatch
+            } else {
+                _userQueue.value = emptyList()
+                _targetUser.value = null
+
+                Log.d("UserViewModel", "🔁 Queue empty, loading new batch...")
+
+                when (val result = loadRandomUserBatch()) {
+                    is RandomUserLoadResult.NoUsersFound -> {
+                        _toastEvent.emit("🎉 You've seen everyone for now.")
+                    }
+                    is RandomUserLoadResult.NoSwipesLeft -> {
+                        _toastEvent.emit("🚫 You've hit your daily swipe limit.")
+                    }
+                    is RandomUserLoadResult.Success -> {
+                        // silently succeeds
+                    }
+                }
+            }
+        }
+    }
+
+    fun refreshEngagementStatus() {
+        val uid = _user.value?.uid ?: return
+
+        userRepository.fetchEngagementStatus(uid) { status ->
+            if (status != null) {
+                _engagementStatus.value = status
+                Log.d("UserViewModel", "✅ EngagementStatus refreshed")
+            }
+        }
+    }
+
+
+///////RandomUsers End///////////
 
     fun observeLocalFriends(): Flow<List<LocalFriend>> {
         return friendDao.getAllFriends()
@@ -449,5 +615,12 @@ class UserViewModel @Inject constructor(
                 Log.e("FakeUsers", "❌ Failed to create fake users", error)
             }
     }
+
+    sealed class RandomUserLoadResult {
+        object Success : RandomUserLoadResult()
+        object NoUsersFound : RandomUserLoadResult()
+        object NoSwipesLeft : RandomUserLoadResult()
+    }
+
 
 }

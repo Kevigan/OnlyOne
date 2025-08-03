@@ -205,7 +205,6 @@ fun Navigation(
                     ) { backStackEntry ->
                         val uid = backStackEntry.arguments?.getString("uid") ?: "none"
                         val isRandom = backStackEntry.arguments?.getBoolean("isRandom") ?: false
-
                         ChatScreenEntry(
                             uid = uid,
                             isRandom = isRandom,

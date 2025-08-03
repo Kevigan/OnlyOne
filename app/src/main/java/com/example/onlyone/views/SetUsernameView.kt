@@ -102,62 +102,40 @@ fun SetUsernameView(
 
         Button(
             onClick = {
-                if (isGoogleUser) {
-                    FirebaseMessaging.getInstance().token
-                        .addOnSuccessListener { token ->
-                            userViewModel.repository.createUserProfile(
-                                email = email,
-                                username = username,
-                                fcmToken = token,
-                                chatLanguage = selectedLanguage,
-                                onSuccess = {
-                                    userViewModel.saveSearchUserLanguage(selectedLanguage)
-                                    userViewModel.loadUser()
-                                    navController.navigate(Screen.MainScreen.route) {
-                                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                                    }
-                                },
-                                onFailure = { error ->
-                                    Toast.makeText(context, "Failed to create user profile", Toast.LENGTH_SHORT).show()
-                                    Log.e("SetUsername", "❌ Profile creation failed", error)
-                                    isSaving = false
+                isSaving = true
+
+                FirebaseMessaging.getInstance().token
+                    .addOnSuccessListener { token ->
+                        userViewModel.repository.createUserProfile(
+                            email = email,
+                            username = username,
+                            fcmToken = token,
+                            chatLanguage = selectedLanguage,
+                            onSuccess = {
+                                userViewModel.saveSearchUserLanguage(selectedLanguage)
+                                userViewModel.loadUser()
+                                navController.navigate(Screen.MainScreen.route) {
+                                    popUpTo(Screen.LoginScreen.route) { inclusive = true }
                                 }
-                            )
-                        }
-                        .addOnFailureListener { error ->
-                            Toast.makeText(context, "Failed to get FCM token", Toast.LENGTH_SHORT).show()
-                            Log.e("SetUsername", "❌ FCM token fetch failed", error)
-                            isSaving = false
-                        }
-                } else {
-                    // ✏️ Just update username & chat language (Email users)
-                    userViewModel.saveSearchUserLanguage(selectedLanguage)
-
-                    userViewModel.updatePublicProfile(
-                        uid = uid,
-                        updates = mapOf(
-                            "username" to username,
-                            "chatLanguage" to selectedLanguage
-                        ),
-                        onSuccess = {
-                            userViewModel.loadUser()
-                            navController.navigate(Screen.MainScreen.route) {
-                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                            },
+                            onFailure = { error ->
+                                Toast.makeText(context, "Failed to create user profile", Toast.LENGTH_SHORT).show()
+                                Log.e("SetUsername", "❌ Profile creation failed", error)
+                                isSaving = false
                             }
-                        },
-                        onFailure = { error ->
-                            Toast.makeText(context, "Failed to update profile", Toast.LENGTH_SHORT).show()
-                            Log.e("SetUsername", "❌ Profile update failed", error)
-                            isSaving = false
-                        }
-                    )
-                }
-
+                        )
+                    }
+                    .addOnFailureListener { error ->
+                        Toast.makeText(context, "Failed to get FCM token", Toast.LENGTH_SHORT).show()
+                        Log.e("SetUsername", "❌ FCM token fetch failed", error)
+                        isSaving = false
+                    }
             },
             enabled = !isSaving
         ) {
             Text(if (isSaving) "Saving..." else "Continue")
         }
+
     }
 }
 

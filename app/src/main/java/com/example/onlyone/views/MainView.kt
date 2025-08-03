@@ -47,6 +47,7 @@ import com.example.onlyone.composables.ReceivedMessageItemBig
 import com.example.onlyone.composables.TopSnackbar
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.utils.DailyResetTimer
+import com.example.onlyone.utils.formatTimeLeft
 import kotlinx.coroutines.delay
 
 @Composable
@@ -63,16 +64,15 @@ fun MainView(
         .collectAsState(initial = emptyList())
     val millisUntilReset by DailyResetTimer.timeUntilReset.collectAsState()
     val statusBarColor = MaterialTheme.colors.background
-    val swipeStatus by userViewModel.swipeStatus.collectAsState()
 
     var selectedMessage by remember { mutableStateOf<LocalMessage?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var isSyncing by remember { mutableStateOf(false) }
     var syncFailed by remember { mutableStateOf(false) }
 
-    LaunchedEffect(user?.uid) {
+   /* LaunchedEffect(user?.uid) {
         user?.uid?.let { userViewModel.checkAndResetSwipeLimit() }
-    }
+    }*/
 //for app start
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
@@ -164,7 +164,7 @@ fun MainView(
                 onDismiss = {}
             ) {
                 UserStatsCardContent(
-                    messagesLeft = swipeStatus?.let { it.swipesGranted - it.swipesUsed } ?: 0,
+                    messagesLeft =25, //swipeStatus?.let { it.swipesGranted - it.swipesUsed } ?: 0,
                     points = (user?.points ?: 0).toString(),
                     pointsRank = user?.points ?: 0,
                     gold = user?.gold ?: 0,
@@ -243,7 +243,7 @@ fun MainView(
                                     avatarResId = R.drawable.baseline_tag_faces_24,
                                     name = message.senderUsername,
                                     message = message.content,
-                                    expiration = "24hrs",
+                                    expiration = formatTimeLeft(message.timestamp),
                                     onClick = { selectedMessage = message },
                                     isRead = message.read,
                                     feedback = message.feedback ?: -10

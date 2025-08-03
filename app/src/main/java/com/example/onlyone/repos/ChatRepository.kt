@@ -7,7 +7,6 @@ import com.example.onlyone.utils.toFirestoreMap
 import com.example.onlyone.data.Message
 import com.example.onlyone.data.MessageResult
 import com.example.onlyone.data.PublicUser
-import com.example.onlyone.data.UserSwipeStatus
 import com.example.onlyone.data.WrittenTodayEntity
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
@@ -153,8 +152,6 @@ class ChatRepository @Inject constructor(
             throw e
         }
     }
-
-
 
     /////////////ROOM Database///////////////
 

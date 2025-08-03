@@ -15,21 +15,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.onlyone.R
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.Message
 import com.example.onlyone.data.MessageResult
-import com.example.onlyone.data.User
-import com.example.onlyone.repos.UserRepository
+import com.example.onlyone.data.UserComposite
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.utils.buildMessageId
 import com.example.onlyone.viewModels.UserViewModel
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatView(
-    user: User,
-    targetUser: PublicUser,
+    user: UserComposite,
+    targetUser: PublicUser?,
     isRandom: Boolean,
     onNextUser: () -> Unit,
     chatViewModel: ChatViewModel,
@@ -40,6 +41,7 @@ fun ChatView(
     val context = LocalContext.current
     val isSending by chatViewModel.isSending.collectAsState()
     val maxLength = user.maxMessageLength
+    val coroutineScope = rememberCoroutineScope()
 
     var selectedLanguage by remember { mutableStateOf("any") }
 
@@ -76,15 +78,25 @@ fun ChatView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = mapAvatarIdToDrawable(targetUser.avatarId)),
+                    painter = painterResource(
+                        id = mapAvatarIdToDrawable(
+                            targetUser?.avatarId ?: 0
+                        )
+                    ),
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(48.dp)
                         .padding(end = 12.dp)
                 )
                 Column {
-                    Text(text = targetUser.username, style = MaterialTheme.typography.subtitle1)
-                    Text(text = targetUser.moodStatus, style = MaterialTheme.typography.body2)
+                    Text(
+                        text = targetUser?.username ?: "...",
+                        style = MaterialTheme.typography.subtitle1
+                    )
+                    Text(
+                        text = targetUser?.moodStatus ?: "",
+                        style = MaterialTheme.typography.body2
+                    )
                 }
             }
         }
@@ -92,17 +104,39 @@ fun ChatView(
         Spacer(modifier = Modifier.height(12.dp))
 
         // 📝 Chat input
-        OutlinedTextField(
-            value = messageText,
-            onValueChange = {
-                if (it.length <= maxLength) messageText = it
-            },
-            label = { Text("Write your message (${messageText.length}/$maxLength)") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(bottom = 150.dp)
-        )
+        if (targetUser != null) {
+            OutlinedTextField(
+                value = messageText,
+                onValueChange = {
+                    if (it.length <= maxLength) messageText = it
+                },
+                label = { Text("Write your message (${messageText.length}/$maxLength)") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(bottom = 150.dp)
+            )
+        }else
+        {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ghosthead_sad),
+                        contentDescription = "Waiting for match",
+                        modifier = Modifier
+                            .size(160.dp)
+                            .padding(bottom = 12.dp)
+                    )
+                    Text("Searching for someone...", style = MaterialTheme.typography.body1)
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(12.dp))
 
         Box(
@@ -119,12 +153,12 @@ fun ChatView(
                         return@Button
                     }
 
-                    val messageId = buildMessageId(user.uid, targetUser.uid)
+                    val messageId = buildMessageId(user.uid, targetUser?.uid ?: "")
                     val msg = Message(
                         id = messageId,
                         senderUsername = user.username,
                         senderId = user.uid,
-                        receiverId = targetUser.uid,
+                        receiverId = targetUser?.uid ?: "",
                         content = messageText.trim(),
                         timestamp = Timestamp.now(),
                         senderAvatarId = user.avatarId,
@@ -192,7 +226,7 @@ fun ChatView(
             ) {
                 // Placeholder dropdown
                 var expanded by remember { mutableStateOf(false) }
-                val languageOptions = listOf("any","en", "de", "fr", "es", "it")
+                val languageOptions = listOf("any", "en", "de", "fr", "es", "it")
 
                 Box {
                     OutlinedButton(onClick = { expanded = true }) {
@@ -204,29 +238,19 @@ fun ChatView(
                         onDismissRequest = { expanded = false }
                     ) {
                         languageOptions.forEach { lang ->
-                            DropdownMenuItem(onClick = {
-                                selectedLanguage = lang
-                                expanded = false
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedLanguage = lang
+                                    expanded = false
 
-                                userViewModel.saveSearchUserLanguage(lang)
+                                    userViewModel.saveSearchUserLanguage(lang)
+                                    // chatViewModel.clearQueue() // ✅ still valid — clears Chat UI state
 
-                                // 👇 Clear stale users
-                                chatViewModel.clearQueue()
-
-                                // 👇 Then load fresh users for selected language
-                                chatViewModel.loadRandomUserBatch(
-                                    currentUserId = user.uid,
-                                    userRepository = userViewModel.repository,
-                                    onNotEnoughSwipes = {
-                                        Toast.makeText(context, "No swipes left today.", Toast.LENGTH_SHORT).show()
-                                    },
-                                    onComplete = { success ->
-                                        if (!success) {
-                                            Toast.makeText(context, "No users found in selected language.", Toast.LENGTH_SHORT).show()
-                                        }
+                                    coroutineScope.launch {
+                                        userViewModel.loadRandomUserBatch(showToasts = true)
                                     }
-                                )
-                            })
+                                }
+                            )
                             {
                                 Text(lang.uppercase())
                             }
