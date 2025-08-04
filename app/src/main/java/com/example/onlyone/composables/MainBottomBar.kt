@@ -131,7 +131,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
                 .offset(y = (-36).dp)
         ) {
             Button(
-                onClick = { navController.navigate("ChatScreen/none?isRandom=true") },
+                onClick = { navController.navigate(Screen.ChatScreen.createRoute("none", true)) },
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent), // Transparent to show gradient inside
                 modifier = Modifier.size(72.dp),

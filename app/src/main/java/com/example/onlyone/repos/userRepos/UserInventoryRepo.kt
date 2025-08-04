@@ -2,7 +2,10 @@ package com.example.onlyone.repos
 
 import android.util.Log
 import com.example.onlyone.data.UserInventory
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.functions.ktx.functions
+import com.google.firebase.ktx.Firebase
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.tasks.await
@@ -19,7 +22,11 @@ class UserInventoryRepo @Inject constructor(
                 gold = (data["gold"] as? Number)?.toInt() ?: 0,
                 runes_rare = (data["runes_rare"] as? Number)?.toInt() ?: 0,
                 runes_super_rare = (data["runes_super_rare"] as? Number)?.toInt() ?: 0,
-                runes_mega_rare = (data["runes_mega_rare"] as? Number)?.toInt() ?: 0
+                runes_mega_rare = (data["runes_mega_rare"] as? Number)?.toInt() ?: 0,
+                ownedAvatars = (data["ownedAvatars"] as? List<*>)
+                    ?.filterIsInstance<Number>()
+                    ?.map { it.toInt() }
+                    ?: emptyList()
             )
         } catch (e: Exception) {
             Log.e("InventoryRepo", "❌ Failed to fetch inventory", e)
@@ -27,17 +34,22 @@ class UserInventoryRepo @Inject constructor(
         }
     }
 
-    suspend fun updateGold(uid: String, newAmount: Int): Boolean {
+    suspend fun buyAvatar(avatarId: Int): UserInventory? {
         return try {
-            db.collection("users_inventory").document(uid)
-                .update("gold", newAmount)
+            Firebase.functions("europe-west3")
+                .getHttpsCallable("buyAvatar")
+                .call(mapOf("avatarId" to avatarId))
                 .await()
-            true
+
+            // Fetch updated inventory after purchase
+            val uid = Firebase.auth.currentUser?.uid ?: return null
+            fetchInventory(uid)
         } catch (e: Exception) {
-            Log.e("InventoryRepo", "❌ Failed to update gold", e)
-            false
+            Log.e("InventoryRepo", "❌ Failed to buy avatar", e)
+            null
         }
     }
+
 
     // Optional: Add similar update functions for each rune type if needed
 }

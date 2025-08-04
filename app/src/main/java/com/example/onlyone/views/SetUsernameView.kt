@@ -27,8 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.Screen
-import com.example.onlyone.viewModels.UserViewModel
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.firebase.messaging.FirebaseMessaging
 
 @Composable

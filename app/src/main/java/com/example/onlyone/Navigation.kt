@@ -1,6 +1,5 @@
 package com.example.onlyone
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -36,7 +35,7 @@ import com.example.onlyone.composables.TopSnackbar
 import com.example.onlyone.connection.ConnectivityListener
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.SessionViewModel
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.example.onlyone.views.FriendsView
 import com.example.onlyone.views.LoginView
 import com.example.onlyone.views.MainView
@@ -194,13 +193,10 @@ fun Navigation(
                     }
 
                     composable(
-                        route = "ChatScreen/{uid}?isRandom={isRandom}",
+                        route = "ChatScreen/{uid}/{isRandom}",
                         arguments = listOf(
                             navArgument("uid") { type = NavType.StringType },
-                            navArgument("isRandom") {
-                                type = NavType.BoolType
-                                defaultValue = false
-                            }
+                            navArgument("isRandom") { type = NavType.BoolType }
                         )
                     ) { backStackEntry ->
                         val uid = backStackEntry.arguments?.getString("uid") ?: "none"
@@ -213,12 +209,9 @@ fun Navigation(
                             navController = navController
                         )
                     }
-
                 }
             }
         }
-
-
     }
 }
 

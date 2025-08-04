@@ -1,6 +1,5 @@
 package com.example.onlyone.views
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +33,7 @@ import com.example.onlyone.composables.settings.AppLanguageBig
 import com.example.onlyone.composables.settings.AppearanceItemBig
 import com.example.onlyone.composables.settings.NotificationsItemBig
 import com.example.onlyone.composables.settings.PrivacyItemBig
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
 fun SettingsView(userViewModel: UserViewModel) {

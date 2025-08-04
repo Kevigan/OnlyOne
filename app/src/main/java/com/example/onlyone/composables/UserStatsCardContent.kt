@@ -60,11 +60,11 @@ fun UserStatsCardContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
+            /*Text(
                 text = "Messages left: $messagesLeft",
                 fontSize = 18.sp,
                 color = Color.White
-            )
+            )*/
             Text(
                 text = "Reset in: ${hours}h ${minutes}m UTC",
                 fontSize = 14.sp,

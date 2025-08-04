@@ -12,18 +12,28 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.room.Room
+import com.example.dao.UserSettingsDao
 import com.example.onlyone.R
 import com.example.onlyone.repos.AppDatabase
+import com.example.onlyone.repos.UserInventoryRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MyFirebaseMessagingService : FirebaseMessagingService() {
+    @Inject
+    lateinit var userInventoryRepo: UserInventoryRepo
+    @Inject lateinit var userSettingsDao: UserSettingsDao
+    @Inject lateinit var firestore: FirebaseFirestore
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         remoteMessage.notification?.let {
             val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -45,6 +55,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     Log.d("FCM", "🔕 Local setting: message notifications disabled — skipping")
                     return@launch
                 }
+                // ✅ Fetch inventory
+                val inventory = userInventoryRepo.fetchInventory(uid)
+
+                // ✅ Fetch points from users_public
+                val publicDoc = firestore.collection("users_public").document(uid).get().await()
+                val points = (publicDoc.get("points") as? Number)?.toInt() ?: 0
+
+                Log.d("FCM", "📥 Updated inventory after feedback — gold=${inventory?.gold}, points=$points")
+
 
                 withContext(Dispatchers.Main) {
                     if (isAppInForeground(this@MyFirebaseMessagingService)) {

@@ -8,6 +8,8 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.functions.ktx.functions
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,25 +29,22 @@ class UserPublicRepo @Inject constructor(
             "Write from UserRepo [$writeCount]: $path${if (from.isNotBlank()) " ($from)" else ""}"
         )
     }
-    fun updateMood(uid: String, mood: String): Task<Void> {
-        //trackWrite("users_public/$uid → moodStatus", "updateMood")
-        return db.collection("users_public").document(uid).update("moodStatus", mood)
-    }
 
-    fun updateChatLanguage(uid: String, language: String): Task<Void> {
-        return db.collection("users_public").document(uid).update("chatLanguage", language)
-    }
-
-    fun updateUserPublicProfile(
-        uid: String,
+    suspend fun updateUserPublicProfileSecure(
         updates: Map<String, Any>,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        db.collection("users_public").document(uid)
-            .update(updates)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { onFailure(it) }
+        try {
+            Firebase.functions("europe-west3")
+                .getHttpsCallable("updatePublicProfileFields")
+                .call(mapOf("updates" to updates))
+                .await()
+            onSuccess()
+        } catch (e: Exception) {
+            Log.e("UserPublicRepo", "❌ updateUserPublicProfileSecure failed", e)
+            onFailure(e)
+        }
     }
 
     fun getPublicUser(uid: String): Task<DocumentSnapshot> {
@@ -57,5 +56,4 @@ class UserPublicRepo @Inject constructor(
         val doc = db.collection("users_public").document(uid).get().await()
         return doc.toObject(PublicUser::class.java) ?: throw Exception("Invalid user_public/$uid")
     }
-
 }

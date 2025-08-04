@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
 fun NotificationsItemBig(userViewModel: UserViewModel) {

@@ -39,12 +39,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.R
+import com.example.onlyone.Screen
 import com.example.onlyone.composables.BlinkingIcon
 import com.example.onlyone.composables.FriendItem
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.utils.toPublicUser
 import com.example.onlyone.viewModels.ChatViewModel
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
 fun FriendsView(
@@ -157,9 +158,7 @@ fun FriendsView(
                                 //Log.d("FriendsView", "Write clicked for ${friend.username} (${friend.uid})")
                                 if (friend.uid !in writtenIds) {
                                     userViewModel.setTargetUser(friend.toPublicUser())
-                                    val route = "ChatScreen/${friend.uid}?isRandom=false"
-                                    Log.d("FriendsView", "friend.uid: ${friend.uid}")
-                                    navController.navigate(route)
+                                    navController.navigate(Screen.ChatScreen.createRoute(friend.uid, false))
                                 } else {
                                     Log.d("FriendsView", "User already written to today")
                                 }

@@ -30,7 +30,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.viewModels.SessionViewModel
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.onlyone.BuildConfig

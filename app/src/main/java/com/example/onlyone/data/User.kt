@@ -42,7 +42,8 @@ data class UserInventory(
     val gold: Int = 0,
     val runes_rare: Int = 0,
     val runes_super_rare: Int = 0,
-    val runes_mega_rare: Int = 0
+    val runes_mega_rare: Int = 0,
+    val ownedAvatars: List<Int> = emptyList()
 )
 
 // 🔁 Daily engagement state (engagement_status/{uid})
@@ -63,19 +64,27 @@ data class UserComposite(
     val moodStatus: String,
     val chatLanguage: String,
     val isPro: Boolean,
+
+    //Inventory
     val gold: Int,
     val points: Int,
     val runes_rare: Int,
     val runes_super_rare: Int,
     val runes_mega_rare: Int,
+    val ownedAvatars: List<Int>,
+
+
     val blockList: List<String>,
     val friendList: List<String>,
     val incomingFriendRequests: List<String>,
     val outgoingFriendRequests: List<String>,
-    val maxMessageLength: Int,
     val notifications: Map<String, Boolean>,
     val reportCount: Int,
+
+
+    //Upgrades
     val maxMoments: Int,
     val maxSwipes: Int,
-    val maxAdsPerDay: Int
+    val maxAdsPerDay: Int,
+    val maxMessageLength: Int,
 )

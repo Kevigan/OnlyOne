@@ -1,6 +1,5 @@
 package com.example.onlyone.views
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,8 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -34,21 +31,15 @@ import com.example.onlyone.composables.ReceivedMessageItem
 import com.example.onlyone.composables.UserStatsCardContent
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.SessionViewModel
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import com.example.dao.FriendDao
-import com.example.onlyone.cloudMessaging.MessageNotifier
-import com.example.onlyone.cloudMessaging.RequestNotificationPermission
 import com.example.onlyone.composables.MoodStatusCardContent
 import com.example.onlyone.composables.ReceivedMessageItemBig
-import com.example.onlyone.composables.TopSnackbar
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.utils.DailyResetTimer
 import com.example.onlyone.utils.formatTimeLeft
-import kotlinx.coroutines.delay
 
 @Composable
 fun MainView(
@@ -152,8 +143,16 @@ fun MainView(
                 MoodStatusCardContent(
                     moodStatus = user?.moodStatus.orEmpty(),
                     avatarResId = R.drawable.baseline_tag_faces_24,
-                    onMoodSubmit = { newMood -> userViewModel.updateMood(newMood) }
+                    onMoodSubmit = { newMood ->
+                        userViewModel.updatePublicProfile(
+                            updates = mapOf("moodStatus" to newMood),
+                            onSuccess = {},
+                            onFailure = {}
+                        )
+
+                    }
                 )
+
             }
             Spacer(modifier = Modifier.height(8.dp))
             // 🟣 2/8 — Overlay
@@ -164,7 +163,7 @@ fun MainView(
                 onDismiss = {}
             ) {
                 UserStatsCardContent(
-                    messagesLeft =25, //swipeStatus?.let { it.swipesGranted - it.swipesUsed } ?: 0,
+                    messagesLeft =0, //swipeStatus?.let { it.swipesGranted - it.swipesUsed } ?: 0,
                     points = (user?.points ?: 0).toString(),
                     pointsRank = user?.points ?: 0,
                     gold = user?.gold ?: 0,

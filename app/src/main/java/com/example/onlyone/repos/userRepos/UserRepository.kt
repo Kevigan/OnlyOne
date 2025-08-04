@@ -29,17 +29,14 @@ class UserRepository @Inject constructor(
     private val discoveryRepo: UserDiscoveryRepo,
 ) {
     //////////UserPublicRepo//////////
-    fun updateMood(uid: String, mood: String) = publicRepo.updateMood(uid, mood)
-    fun updateChatLanguage(uid: String, language: String) = publicRepo.updateChatLanguage(uid, language)
+    suspend fun updatePublicProfileSecure(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.updateUserPublicProfileSecure(updates, onSuccess, onFailure)
     fun getPublicUser(uid: String) = publicRepo.getPublicUser(uid)
     //////////UserPublicRepo End//////////
 
 
     //////////UserPrivateRepo//////////
     fun syncFcmToken() = private.syncFcmToken()
-
-    fun updateNotificationSetting(uid: String, key: String, enabled: Boolean, onSuccess: () -> Unit, onFailure: (Exception) -> Unit
-    ) = private.updateNotificationSetting(uid, key, enabled, onSuccess, onFailure)
+    fun updateNotificationSetting(uid: String, key: String, enabled: Boolean, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = private.updateNotificationSetting(uid, key, enabled, onSuccess, onFailure)
     //////////UserPrivateRepo End//////////
 
 
@@ -50,14 +47,13 @@ class UserRepository @Inject constructor(
 
 
     //////////UserUpgradeRepo//////////
-    fun upgradeMaxMessageLength(levels: Int, onSuccess: (Int, Int) -> Unit, onFailure: (Exception) -> Unit
-    ) = upgrade.upgradeMaxMessageLength(levels, onSuccess, onFailure)
+    fun upgradeMaxMessageLength(levels: Int, onSuccess: (Int, Int) -> Unit, onFailure: (Exception) -> Unit) = upgrade.upgradeMaxMessageLength(levels, onSuccess, onFailure)
     //////////UserUpgradeRepo End//////////
 
 
     //////////UserInventoryRepo//////////
     suspend fun fetchInventory(uid: String): UserInventory? = inventory.fetchInventory(uid)
-    suspend fun updateGold(uid: String, amount: Int): Boolean = inventory.updateGold(uid, amount)
+    suspend fun buyAvatar(avatarId: Int): UserInventory?= inventory.buyAvatar(avatarId)
     //////////UserInventoryRepo End//////////
 
 
@@ -142,7 +138,11 @@ class UserRepository @Inject constructor(
                     maxSwipes = (userMap["maxSwipes"] as? Number)?.toInt() ?: 50,
                     maxAdsPerDay = (userMap["maxAdsPerDay"] as? Number)?.toInt() ?: 3,
                     notifications = notifications,
-                    reportCount = (userMap["reportCount"] as? Number)?.toInt() ?: 0
+                    reportCount = (userMap["reportCount"] as? Number)?.toInt() ?: 0,
+                    ownedAvatars = (userMap["ownedAvatars"] as? List<*>)
+                        ?.filterIsInstance<Number>()
+                        ?.map { it.toInt() }
+                        ?: emptyList()
                 )
 
                 val engagementMap = data["engagementStatus"] as? Map<*, *> ?: emptyMap<String, Any>()
@@ -166,6 +166,7 @@ class UserRepository @Inject constructor(
                 val blocked = blockedList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
 
                 Log.d("userStuff", "🔥 user name: ${user.username}")
+                Log.d("ownedAvatars", "🔥 user ownedAvatars: ${user.ownedAvatars}")
                 Log.d("userStuff", "🔥 user gold: ${user.gold}")
                 Log.d("userStuff", "🔥 user maxMoments: ${user.maxMoments}")
                 Log.d("userStuff", "🔥 engagementStatus momentsAvailable: ${engagementStatus.momentsAvailable}")

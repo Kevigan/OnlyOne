@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -23,7 +24,7 @@ import com.example.onlyone.data.MessageResult
 import com.example.onlyone.data.UserComposite
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.utils.buildMessageId
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.launch
 
@@ -42,6 +43,7 @@ fun ChatView(
     val isSending by chatViewModel.isSending.collectAsState()
     val maxLength = user.maxMessageLength
     val coroutineScope = rememberCoroutineScope()
+    val engagementStatus by userViewModel.engagementStatus.collectAsState()
 
     var selectedLanguage by remember { mutableStateOf("any") }
 
@@ -50,7 +52,7 @@ fun ChatView(
             selectedLanguage = savedLang
         }
     }
-
+    Log.w("Chatview", "isRandom: $isRandom")
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -63,7 +65,17 @@ fun ChatView(
             color = Color.White,
             modifier = Modifier.padding(bottom = 16.dp)
         )
+        if (isRandom && engagementStatus != null) {
+            val swipesUsed = engagementStatus!!.swipesUsed
+            val maxSwipes = user.maxSwipes
 
+            Text(
+                text = "Swipes: $swipesUsed / $maxSwipes",
+                style = MaterialTheme.typography.subtitle1,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
         // 👤 Public Info Card
         Card(
             modifier = Modifier
@@ -103,27 +115,22 @@ fun ChatView(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 📝 Chat input
-        if (targetUser != null) {
-            OutlinedTextField(
-                value = messageText,
-                onValueChange = {
-                    if (it.length <= maxLength) messageText = it
-                },
-                label = { Text("Write your message (${messageText.length}/$maxLength)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(bottom = 150.dp)
-            )
-        }else
-        {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            if (targetUser != null) {
+                OutlinedTextField(
+                    value = messageText,
+                    onValueChange = {
+                        if (it.length <= maxLength) messageText = it
+                    },
+                    label = { Text("Write your message (${messageText.length}/$maxLength)") },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Image(
                         painter = painterResource(id = R.drawable.ghosthead_sad),
@@ -142,7 +149,7 @@ fun ChatView(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
+                .padding(bottom = if (!isRandom) 32.dp else 0.dp),
             contentAlignment = Alignment.Center
         ) {
             Button(
@@ -202,6 +209,7 @@ fun ChatView(
                 enabled = messageText.isNotBlank() && !isSending,
                 modifier = Modifier
                     .defaultMinSize(minWidth = 160.dp, minHeight = 48.dp)
+                    .fillMaxWidth()
             ) {
                 if (isSending) {
                     CircularProgressIndicator(
@@ -210,12 +218,12 @@ fun ChatView(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Send", fontSize = 18.sp) // 👈 bigger font
+                    Text("Send", fontSize = 18.sp)
                 }
             }
         }
 
-// 🌐 Language filter + next user
+        // 🌐 Language filter + next user
         if (isRandom) {
             Row(
                 modifier = Modifier
@@ -224,7 +232,6 @@ fun ChatView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Placeholder dropdown
                 var expanded by remember { mutableStateOf(false) }
                 val languageOptions = listOf("any", "en", "de", "fr", "es", "it")
 
@@ -244,14 +251,11 @@ fun ChatView(
                                     expanded = false
 
                                     userViewModel.saveSearchUserLanguage(lang)
-                                    // chatViewModel.clearQueue() // ✅ still valid — clears Chat UI state
-
                                     coroutineScope.launch {
                                         userViewModel.loadRandomUserBatch(showToasts = true)
                                     }
                                 }
-                            )
-                            {
+                            ) {
                                 Text(lang.uppercase())
                             }
                         }
@@ -260,19 +264,16 @@ fun ChatView(
 
                 IconButton(
                     onClick = onNextUser,
-                    modifier = Modifier.size(56.dp) // 👈 larger tap area
+                    modifier = Modifier.size(56.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowForward,
                         contentDescription = "Next user",
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp) // 👈 larger arrow
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
         }
-
     }
 }
-
-

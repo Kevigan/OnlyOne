@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.viewModels.ChatViewModel
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
 fun ReceivedMessageItemBig(

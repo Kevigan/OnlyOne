@@ -12,6 +12,7 @@ import com.example.onlyone.data.WrittenTodayEntity
 import com.example.onlyone.repos.ChatRepository
 import com.example.onlyone.repos.userRepos.UserRepository
 import com.example.onlyone.utils.DailyResetTimer
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow

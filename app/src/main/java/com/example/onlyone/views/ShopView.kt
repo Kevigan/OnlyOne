@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -20,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
-import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
@@ -39,26 +37,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
+import com.example.onlyone.avatarCatalog.AvatarCatalog
 import com.example.onlyone.composables.CustomColorOverlay
-import com.example.onlyone.viewModels.UserViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
 fun ShopView(userViewModel: UserViewModel) {
-    // Fake image lists – replace with actual drawable resources
-    val avatarImages = listOf(
-        R.drawable.baseline_tag_faces_24,
-        R.drawable.baseline_sentiment_neutral_24,
-        R.drawable.baseline_tag_faces_24,
-        R.drawable.baseline_sentiment_neutral_24,
-        R.drawable.baseline_tag_faces_24,
-        R.drawable.baseline_sentiment_neutral_24,
-        R.drawable.baseline_tag_faces_24,
-        R.drawable.baseline_sentiment_neutral_24,
-        R.drawable.baseline_tag_faces_24,
-        R.drawable.baseline_sentiment_neutral_24,
-        R.drawable.baseline_tag_faces_24,
-        R.drawable.baseline_sentiment_neutral_24,
-    )
+
+    val avatarItems = AvatarCatalog.avatars
 
     val moodImages = listOf(
         R.drawable.ic_launcher_foreground,
@@ -102,14 +88,14 @@ fun ShopView(userViewModel: UserViewModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Coins",
+                    text = "Gold",
                     style = MaterialTheme.typography.h5,
                     color = Color.White,
                     modifier = Modifier.padding(end = 8.dp, bottom = 16.dp)
                 )
 
                 Text(
-                    text = "9999$",
+                    text = user?.gold.toString(),
                     style = MaterialTheme.typography.h5,
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -136,16 +122,69 @@ fun ShopView(userViewModel: UserViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(avatarImages) { resId ->
-                    Image(
-                        painter = painterResource(id = resId),
-                        contentDescription = "Avatar",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                    )
+                items(avatarItems) { avatar ->
+                    val alreadyOwned = user?.ownedAvatars?.contains(avatar.id) == true
+                    val isSelected = avatar.id == user?.avatarId
+                    val canAfford = (user?.gold ?: 0) >= avatar.cost
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(id = avatar.imageRes),
+                            contentDescription = "Avatar",
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .border(
+                                    width = 3.dp,
+                                    color = if (isSelected) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.3f),
+                                    shape = CircleShape
+                                )
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        when {
+                            !alreadyOwned -> {
+                                Button(
+                                    onClick = {
+                                        userViewModel.buyAvatar(
+                                            avatarId = avatar.id,
+                                            onSuccess = { /* show toast */ },
+                                            onFailure = { /* show error */ }
+                                        )
+                                    },
+                                    enabled = canAfford
+                                ) {
+                                    Text("Buy (${avatar.cost})")
+                                }
+                            }
+
+                            alreadyOwned && !isSelected -> {
+                                Button(
+                                    onClick = {
+                                        userViewModel.updatePublicProfile(
+                                            updates = mapOf("avatarId" to avatar.id),
+                                            onSuccess = {},
+                                            onFailure = {}
+                                        )
+                                    }
+                                ) {
+                                    Text("Select")
+                                }
+                            }
+
+                            isSelected -> {
+                                Button(
+                                    onClick = {},
+                                    enabled = false
+                                ) {
+                                    Text("Selected")
+                                }
+                            }
+                        }
+                    }
                 }
+
             }
         }
 

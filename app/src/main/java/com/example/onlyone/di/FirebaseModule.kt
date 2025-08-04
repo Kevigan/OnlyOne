@@ -3,6 +3,7 @@ import com.example.dao.FriendDao
 import com.example.dao.MessageDao
 import com.example.dao.UserSettingsDao
 import com.example.onlyone.repos.ChatRepository
+import com.example.onlyone.repos.UserInventoryRepo
 import com.example.onlyone.repos.userRepos.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -32,4 +33,10 @@ object FirebaseModule {
     ): ChatRepository {
         return ChatRepository(db, messageDao)
     }
+
+    @Provides
+    @Singleton
+    fun provideUserInventoryRepo(
+        db: FirebaseFirestore
+    ): UserInventoryRepo = UserInventoryRepo(db)
 }
