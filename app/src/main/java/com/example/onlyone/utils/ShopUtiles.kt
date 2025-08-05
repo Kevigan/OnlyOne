@@ -1,4 +1,4 @@
-package com.example.onlyone.avatarCatalog
+package com.example.onlyone.composables
 
 import com.example.onlyone.R
 
@@ -16,3 +16,12 @@ data class AvatarItem(
     val imageRes: Int,
     val cost: Int
 )
+
+fun mapAvatarIdToDrawable(avatarId: Int): Int {
+    return AvatarCatalog.avatars
+        .find { it.id == avatarId }
+        ?.imageRes
+        ?: R.drawable.ghosthead // Fallback
+}
+
+

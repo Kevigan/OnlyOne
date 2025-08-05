@@ -89,7 +89,8 @@ class UserViewModel @Inject constructor(
             loadUser = { loadUser() } // ✅ Pass your ViewModel method
         )
     }
-    fun upgradeMaxMessageLength(levels: Int, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) { upgradeManager.upgradeMaxMessageLength(levels, onSuccess, onFailure) }
+    fun upgradeFeature(feature: String, levels: Int, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) { upgradeManager.upgradeFeature(feature, levels, onSuccess, onFailure) }
+
 
 
     var settingsManager: UserSettingsManager

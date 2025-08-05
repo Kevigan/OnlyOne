@@ -40,8 +40,8 @@ import com.example.onlyone.views.FriendsView
 import com.example.onlyone.views.LoginView
 import com.example.onlyone.views.MainView
 import com.example.onlyone.views.SetUsernameView
-import com.example.onlyone.views.SettingsView
-import com.example.onlyone.views.ShopView
+import com.example.onlyone.views.settingsView.SettingsView
+import com.example.onlyone.views.shopView.ShopView
 import com.example.onlyone.views.SplashView
 import kotlinx.coroutines.delay
 

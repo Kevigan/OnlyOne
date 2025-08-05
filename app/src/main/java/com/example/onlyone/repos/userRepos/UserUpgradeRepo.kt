@@ -12,25 +12,27 @@ import javax.inject.Singleton
 @Singleton
 class UserUpgradeRepo @Inject constructor(private val db: FirebaseFirestore) {
 
-    fun upgradeMaxMessageLength(
+    fun upgradeFeature(
+        feature: String,
         levels: Int,
-        onSuccess: (newLength: Int, remainingGold: Int) -> Unit,
+        onSuccess: (newValue: Int, remainingGold: Int) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        val data = mapOf("levels" to levels)
+        val data = mapOf("feature" to feature, "amount" to levels)
 
         Firebase.functions("europe-west3")
-            .getHttpsCallable("upgradeMessageLength")
+            .getHttpsCallable("upgradeFeature")
             .call(data)
             .addOnSuccessListener { result ->
                 val dataMap = result.data as? Map<*, *> ?: return@addOnSuccessListener
-                val newLength = (dataMap["newLength"] as? Number)?.toInt() ?: 0
-                val remainingGold = (dataMap["remainingGold"] as? Number)?.toInt() ?: 0
-                Log.d("UpgradeRepo", "✅ Upgraded to $newLength (remaining gold: $remainingGold)")
-                onSuccess(newLength, remainingGold)
+                val newValue = (dataMap["newValue"] as? Number)?.toInt() ?: 0
+                val remainingGold = (dataMap["remaining"] as? Map<*, *>)?.get("gold")?.let { it as? Number }?.toInt() ?: 0
+
+                Log.d("UpgradeRepo", "✅ Upgraded $feature to $newValue (remaining gold: $remainingGold)")
+                onSuccess(newValue, remainingGold)
             }
             .addOnFailureListener { error ->
-                Log.e("UpgradeRepo", "❌ Upgrade failed", error)
+                Log.e("UpgradeRepo", "❌ Upgrade failed for $feature", error)
                 onFailure(error)
             }
     }
@@ -45,5 +47,4 @@ class UserUpgradeRepo @Inject constructor(private val db: FirebaseFirestore) {
             maxAdsPerDay = (data["maxAdsPerDay"] as? Number)?.toInt() ?: 3
         )
     }
-
 }

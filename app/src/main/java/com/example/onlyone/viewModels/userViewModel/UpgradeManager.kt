@@ -8,21 +8,21 @@ class UpgradeManager(
     private val viewModelScope: CoroutineScope,
     private val loadUser: () -> Unit
 ) {
-
-    fun upgradeMaxMessageLength(
+    fun upgradeFeature(
+        feature: String,
         levels: Int,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        userRepository.upgradeMaxMessageLength(
+        userRepository.upgradeFeature(
+            feature = feature,
             levels = levels,
             onSuccess = { _, _ ->
-                loadUser() // ✅ Clean reuse
+                loadUser() // refresh after upgrade
                 onSuccess()
             },
             onFailure = onFailure
         )
     }
-
-    // Future: add other upgrades
 }
+

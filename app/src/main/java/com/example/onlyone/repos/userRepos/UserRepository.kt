@@ -47,7 +47,7 @@ class UserRepository @Inject constructor(
 
 
     //////////UserUpgradeRepo//////////
-    fun upgradeMaxMessageLength(levels: Int, onSuccess: (Int, Int) -> Unit, onFailure: (Exception) -> Unit) = upgrade.upgradeMaxMessageLength(levels, onSuccess, onFailure)
+    fun upgradeFeature(feature: String, levels: Int, onSuccess: (Int, Int) -> Unit, onFailure: (Exception) -> Unit) = upgrade.upgradeFeature(feature, levels, onSuccess, onFailure)
     //////////UserUpgradeRepo End//////////
 
 
