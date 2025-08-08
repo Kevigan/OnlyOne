@@ -43,6 +43,7 @@ import com.example.onlyone.views.SetUsernameView
 import com.example.onlyone.views.settingsView.SettingsView
 import com.example.onlyone.views.shopView.ShopView
 import com.example.onlyone.views.SplashView
+import com.example.onlyone.views.achievements.AchievementsView
 import kotlinx.coroutines.delay
 
 @Composable
@@ -121,7 +122,7 @@ fun Navigation(
                 }
             },
             // other scaffold content...
-        ){ innerPadding ->
+        ) { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -149,7 +150,11 @@ fun Navigation(
                     }
 
                     composable(Screen.FriendsScreen.route) {
-                        FriendsView(userViewModel = userViewModel, navController = navController, chatViewModel = chatViewModel)
+                        FriendsView(
+                            userViewModel = userViewModel,
+                            navController = navController,
+                            chatViewModel = chatViewModel
+                        )
                     }
 
                     composable(Screen.ShopScreen.route) {
@@ -208,6 +213,10 @@ fun Navigation(
                             chatViewModel = chatViewModel,
                             navController = navController
                         )
+                    }
+
+                    composable(Screen.AchievementsScreen.route) {
+                        AchievementsView(viewModel = userViewModel)
                     }
                 }
             }

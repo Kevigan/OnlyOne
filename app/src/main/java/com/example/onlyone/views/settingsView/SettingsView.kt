@@ -1,5 +1,6 @@
 package com.example.onlyone.views.settingsView
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -77,6 +78,21 @@ fun SettingsView(userViewModel: UserViewModel) {
                 modifier = Modifier.padding(top = 16.dp)
             ) {
                 Text("Create 20 Fake Users", color = Color.White)
+            }
+
+            Button(
+                onClick = { userViewModel.seedAchievementDefinitions(
+                    onSuccess = { count ->
+                        Log.d("Seeder", "✅ Seeded $count definitions.")
+                    },
+                    onFailure = { error ->
+                        Log.e("Seeder", "❌ Failed to seed: ${error.message}")
+                    }
+                )},
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red),
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text("Seed Achievements Defintions", color = Color.White)
             }
         }
 

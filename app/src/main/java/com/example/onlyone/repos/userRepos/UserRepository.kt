@@ -11,6 +11,7 @@ import com.example.onlyone.repos.UserEngagementRepo
 import com.example.onlyone.repos.UserInventoryRepo
 import com.example.onlyone.repos.UserSettingsRepo
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,7 @@ class UserRepository @Inject constructor(
     private val settings: UserSettingsRepo,
     private val friendRepo: UserFriendRepo,
     private val discoveryRepo: UserDiscoveryRepo,
+    private val achievementRepo: UserAchievementRepo
 ) {
     //////////UserPublicRepo//////////
     suspend fun updatePublicProfileSecure(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.updateUserPublicProfileSecure(updates, onSuccess, onFailure)
@@ -88,6 +90,17 @@ class UserRepository @Inject constructor(
     suspend fun hardResetFriends() { discoveryRepo.hardResetFriends() }
     suspend fun hardResetLocalMessages() { discoveryRepo.hardResetLocalMessages() }
     //////////UserDiscoveryRepo End//////////
+
+
+    //////////UserAchievemtRepo//////////
+    suspend fun getUserAchievements(): Map<String, Any>? { return achievementRepo.getUserAchievements() }
+    suspend fun fetchAchievementDefinitions(): List<Map<String, Any>> { return achievementRepo.fetchAchievementDefinitions() }
+    suspend fun fetchUserStats(): Map<String, Any>? { return achievementRepo.fetchUserStats() }
+
+    //////////UserAchievemtRepo End//////////
+
+
+
 
 
     fun fetchFullUserSession(
@@ -218,4 +231,25 @@ class UserRepository @Inject constructor(
                 onFailure(error)
             }
     }
+
+    fun seedAchievementDefinitions(
+        definitions: List<Map<String, Any>>,
+        onSuccess: (Int) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val data = mapOf("definitions" to definitions)
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("seedAchievementDefinitions")
+            .call(mapOf("definitions" to definitions))
+            .addOnSuccessListener {
+                val count = (it.data as? Map<*, *>)?.get("count") as? Int ?: 0
+                Log.d("Seeder", "✅ Seeded $count definitions.")
+            }
+            .addOnFailureListener {
+                Log.e("Seeder", "❌ Failed to seed: ${it.message}", it)
+            }
+
+    }
+
 }

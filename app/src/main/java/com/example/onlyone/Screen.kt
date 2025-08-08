@@ -20,4 +20,6 @@ sealed class Screen(val route: String, val title: String){
     object ChatScreen : Screen("ChatScreen/{uid}/{isFriend}", "Chat") {
         fun createRoute(uid: String, isFriend: Boolean): String = "ChatScreen/$uid/$isFriend"
     }
+    object AchievementsScreen : Screen("achievements_screen", "Achievements")
+
 }

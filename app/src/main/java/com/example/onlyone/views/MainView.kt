@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,6 +41,8 @@ import com.example.onlyone.composables.ReceivedMessageItemBig
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.utils.DailyResetTimer
 import com.example.onlyone.utils.formatTimeLeft
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 @Composable
 fun MainView(
@@ -64,6 +67,7 @@ fun MainView(
    /* LaunchedEffect(user?.uid) {
         user?.uid?.let { userViewModel.checkAndResetSwipeLimit() }
     }*/
+
 //for app start
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
@@ -163,14 +167,17 @@ fun MainView(
                 onDismiss = {}
             ) {
                 UserStatsCardContent(
-                    messagesLeft =0, //swipeStatus?.let { it.swipesGranted - it.swipesUsed } ?: 0,
+                    messagesLeft = 0,
                     points = (user?.points ?: 0).toString(),
                     pointsRank = user?.points ?: 0,
                     gold = user?.gold ?: 0,
                     runesRare = user?.runes_rare ?: 0,
                     runesSuperRare = user?.runes_super_rare ?: 0,
                     runesMegaRare = user?.runes_mega_rare ?: 0,
-                    millisUntilReset = millisUntilReset
+                    millisUntilReset = millisUntilReset,
+                    onAchievementsClick = {
+                        navController.navigate(Screen.AchievementsScreen.route)
+                    }
                 )
             }
 

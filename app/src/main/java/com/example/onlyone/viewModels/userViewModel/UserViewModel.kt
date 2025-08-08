@@ -12,6 +12,7 @@ import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.UserComposite
 import com.example.onlyone.data.UserEngagementStatus
+import com.example.onlyone.data.achievementDefinitions.MessageAchievements
 import com.example.onlyone.repos.userRepos.UserRepository
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
@@ -139,6 +140,59 @@ class UserViewModel @Inject constructor(
     fun buyAvatar(avatarId: Int, onSuccess: () -> Unit, onFailure: (String) -> Unit) { shopManager.buyAvatar(avatarId, onSuccess, onFailure) }
 
 
+    var achievementManager: AchievementManager
+    init {
+        achievementManager = AchievementManager(
+            userRepository,
+            viewModelScope,
+            getUser = { _user.value }
+        )
+    }
+    fun loadAchievementsWithStats() {
+        achievementManager.fetchDefinitions(
+            onSuccess = {
+                achievementManager.loadUserAchievementsWithStats(
+                    onSuccess = {
+                        updateGroupedAchievements()
+                    },
+                    onFailure = { error ->
+                        Log.e("Achievements", "❌ Failed to load: $error")
+                    }
+                )
+            },
+            onFailure = { error ->
+                Log.e("Achievements", "❌ Failed to fetch definitions: $error")
+            }
+        )
+    }
+
+    private val _groupedAchievements = MutableLiveData<Map<String, List<AchievementManager.AchievementWithProgress>>>()
+    val groupedAchievements: LiveData<Map<String, List<AchievementManager.AchievementWithProgress>>> = _groupedAchievements
+
+    fun updateGroupedAchievements() {
+        val defs = achievementManager.getCachedDefinitions() ?: run {
+            Log.e("Achievements", "❌ No definitions cached")
+            return
+        }
+
+        val user = achievementManager.getCachedUserAchievements() ?: run {
+            Log.e("Achievements", "❌ No achievement user data cached")
+            return
+        }
+
+        val achieved = user["achieved"] as? Map<String, Any> ?: emptyMap()
+
+        Log.d("Achievements", "✅ Definitions count: ${defs.size}")
+        Log.d("Achievements", "✅ Achieved keys: ${achieved.keys}")
+        Log.d("Achievements", "✅ Cached stats: ${achievementManager.cachedUserStats}")
+
+        val grouped = achievementManager.groupAchievementsByType(defs, achieved)
+        Log.d("Achievements", "✅ Grouped count: ${grouped.size}")
+        _groupedAchievements.value = grouped
+    }
+
+
+
     /*init {
         DailyResetTimer.start {
             checkAndResetSwipeLimit()
@@ -202,5 +256,18 @@ class UserViewModel @Inject constructor(
             .addOnFailureListener { error ->
                 Log.e("FakeUsers", "❌ Failed to create fake users", error)
             }
+    }
+
+
+
+    fun seedAchievementDefinitions(
+        onSuccess: (Int) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        userRepository.seedAchievementDefinitions(
+            definitions = MessageAchievements.definitions,
+            onSuccess = onSuccess,
+            onFailure = onFailure
+        )
     }
 }
