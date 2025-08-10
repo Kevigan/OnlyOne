@@ -10,29 +10,29 @@ class UserSettingsRepo @Inject constructor(
     private val userSettingsDao: UserSettingsDao
 ) {
     suspend fun saveAppLanguage(uid: String, language: String) {
-        val existing = userSettingsDao.getSettings(uid)
+        val existing = userSettingsDao.getSettings()
         val updated = existing?.copy(language = language)
-            ?: LocalUserSettings(uid = uid, language = language)
+            ?: LocalUserSettings(language = language)
         userSettingsDao.saveSettings(updated)
     }
 
     suspend fun getAppLanguage(uid: String): String {
-        return userSettingsDao.getSettings(uid)?.language ?: "en"
+        return userSettingsDao.getSettings()?.language ?: "en"
     }
 
     suspend fun saveSearchUserLanguage(uid: String, lang: String) {
-        val existing = userSettingsDao.getSettings(uid)
+        val existing = userSettingsDao.getSettings()
         val updated = existing?.copy(searchUserLanguage = lang)
-            ?: LocalUserSettings(uid = uid, searchUserLanguage = lang)
+            ?: LocalUserSettings(searchUserLanguage = lang)
         userSettingsDao.saveSettings(updated)
     }
 
     suspend fun getSearchUserLanguage(uid: String): String {
-        return userSettingsDao.getSettings(uid)?.searchUserLanguage ?: "any"
+        return userSettingsDao.getSettings()?.searchUserLanguage ?: "any"
     }
 
     suspend fun getLocalNotificationSettings(uid: String): Pair<Boolean, Boolean> {
-        val settings = userSettingsDao.getSettings(uid)
+        val settings = userSettingsDao.getSettings()
         return Pair(
             settings?.notifyMessages ?: true,
             settings?.notifyFeedback ?: true
@@ -44,12 +44,11 @@ class UserSettingsRepo @Inject constructor(
         message: Boolean,
         feedback: Boolean
     ) {
-        val existing = userSettingsDao.getSettings(uid)
+        val existing = userSettingsDao.getSettings()
         val updated = existing?.copy(
             notifyMessages = message,
             notifyFeedback = feedback
         ) ?: LocalUserSettings(
-            uid = uid,
             notifyMessages = message,
             notifyFeedback = feedback
         )

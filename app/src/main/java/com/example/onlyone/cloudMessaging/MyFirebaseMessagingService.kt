@@ -48,7 +48,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val dao = db.userSettingsDao()
 
             CoroutineScope(Dispatchers.IO).launch {
-                val settings = dao.getSettings(uid)
+                val settings = dao.getSettings()
 
                 val messageAllowed = settings?.notifyMessages ?: true
                 if (!messageAllowed) {

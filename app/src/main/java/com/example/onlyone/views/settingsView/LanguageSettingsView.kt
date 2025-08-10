@@ -1,5 +1,6 @@
 package com.example.onlyone.views.settingsView
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
@@ -44,44 +46,47 @@ fun LanguageSettingsView(userViewModel: UserViewModel) {
     )
     val reverseMap = languageMap.entries.associate { it.value to it.key }
 
-    // Load from ViewModel
     LaunchedEffect(Unit) {
-        userViewModel.getAppLanguage { saved -> currentAppLang = saved }
+        userViewModel.getAppLanguage { saved ->
+            currentAppLang = saved
+            Log.e("applyAppLocale", "❌ applyAppLocale: $saved")
+            // optional: ensure app reflects persisted value on entry
+            applyAppLocale(saved)
+        }
         currentChatLang = userViewModel.user.value?.chatLanguage ?: "en"
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize()) {
         Column {
             Text("🌐 App Language", color = Color.White, fontSize = 18.sp)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
             LanguageDropdown(
                 currentCode = currentAppLang,
                 availableLanguages = availableLanguages,
                 languageMap = languageMap,
-                reverseMap = reverseMap,
-                onLanguageSelected = { code ->
-                    userViewModel.saveAppLanguage(code)
-                    currentAppLang = code
-                }
-            )
+                reverseMap = reverseMap
+            ) { code ->
+                userViewModel.saveAppLanguage(code)
+                currentAppLang = code
+                applyAppLocale(code) // 👈 apply instantly
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp))
 
             Text("💬 Chat Language", color = Color.White, fontSize = 18.sp)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
             LanguageDropdown(
                 currentCode = currentChatLang,
                 availableLanguages = availableLanguages,
                 languageMap = languageMap,
-                reverseMap = reverseMap,
-                onLanguageSelected = { code ->
-                    userViewModel.updatePublicProfile(
-                        updates = mapOf("chatLanguage" to code),
-                        onSuccess = { currentChatLang = code },
-                        onFailure = { /* show error */ }
-                    )
-                }
-            )
+                reverseMap = reverseMap
+            ) { code ->
+                userViewModel.updatePublicProfile(
+                    updates = mapOf("chatLanguage" to code),
+                    onSuccess = { currentChatLang = code },
+                    onFailure = { /* show error */ }
+                )
+            }
         }
     }
 }

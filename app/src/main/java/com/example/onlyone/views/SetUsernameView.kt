@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.Screen
+import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.firebase.messaging.FirebaseMessaging
 
@@ -36,26 +37,30 @@ fun SetUsernameView(
     email: String,
     userViewModel: UserViewModel,
     navController: NavController,
-    isGoogleUser: Boolean = false // 👈 new param
+    isGoogleUser: Boolean = false
 ) {
     val context = LocalContext.current
     var username by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
 
-    // 🔤 Language dropdown state
-    val languageOptions = listOf("en", "de", "fr", "es", "it")
-    var selectedLanguage by remember { mutableStateOf("en") }
-    var languageDropdownExpanded by remember { mutableStateOf(false) }
+    // 🔤 Chat language (existing)
+    val chatLanguageOptions = listOf("en", "de", "fr", "es", "it")
+    var selectedChatLanguage by remember { mutableStateOf("en") }
+    var chatLangExpanded by remember { mutableStateOf(false) }
+
+    // 🛠 App language (new)
+    // you can reuse the same options, or add "pt" if you support it
+    val appLanguageOptions = listOf("en", "de", "fr", "es", "it")
+    var selectedAppLanguage by remember { mutableStateOf("en") }
+    var appLangExpanded by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Choose your username")
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
             value = username,
@@ -63,70 +68,87 @@ fun SetUsernameView(
             label = { Text("Username") }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
+        // 💬 Chat Language
         Text("Select your chat language")
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .clickable { languageDropdownExpanded = true }) {
-
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.fillMaxWidth().clickable { chatLangExpanded = true }) {
             OutlinedTextField(
-                value = selectedLanguage,
+                value = selectedChatLanguage,
                 onValueChange = {},
                 label = { Text("Chat Language") },
                 readOnly = true,
-                enabled = false, // disables internal tap logic
+                enabled = false,
                 modifier = Modifier.fillMaxWidth()
             )
-
-            DropdownMenu(
-                expanded = languageDropdownExpanded,
-                onDismissRequest = { languageDropdownExpanded = false }
-            ) {
-                languageOptions.forEach { lang ->
+            DropdownMenu(expanded = chatLangExpanded, onDismissRequest = { chatLangExpanded = false }) {
+                chatLanguageOptions.forEach { lang ->
                     DropdownMenuItem(onClick = {
-                        selectedLanguage = lang
-                        languageDropdownExpanded = false
-                    }) {
-                        Text(lang)
-                    }
+                        selectedChatLanguage = lang
+                        chatLangExpanded = false
+                    }) { Text(lang) }
                 }
             }
         }
 
+        Spacer(Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // 🌐 App Language (NEW)
+        Text("Select your app language")
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.fillMaxWidth().clickable { appLangExpanded = true }) {
+            OutlinedTextField(
+                value = selectedAppLanguage,
+                onValueChange = {},
+                label = { Text("App Language") },
+                readOnly = true,
+                enabled = false,
+                modifier = Modifier.fillMaxWidth()
+            )
+            DropdownMenu(expanded = appLangExpanded, onDismissRequest = { appLangExpanded = false }) {
+                appLanguageOptions.forEach { lang ->
+                    DropdownMenuItem(onClick = {
+                        selectedAppLanguage = lang
+                        appLangExpanded = false
+                    }) { Text(lang) }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
 
         Button(
             onClick = {
                 isSaving = true
-
                 FirebaseMessaging.getInstance().token
                     .addOnSuccessListener { token ->
                         userViewModel.repository.createUserProfile(
                             email = email,
                             username = username,
                             fcmToken = token,
-                            chatLanguage = selectedLanguage,
+                            chatLanguage = selectedChatLanguage,
                             onSuccess = {
-                                userViewModel.saveSearchUserLanguage(selectedLanguage)
+                                // persist both prefs
+                                userViewModel.saveSearchUserLanguage(selectedChatLanguage)
+                                userViewModel.saveAppLanguage(selectedAppLanguage)
+
+                                // apply locale immediately
+                                applyAppLocale(selectedAppLanguage)
+
                                 userViewModel.loadUser()
                                 navController.navigate(Screen.MainScreen.route) {
                                     popUpTo(Screen.LoginScreen.route) { inclusive = true }
                                 }
                             },
-                            onFailure = { error ->
+                            onFailure = {
                                 Toast.makeText(context, "Failed to create user profile", Toast.LENGTH_SHORT).show()
-                                Log.e("SetUsername", "❌ Profile creation failed", error)
                                 isSaving = false
                             }
                         )
                     }
-                    .addOnFailureListener { error ->
+                    .addOnFailureListener {
                         Toast.makeText(context, "Failed to get FCM token", Toast.LENGTH_SHORT).show()
-                        Log.e("SetUsername", "❌ FCM token fetch failed", error)
                         isSaving = false
                     }
             },
@@ -134,7 +156,6 @@ fun SetUsernameView(
         ) {
             Text(if (isSaving) "Saving..." else "Continue")
         }
-
     }
 }
 

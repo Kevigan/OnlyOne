@@ -1,6 +1,5 @@
 package com.example.onlyone.views.achievements
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,14 +12,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.onlyone.R
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
@@ -35,10 +35,12 @@ fun AchievementsView(
         isLoading.value = false
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         Text(
-            text = "🏆 Achievements",
-            style = MaterialTheme.typography.h3,
+            stringResource(R.string.Achievements),
+            style = MaterialTheme.typography.h4,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
