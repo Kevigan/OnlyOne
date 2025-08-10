@@ -26,8 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onlyone.R
 import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
@@ -36,30 +38,36 @@ fun LanguageSettingsView(userViewModel: UserViewModel) {
     var currentAppLang by remember { mutableStateOf("en") }
     var currentChatLang by remember { mutableStateOf("en") }
 
-    val availableLanguages = listOf("English", "Deutsch", "Français", "Español", "Português")
-    val languageMap = mapOf(
-        "en" to "English",
-        "de" to "Deutsch",
-        "fr" to "Français",
-        "es" to "Español",
-        "pt" to "Português"
+    // Localized display names (from string resources below)
+    val langNames = mapOf(
+        "en" to stringResource(R.string.lang_english),
+        "de" to stringResource(R.string.lang_german),
+        "fr" to stringResource(R.string.lang_french),
+        "es" to stringResource(R.string.lang_spanish),
+        "pt" to stringResource(R.string.lang_portuguese)
     )
-    val reverseMap = languageMap.entries.associate { it.value to it.key }
+    val availableLanguages = langNames.values.toList()
+    val languageMap = langNames                    // code -> display name
+    val reverseMap = langNames.entries.associate { it.value to it.key } // display -> code
 
     LaunchedEffect(Unit) {
         userViewModel.getAppLanguage { saved ->
             currentAppLang = saved
-            Log.e("applyAppLocale", "❌ applyAppLocale: $saved")
-            // optional: ensure app reflects persisted value on entry
-            applyAppLocale(saved)
+            // remove this now that you apply at startup to prevent flicker:
+            // applyAppLocale(saved)
         }
         currentChatLang = userViewModel.user.value?.chatLanguage ?: "en"
     }
 
     Box(Modifier.fillMaxSize()) {
         Column {
-            Text("🌐 App Language", color = Color.White, fontSize = 18.sp)
+            Text(
+                text = stringResource(R.string.settings_app_language_header),
+                color = Color.White,
+                fontSize = 18.sp
+            )
             Spacer(Modifier.height(12.dp))
+
             LanguageDropdown(
                 currentCode = currentAppLang,
                 availableLanguages = availableLanguages,
@@ -68,13 +76,18 @@ fun LanguageSettingsView(userViewModel: UserViewModel) {
             ) { code ->
                 userViewModel.saveAppLanguage(code)
                 currentAppLang = code
-                applyAppLocale(code) // 👈 apply instantly
+                applyAppLocale(code) // apply instantly on user change
             }
 
             Spacer(Modifier.height(24.dp))
 
-            Text("💬 Chat Language", color = Color.White, fontSize = 18.sp)
+            Text(
+                text = stringResource(R.string.settings_chat_language_header),
+                color = Color.White,
+                fontSize = 18.sp
+            )
             Spacer(Modifier.height(12.dp))
+
             LanguageDropdown(
                 currentCode = currentChatLang,
                 availableLanguages = availableLanguages,
@@ -91,57 +104,3 @@ fun LanguageSettingsView(userViewModel: UserViewModel) {
     }
 }
 
-@Composable
-private fun LanguageDropdown(
-    currentCode: String,
-    availableLanguages: List<String>,
-    languageMap: Map<String, String>,
-    reverseMap: Map<String, String>,
-    onLanguageSelected: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var selectedText by remember { mutableStateOf(languageMap[currentCode] ?: "English") }
-
-    LaunchedEffect(currentCode) {
-        selectedText = languageMap[currentCode] ?: "English"
-    }
-
-    Box {
-        OutlinedTextField(
-            value = selectedText,
-            onValueChange = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            enabled = false,
-            label = { Text("Select language") },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                disabledTextColor = Color.White,
-                disabledLabelColor = Color.LightGray,
-                disabledBorderColor = Color.White,
-                disabledTrailingIconColor = Color.White
-            ),
-            trailingIcon = {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null
-                )
-            }
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            availableLanguages.forEach { lang ->
-                DropdownMenuItem(onClick = {
-                    selectedText = lang
-                    expanded = false
-                    onLanguageSelected(reverseMap[lang] ?: "en")
-                }) {
-                    Text(lang)
-                }
-            }
-        }
-    }
-}

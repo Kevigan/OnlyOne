@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_title">Send a happy message</string>
+    <string name="chat_swipes">Swipes: %1$d / %2$d</string>
+
+    <string name="chat_cd_avatar">Avatar</string>
+    <string name="chat_username_placeholder">…</string>
+
+    <string name="chat_input_label">Write your message (%1$d/%2$d)</string>
+
+    <string name="chat_cd_waiting">Waiting for match</string>
+    <string name="chat_searching">Searching for someone…</string>
+
+    <string name="chat_toast_too_long">Your message is too long!</string>
+    <string name="chat_reward_text">Earned: +%1$d gold, +%2$d points</string>
+    <string name="chat_rune_drop">Lucky drop: %1$s rune!</string>
+    <string name="chat_already_sent">You already messaged this user today.</string>
+    <string name="chat_send_error">Could not send message. Try again later.</string>
+
+    <string name="chat_send_button">Send</string>
+
+    <string name="chat_language_prefix">Language: %1$s</string>
+    <string name="chat_cd_next_user">Next user</string>
+</resources>

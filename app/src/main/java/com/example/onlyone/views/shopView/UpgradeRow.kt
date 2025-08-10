@@ -13,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
 
 @Composable
@@ -38,7 +40,7 @@ fun UpgradeRow(
             Column {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.body2,
                     color = Color.White
                 )
                 Text(
@@ -48,8 +50,12 @@ fun UpgradeRow(
                 )
             }
             Button(onClick = onUpgradeClick) {
-                Text("Upgrade")
+                Text(
+                    text = stringResource(R.string.shop_upgrade),
+                    style = MaterialTheme.typography.button // or labelLarge for M3
+                )
             }
+
         }
     }
 }

@@ -17,13 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
 
 @Composable
 fun MoodsSection(moodImages: List<Int>) {
     Text(
-        text = "Moods",
+        text = stringResource(R.string.common_moods),
         style = MaterialTheme.typography.h6,
         color = Color.White,
         modifier = Modifier.padding(start = 6.dp, bottom = 4.dp)
@@ -43,7 +45,7 @@ fun MoodsSection(moodImages: List<Int>) {
             items(moodImages) { resId ->
                 Image(
                     painter = painterResource(id = resId),
-                    contentDescription = "Mood",
+                    contentDescription = stringResource(R.string.common_mood),
                     modifier = Modifier
                         .size(120.dp)
                         .clip(RoundedCornerShape(12.dp))
@@ -53,3 +55,4 @@ fun MoodsSection(moodImages: List<Int>) {
         }
     }
 }
+

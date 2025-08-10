@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shop_title">Shop</string>
+    <string name="shop_message_length_label">Nachrichtenlängen-Limit</string>
+    <string name="shop_swipes_limit_label">Swipe-Limit</string>
+    <string name="shop_upgrade_message_length_title">Nachrichtenlänge erhöhen</string>
+    <string name="shop_upgrade_swipes_title">Swipe-Limit erhöhen</string>
+    <string name="shop_cost_header">Kosten für den nächsten Schritt:</string>
+
+    <string name="shop_upgrade">Aufwerten</string>
+    <string name="shop_upgrade_success">Upgrade erfolgreich!</string>
+    <string name="shop_upgrade_failed">Upgrade fehlgeschlagen!</string>
+</resources>

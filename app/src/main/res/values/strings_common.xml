@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generic labels used across screens -->
+    <string name="common_avatar">Avatar</string>
+    <string name="common_avatars">Avatars</string>
+    <string name="common_moods">Moods</string>
+    <string name="common_mood">Moods</string>
+    <string name="common_buy">Buy</string>
+    <string name="common_select">Select</string>
+    <string name="common_owned">Owned</string>
+    <string name="common_purchase_failed">Could not complete purchase.</string>
+    <string name="common_upgrade">Upgrade</string>
+    <string name="common_current">Current: %1$s</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_close">Close</string>
+    <string name="common_selected">Selected</string>
+    <string name="common_buy_with_cost">Buy (%1$d)</string>
+
+    <string name="common_gold">Gold</string>
+    <string name="common_runes_rare">Rare Runes: %1$d</string>
+    <string name="common_runes_super_rare">Super Rare Runes: %1$d</string>
+    <string name="common_runes_mega_rare">Mega Rare Runes: %1$d</string>
+
+    <!-- Plurals -->
+    <plurals name="common_chars">
+        <item quantity="one">%1$d char</item>
+        <item quantity="other">%1$d chars</item>
+    </plurals>
+
+    <plurals name="common_swipes">
+        <item quantity="one">%1$d swipe</item>
+        <item quantity="other">%1$d swipes</item>
+    </plurals>
+
+    <plurals name="common_swipes_per_day">
+        <item quantity="one">%1$d swipe/day</item>
+        <item quantity="other">%1$d swipes/day</item>
+    </plurals>
+</resources>

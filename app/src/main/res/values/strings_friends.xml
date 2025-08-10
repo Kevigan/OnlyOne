@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Header / actions -->
+    <string name="friends_header">Connections</string>
+    <string name="friends_refreshing">Refreshing connections…</string>
+    <string name="friends_cd_reload">Reload connections</string>
+    <string name="friends_cd_add">Add friend</string>
+
+    <!-- Tabs -->
+    <string name="friends_tab_friends">Friends</string>
+    <string name="friends_tab_incoming">Incoming</string>
+    <string name="friends_tab_outgoing">Outgoing</string>
+    <string name="friends_tab_blocked">Blocked</string>
+
+    <!-- Empty states -->
+    <string name="friends_empty_incoming">No incoming friend requests.</string>
+    <string name="friends_empty_outgoing">No outgoing requests.</string>
+    <string name="friends_empty_blocked">No blocked users.</string>
+
+    <!-- Status / labels -->
+    <string name="friends_status_wants_connect">Wants to connect</string>
+    <string name="friends_status_request_sent">Request sent</string>
+    <string name="friends_status_blocked">Blocked</string>
+    <string name="friends_pending">Pending</string>
+    <string name="friends_unknown">Unknown</string>
+
+    <!-- Dialog -->
+    <string name="friends_dialog_title">Send Friend Request</string>
+    <string name="friends_dialog_email_label">Friend´s email</string>
+    <string name="friends_dialog_send">Send</string>
+    <string name="friends_dialog_cancel">Cancel</string>
+
+    <!-- Toasts -->
+    <string name="friends_toast_email_empty">Email cannot be empty</string>
+    <string name="friends_toast_request_sent">Friend request sent!</string>
+    <string name="friends_toast_cancel_failed">Failed to cancel request</string>
+    <string name="friends_toast_request_canceled">Request canceled</string>
+
+    <!-- Icon content descriptions -->
+    <string name="friends_cd_incoming">Incoming</string>
+    <string name="friends_cd_outgoing">Outgoing</string>
+    <string name="friends_cd_blocked">Blocked</string>
+
+    <!-- Content descriptions -->
+    <string name="friends_cd_avatar_for">Avatar for %1$s</string>
+    <string name="friends_cd_locked">Locked</string>
+    <string name="friends_cd_write">Write</string>
+    <string name="friends_cd_delete_friend">Delete friend</string>
+    <string name="friends_cd_block_user">Block user</string>
+    <string name="friends_cd_unblock_user">Unblock user</string>
+    <string name="friends_cd_accept">Accept</string>
+    <string name="friends_cd_decline">Decline</string>
+
+    <!-- Delete -->
+    <string name="friends_dialog_delete_title">Delete friend</string>
+    <string name="friends_dialog_delete_text">Are you sure you want to delete %1$s from your friend list?</string>
+
+    <!-- Block -->
+    <string name="friends_dialog_block_title">Block user</string>
+    <string name="friends_dialog_block_text">Block %1$s? This also removes them from your friends list.</string>
+    <string name="friends_dialog_block_confirm">Block</string>
+
+    <!-- Unblock -->
+    <string name="friends_dialog_unblock_title">Unblock user</string>
+    <string name="friends_dialog_unblock_text">Unblock %1$s? You can also send a friend request immediately after unblocking.</string>
+    <string name="friends_dialog_unblock_confirm">Unblock</string>
+    <string name="friends_dialog_unblock_and_request">Unblock and request</string>
+</resources>

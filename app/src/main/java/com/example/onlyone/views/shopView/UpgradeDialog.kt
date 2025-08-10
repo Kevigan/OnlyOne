@@ -28,7 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.utils.calculateUpgradeCost
 import com.example.onlyone.utils.upgradeCosts
@@ -37,7 +40,7 @@ import com.example.onlyone.utils.upgradeSteps
 @Composable
 fun UpgradeDialog(
     title: String,
-    feature: String,
+    feature: String, // "maxMessageLength" | "maxSwipes" (others show raw number)
     currentValue: Int,
     userGold: Int,
     userRunesRare: Int,
@@ -49,11 +52,22 @@ fun UpgradeDialog(
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val cost = calculateUpgradeCost(feature, currentValue, 1) // Always 1 step
+    val cost = calculateUpgradeCost(feature, currentValue, 1) // always 1 step
     val canAfford = userGold >= cost.gold &&
             userRunesRare >= cost.runesRare &&
             userRunesSuperRare >= cost.runesSuperRare &&
             userRunesMegaRare >= cost.runesMegaRare
+
+    // Localized "Current: …"
+    val currentValueText = when (feature) {
+        "maxMessageLength" -> pluralStringResource(
+            R.plurals.common_chars, currentValue, currentValue
+        )
+        "maxSwipes" -> pluralStringResource(
+            R.plurals.common_swipes_per_day, currentValue, currentValue
+        )
+        else -> currentValue.toString()
+    }
 
     Box(
         modifier = Modifier
@@ -76,17 +90,46 @@ fun UpgradeDialog(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(title, style = MaterialTheme.typography.h6, color = Color.White)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Current: $currentValue", color = Color.White)
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Cost for next step:", style = MaterialTheme.typography.body1, color = Color.White)
-                    if (cost.gold > 0) Text("Gold: ${cost.gold}", color = Color.White)
-                    if (cost.runesRare > 0) Text("Rare Runes: ${cost.runesRare}", color = Color.White)
-                    if (cost.runesSuperRare > 0) Text("Super Rare Runes: ${cost.runesSuperRare}", color = Color.White)
-                    if (cost.runesMegaRare > 0) Text("Mega Rare Runes: ${cost.runesMegaRare}", color = Color.White)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.common_current, currentValueText),
+                        color = Color.White
+                    )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.shop_cost_header),
+                        style = MaterialTheme.typography.body1,
+                        color = Color.White
+                    )
+
+                    if (cost.gold > 0) {
+                        Text(
+                            text = stringResource(R.string.common_gold, cost.gold),
+                            color = Color.White
+                        )
+                    }
+                    if (cost.runesRare > 0) {
+                        Text(
+                            text = stringResource(R.string.common_runes_rare, cost.runesRare),
+                            color = Color.White
+                        )
+                    }
+                    if (cost.runesSuperRare > 0) {
+                        Text(
+                            text = stringResource(R.string.common_runes_super_rare, cost.runesSuperRare),
+                            color = Color.White
+                        )
+                    }
+                    if (cost.runesMegaRare > 0) {
+                        Text(
+                            text = stringResource(R.string.common_runes_mega_rare, cost.runesMegaRare),
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
                     Row(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         modifier = Modifier.fillMaxWidth()
@@ -97,10 +140,18 @@ fun UpgradeDialog(
                                 onConfirm { success ->
                                     isLoading = false
                                     if (success) {
-                                        Toast.makeText(context, "Upgrade successful!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.shop_upgrade_success),
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                         onDismiss()
                                     } else {
-                                        Toast.makeText(context, "Upgrade failed!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.shop_upgrade_failed),
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                     }
                                 }
                             },
@@ -113,11 +164,12 @@ fun UpgradeDialog(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text("Confirm")
+                                Text(stringResource(R.string.common_confirm))
                             }
                         }
+
                         Button(onClick = onDismiss, enabled = !isLoading) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.common_cancel))
                         }
                     }
                 }

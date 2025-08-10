@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.R
@@ -52,7 +53,7 @@ fun FriendsView(
     userViewModel: UserViewModel,
     navController: NavController,
     chatViewModel: ChatViewModel
-    ) {
+) {
     val user by userViewModel.user.observeAsState()
     val incomingRequests by userViewModel.incomingRequestUsernames.collectAsState()
     val outgoingUsernames by userViewModel.outgoingRequestUsernames.collectAsState()
@@ -66,7 +67,13 @@ fun FriendsView(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
 
-    val tabTitles = listOf("Friends", "Incoming", "Outgoing", "Blocked")
+    // Localized tab titles (used only for "Friends" text tab)
+    val tabTitles = listOf(
+        stringResource(R.string.friends_tab_friends),
+        stringResource(R.string.friends_tab_incoming),
+        stringResource(R.string.friends_tab_outgoing),
+        stringResource(R.string.friends_tab_blocked)
+    )
 
     Column(
         modifier = Modifier
@@ -82,17 +89,21 @@ fun FriendsView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Connections", style = MaterialTheme.typography.h5)
+                Text(stringResource(R.string.friends_header), style = MaterialTheme.typography.h5)
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
                     onClick = {
-                        userViewModel.loadUser() // 🔄 Re-fetch user data
-                        Toast.makeText(context, "Refreshing connections...", Toast.LENGTH_SHORT).show()
+                        userViewModel.loadUser()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.friends_refreshing),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
-                        contentDescription = "Reload Connections"
+                        contentDescription = stringResource(R.string.friends_cd_reload)
                     )
                 }
             }
@@ -100,7 +111,7 @@ fun FriendsView(
             IconButton(onClick = { showAddDialog = true }) {
                 Icon(
                     imageVector = Icons.Default.PersonAdd,
-                    contentDescription = "Add Friend"
+                    contentDescription = stringResource(R.string.friends_cd_add)
                 )
             }
         }
@@ -109,23 +120,23 @@ fun FriendsView(
 
         // 🔹 Tabs
         TabRow(selectedTabIndex = selectedTabIndex) {
-            tabTitles.forEachIndexed { index, baseTitle ->
+            (0..3).forEach { index ->
                 val label: @Composable () -> Unit = {
-                    when (baseTitle) {
-                        "Incoming" -> BlinkingIcon(
+                    when (index) {
+                        1 -> BlinkingIcon(
                             painter = painterResource(id = R.drawable.baseline_arrow_back_24),
-                            contentDescription = "Incoming",
+                            contentDescription = stringResource(R.string.friends_cd_incoming),
                             shouldBlink = incomingCount > 0
                         )
-                        "Outgoing" -> Icon(
+                        2 -> Icon(
                             painter = painterResource(id = R.drawable.baseline_arrow_forward_24),
-                            contentDescription = "Outgoing"
+                            contentDescription = stringResource(R.string.friends_cd_outgoing)
                         )
-                        "Blocked" -> Icon(
+                        3 -> Icon(
                             painter = painterResource(id = R.drawable.baseline_block_24),
-                            contentDescription = "Blocked"
+                            contentDescription = stringResource(R.string.friends_cd_blocked)
                         )
-                        else -> Text("Friends")
+                        else -> Text(tabTitles[0]) // "Friends"
                     }
                 }
                 Tab(
@@ -135,62 +146,57 @@ fun FriendsView(
                 )
             }
         }
+
         Spacer(modifier = Modifier.height(12.dp))
 
         // 🔹 Tab content
         when (selectedTabIndex) {
             0 -> {
-               // Log.d("FriendsView", "Rendering Friends tab with ${localFriends.size} friends")
-
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(horizontal = 12.dp)
                 ) {
                     items(localFriends) { friend ->
-                        //Log.d("FriendsView", "Rendering friend: ${friend.username}, uid=${friend.uid}")
-
                         FriendItem(
                             avatarResId = mapAvatarIdToDrawable(friend.avatarId),
                             name = friend.username,
                             status = friend.moodStatus,
                             isLocked = friend.uid in writtenIds,
                             onWriteClick = {
-                                //Log.d("FriendsView", "Write clicked for ${friend.username} (${friend.uid})")
                                 if (friend.uid !in writtenIds) {
                                     userViewModel.setTargetUser(friend.toPublicUser())
                                     navController.navigate(Screen.ChatScreen.createRoute(friend.uid, false))
-                                } else {
-                                    Log.d("FriendsView", "User already written to today")
                                 }
                             },
                             showDelete = true,
                             onDelete = { userViewModel.deleteFriend(friend.uid) },
-                            onBlock = { userViewModel.blockUser(friend.uid) } // ✅ Add this line
+                            onBlock = { userViewModel.blockUser(friend.uid) }
                         )
                     }
                 }
             }
+
             1 -> {
                 // 🔹 Incoming Requests
                 val incomingUids = user?.incomingFriendRequests ?: emptyList()
                 if (incomingUids.isEmpty()) {
-                    Text("No incoming friend requests.", modifier = Modifier.padding(12.dp))
+                    Text(stringResource(R.string.friends_empty_incoming), modifier = Modifier.padding(12.dp))
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
                         items(incomingUids) { uid ->
-                            val username = incomingRequests[uid] ?: "Unknown"
+                            val username = incomingRequests[uid] ?: stringResource(R.string.friends_unknown)
                             FriendItem(
                                 name = username,
-                                status = "Wants to connect",
+                                status = stringResource(R.string.friends_status_wants_connect),
                                 avatarResId = mapAvatarIdToDrawable(0),
                                 showAccept = true,
                                 showDecline = true,
                                 onAccept = { userViewModel.acceptFriendRequest(uid) },
                                 onDecline = { userViewModel.declineFriendRequest(uid) },
-                                onBlock = { userViewModel.blockUser(uid) } // ✅ Add block support
+                                onBlock = { userViewModel.blockUser(uid) }
                             )
                         }
                     }
@@ -201,28 +207,35 @@ fun FriendsView(
                 // 🔹 Outgoing Requests
                 val outgoingUids = user?.outgoingFriendRequests ?: emptyList()
                 if (outgoingUids.isEmpty()) {
-                    Text("No outgoing requests.", modifier = Modifier.padding(12.dp))
+                    Text(stringResource(R.string.friends_empty_outgoing), modifier = Modifier.padding(12.dp))
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
                         items(outgoingUids) { uid ->
-                            val username = outgoingUsernames[uid] ?: "Pending"
-
+                            val username = outgoingUsernames[uid] ?: stringResource(R.string.friends_pending)
                             FriendItem(
                                 name = username,
-                                status = "Request sent",
+                                status = stringResource(R.string.friends_status_request_sent),
                                 avatarResId = mapAvatarIdToDrawable(0),
                                 showDecline = true,
                                 onDecline = {
                                     userViewModel.cancelOutgoingFriendRequest(
                                         targetUid = uid,
                                         onSuccess = {
-                                            Toast.makeText(context, "Request canceled", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.friends_toast_request_canceled),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         },
                                         onFailure = {
-                                            Toast.makeText(context, "Failed to cancel request", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.friends_toast_cancel_failed),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
                                     )
                                 }
@@ -231,29 +244,29 @@ fun FriendsView(
                     }
                 }
             }
+
             3 -> {
                 val blockedUsers = userViewModel.blockedUsers.collectAsState(initial = emptyList()).value
 
                 if (blockedUsers.isEmpty()) {
-                    Text("No blocked users.", modifier = Modifier.padding(12.dp))
+                    Text(stringResource(R.string.friends_empty_blocked), modifier = Modifier.padding(12.dp))
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
-                        items(blockedUsers) { user ->
+                        items(blockedUsers) { blocked ->
                             FriendItem(
-                                avatarResId = mapAvatarIdToDrawable(user.avatarId),
-                                name = user.username,
-                                status = "Blocked",
+                                avatarResId = mapAvatarIdToDrawable(blocked.avatarId),
+                                name = blocked.username,
+                                status = stringResource(R.string.friends_status_blocked),
                                 isLocked = true,
-                                onUnblock = { userViewModel.unblockUser(user.uid) },
+                                onUnblock = { userViewModel.unblockUser(blocked.uid) },
                                 onUnblockAndRequest = {
-                                    userViewModel.unblockUser(user.uid)
-                                    userViewModel.sendFriendRequestDirect(user.uid)
+                                    userViewModel.unblockUser(blocked.uid)
+                                    userViewModel.sendFriendRequestDirect(blocked.uid)
                                 }
                             )
-
                         }
                     }
                 }
@@ -267,25 +280,33 @@ fun FriendsView(
 
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Send Friend Request") },
+            title = { Text(stringResource(R.string.friends_dialog_title)) },
             text = {
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Friend's Email") }
+                    label = { Text(stringResource(R.string.friends_dialog_email_label)) }
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     if (email.isBlank()) {
-                        Toast.makeText(context, "Email cannot be empty", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.friends_toast_email_empty),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         return@TextButton
                     }
 
                     userViewModel.sendFriendRequestByEmail(
                         email = email,
                         onSuccess = {
-                            Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.friends_toast_request_sent),
+                                Toast.LENGTH_SHORT
+                            ).show()
                             showAddDialog = false
                         },
                         onFailure = { reason ->
@@ -293,17 +314,14 @@ fun FriendsView(
                         }
                     )
                 }) {
-                    Text("Send")
+                    Text(stringResource(R.string.friends_dialog_send))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.friends_dialog_cancel))
                 }
             }
         )
     }
 }
-
-
-

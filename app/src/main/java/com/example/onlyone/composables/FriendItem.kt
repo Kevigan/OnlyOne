@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 
@@ -49,10 +50,9 @@ fun FriendItem(
     onWriteClick: (() -> Unit)? = null,
     showDelete: Boolean = false,
     onDelete: (() -> Unit)? = null,
-    onBlock: (() -> Unit)? = null, // ✅ new block callback
+    onBlock: (() -> Unit)? = null,
     onUnblock: (() -> Unit)? = null,
     onUnblockAndRequest: (() -> Unit)? = null
-
 ) {
     var deleteDialogVisible by remember { mutableStateOf(false) }
     var blockDialogVisible by remember { mutableStateOf(false) }
@@ -75,7 +75,7 @@ fun FriendItem(
             // 👤 Avatar
             Image(
                 painter = painterResource(id = avatarResId),
-                contentDescription = "Avatar for $name",
+                contentDescription = stringResource(R.string.friends_cd_avatar_for, name),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(40.dp)
@@ -98,12 +98,12 @@ fun FriendItem(
                 )
             }
 
-            // 💬 Write
+            // 💬 Write / delete
             if (onWriteClick != null) {
                 if (isLocked) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_lock_clock_24),
-                        contentDescription = "Locked",
+                        contentDescription = stringResource(R.string.friends_cd_locked),
                         tint = Color.Gray,
                         modifier = Modifier.size(24.dp)
                     )
@@ -111,118 +111,129 @@ fun FriendItem(
                     IconButton(onClick = onWriteClick) {
                         Image(
                             painter = painterResource(id = R.drawable.baseline_message_24),
-                            contentDescription = "Write",
+                            contentDescription = stringResource(R.string.friends_cd_write),
                             modifier = Modifier.size(24.dp),
                             colorFilter = ColorFilter.tint(Color.Green)
                         )
                     }
                 }
-                // ❌ Delete icon
                 if (showDelete && onDelete != null) {
                     IconButton(onClick = { deleteDialogVisible = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Friend",
+                            contentDescription = stringResource(R.string.friends_cd_delete_friend),
                             tint = Color.Red
                         )
                     }
                 }
             }
 
-            // 🛑 Block icon
+            // 🛑 Block
             if (onBlock != null) {
                 IconButton(onClick = { blockDialogVisible = true }) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_block_24),
-                        contentDescription = "Block User",
+                        contentDescription = stringResource(R.string.friends_cd_block_user),
                         tint = Color.Yellow,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
+            // ✅ Unblock / request
             if (onUnblock != null || onUnblockAndRequest != null) {
                 IconButton(onClick = { unblockDialogVisible = true }) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_block_24),
-                        contentDescription = "Unblock User",
+                        contentDescription = stringResource(R.string.friends_cd_unblock_user),
                         tint = Color.Yellow,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
-            // ✅ Accept / ❌ Decline buttons
+            // ✅ Accept / ❌ Decline (for requests)
             if (showAccept && onAccept != null) {
                 IconButton(onClick = onAccept) {
-                    Icon(Icons.Default.Check, contentDescription = "Accept", tint = Color.Green)
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = stringResource(R.string.friends_cd_accept),
+                        tint = Color.Green
+                    )
                 }
             }
-
             if (showDecline && onDecline != null) {
                 IconButton(onClick = onDecline) {
-                    Icon(Icons.Default.Close, contentDescription = "Decline", tint = Color.Red)
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.friends_cd_decline),
+                        tint = Color.Red
+                    )
                 }
             }
 
-            // 🧨 Delete Confirmation Dialog
+            // 🧨 Delete confirmation
             if (deleteDialogVisible) {
                 AlertDialog(
                     onDismissRequest = { deleteDialogVisible = false },
-                    title = { Text("Delete Friend") },
-                    text = { Text("Are you sure you want to delete $name from your friend list?") },
+                    title = { Text(stringResource(R.string.friends_dialog_delete_title)) },
+                    text = {
+                        Text(stringResource(R.string.friends_dialog_delete_text, name))
+                    },
                     confirmButton = {
                         TextButton(onClick = {
                             deleteDialogVisible = false
                             onDelete?.invoke()
                         }) {
-                            Text("Yes")
+                            Text(stringResource(R.string.common_confirm))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { deleteDialogVisible = false }) {
-                            Text("No")
+                            Text(stringResource(R.string.common_cancel))
                         }
                     }
                 )
             }
 
+            // 🛑 Block confirmation
             if (blockDialogVisible) {
                 AlertDialog(
                     onDismissRequest = { blockDialogVisible = false },
-                    title = { Text("Block User") },
+                    title = { Text(stringResource(R.string.friends_dialog_block_title)) },
                     text = {
-                        Text("Are you sure you want to block $name? This will also remove them from your friends list if they are a friend.")
+                        Text(stringResource(R.string.friends_dialog_block_text, name))
                     },
                     confirmButton = {
                         TextButton(onClick = {
                             blockDialogVisible = false
                             onBlock?.invoke()
                         }) {
-                            Text("Block", color = Color.Red)
+                            Text(stringResource(R.string.friends_dialog_block_confirm))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { blockDialogVisible = false }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.common_cancel))
                         }
                     }
                 )
             }
 
+            // 🔓 Unblock
             if (unblockDialogVisible) {
                 AlertDialog(
                     onDismissRequest = { unblockDialogVisible = false },
-                    title = { Text("Unblock User") },
+                    title = { Text(stringResource(R.string.friends_dialog_unblock_title)) },
                     text = {
-                        Text("Do you want to unblock $name?\n\nYou can also send them a friend request immediately after unblocking.")
+                        Text(stringResource(R.string.friends_dialog_unblock_text, name))
                     },
                     confirmButton = {
                         TextButton(onClick = {
                             unblockDialogVisible = false
                             onUnblock?.invoke()
                         }) {
-                            Text("Unblock")
+                            Text(stringResource(R.string.friends_dialog_unblock_confirm))
                         }
                     },
                     dismissButton = {
@@ -230,7 +241,7 @@ fun FriendItem(
                             unblockDialogVisible = false
                             onUnblockAndRequest?.invoke()
                         }) {
-                            Text("Unblock + Request")
+                            Text(stringResource(R.string.friends_dialog_unblock_and_request))
                         }
                     }
                 )
@@ -238,5 +249,6 @@ fun FriendItem(
         }
     }
 }
+
 
 

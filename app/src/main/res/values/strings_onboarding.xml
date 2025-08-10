@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Set Username / Onboarding -->
+    <string name="onboarding_title">Choose your username</string>
+    <string name="onboarding_username_label">Username</string>
+    <string name="onboarding_chat_language_label">Select your chat language</string>
+    <string name="onboarding_app_language_label">Select your app language</string>
+    <string name="onboarding_continue">Continue</string>
+
+    <!-- Generic -->
+    <string name="common_saving">Saving...</string>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Login -->
+    <string name="auth_title">Login</string>
+    <string name="auth_email_label">Email</string>
+    <string name="auth_password_label">Password</string>
+    <string name="auth_toggle_show">Show</string>
+    <string name="auth_toggle_hide">Hide</string>
+
+    <!-- Buttons -->
+    <string name="auth_sign_in_email">Sign in with Email</string>
+    <string name="auth_register">Register</string>
+    <string name="auth_sign_in_google">Sign in with Google</string>
+
+    <!-- Errors / toasts -->
+    <string name="auth_google_failed">Google sign-in failed</string>
+    <string name="auth_google_failed_reason">Google sign-in failed: %1$s</string>
+    <string name="auth_error_unknown">Unknown error</string>
+
+    <string name="auth_login_failed">Login failed</string>
+    <string name="auth_registration_failed">Registration failed</string>
+
+    <string name="auth_error_no_user">No account found for this email.</string>
+    <string name="auth_error_bad_password">Incorrect password.</string>
+    <string name="auth_error_bad_email">Invalid email format.</string>
+    <string name="auth_error_email_in_use">An account with this email already exists.</string>
+    <string name="auth_error_password_weak">Password is too weak.</string>
+</resources>

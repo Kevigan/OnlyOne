@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_avatars">Avatare</string>
+    <string name="common_avatar">Avatar</string>
+    <string name="common_moods">Stimmungen</string>
+    <string name="common_mood">Stimmungen</string>
+    <string name="common_buy">Kaufen</string>
+    <string name="common_select">Auswählen</string>
+    <string name="common_owned">Besitzt</string>
+    <string name="common_purchase_failed">Kauf konnte nicht abgeschlossen werden.</string>
+    <string name="common_upgrade">Upgrade</string>
+    <string name="common_current">Aktuell: %1$s</string>
+    <string name="common_confirm">Bestätigen</string>
+    <string name="common_cancel">Abbrechen</string>
+    <string name="common_close">Schließen</string>
+    <string name="common_selected">Ausgewählt</string>
+    <string name="common_buy_with_cost">Kaufen (%1$d)</string>
+
+    <string name="common_gold">Gold</string>
+    <string name="common_runes_rare">Seltene Runen: %1$d</string>
+    <string name="common_runes_super_rare">Sehr seltene Runen: %1$d</string>
+    <string name="common_runes_mega_rare">Ultra-seltene Runen: %1$d</string>
+
+    <plurals name="common_chars">
+        <item quantity="one">%1$d Zeichen</item>
+        <item quantity="other">%1$d Zeichen</item>
+    </plurals>
+
+    <plurals name="common_swipes">
+        <item quantity="one">%1$d Swipe</item>
+        <item quantity="other">%1$d Swipes</item>
+    </plurals>
+
+    <plurals name="common_swipes_per_day">
+        <item quantity="one">%1$d Swipe/Tag</item>
+        <item quantity="other">%1$d Swipes/Tag</item>
+    </plurals>
+</resources>

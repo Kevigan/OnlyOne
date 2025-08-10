@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Anmeldung -->
+    <string name="auth_title">Anmeldung</string>
+    <string name="auth_email_label">E-Mail</string>
+    <string name="auth_password_label">Passwort</string>
+    <string name="auth_toggle_show">Einblenden</string>
+    <string name="auth_toggle_hide">Ausblenden</string>
+
+    <!-- Buttons -->
+    <string name="auth_sign_in_email">Mit E-Mail anmelden</string>
+    <string name="auth_register">Registrieren</string>
+    <string name="auth_sign_in_google">Mit Google anmelden</string>
+
+    <!-- Fehler / Hinweise -->
+    <string name="auth_google_failed">Google-Anmeldung fehlgeschlagen</string>
+    <string name="auth_google_failed_reason">Google-Anmeldung fehlgeschlagen: %1$s</string>
+    <string name="auth_error_unknown">Unbekannter Fehler</string>
+
+    <string name="auth_login_failed">Anmeldung fehlgeschlagen</string>
+    <string name="auth_registration_failed">Registrierung fehlgeschlagen</string>
+
+    <string name="auth_error_no_user">Kein Konto für diese E-Mail gefunden.</string>
+    <string name="auth_error_bad_password">Falsches Passwort.</string>
+    <string name="auth_error_bad_email">Ungültiges E-Mail-Format.</string>
+    <string name="auth_error_email_in_use">Für diese E-Mail existiert bereits ein Konto.</string>
+    <string name="auth_error_password_weak">Passwort ist zu schwach.</string>
+</resources>

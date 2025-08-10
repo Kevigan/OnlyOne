@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Benutzername festlegen / Onboarding -->
+    <string name="onboarding_title">Wähle deinen Benutzernamen</string>
+    <string name="onboarding_username_label">Benutzername</string>
+    <string name="onboarding_chat_language_label">Chat-Sprache auswählen</string>
+    <string name="onboarding_app_language_label">App-Sprache auswählen</string>
+    <string name="onboarding_continue">Weiter</string>
+
+    <!-- Allgemein -->
+    <string name="common_saving">Wird gespeichert …</string>
+</resources>

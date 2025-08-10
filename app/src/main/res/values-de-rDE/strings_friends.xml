@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kopf / Aktionen -->
+    <string name="friends_header">Verbindungen</string>
+    <string name="friends_refreshing">Verbindungen werden aktualisiert …</string>
+    <string name="friends_cd_reload">Verbindungen neu laden</string>
+    <string name="friends_cd_add">Freund hinzufügen</string>
+
+    <!-- Tabs -->
+    <string name="friends_tab_friends">Freunde</string>
+    <string name="friends_tab_incoming">Eingehend</string>
+    <string name="friends_tab_outgoing">Ausgehend</string>
+    <string name="friends_tab_blocked">Blockiert</string>
+
+    <!-- Leere Zustände -->
+    <string name="friends_empty_incoming">Keine eingehenden Freundesanfragen.</string>
+    <string name="friends_empty_outgoing">Keine ausstehenden Anfragen.</string>
+    <string name="friends_empty_blocked">Keine blockierten Nutzer.</string>
+
+    <!-- Status / Labels -->
+    <string name="friends_status_wants_connect">Möchte sich verbinden</string>
+    <string name="friends_status_request_sent">Anfrage gesendet</string>
+    <string name="friends_status_blocked">Blockiert</string>
+    <string name="friends_pending">Ausstehend</string>
+    <string name="friends_unknown">Unbekannt</string>
+
+    <!-- Dialog -->
+    <string name="friends_dialog_title">Freundesanfrage senden</string>
+    <string name="friends_dialog_email_label">E-Mail des Freundes</string>
+    <string name="friends_dialog_send">Senden</string>
+    <string name="friends_dialog_cancel">Abbrechen</string>
+
+    <!-- Toasts -->
+    <string name="friends_toast_email_empty">E-Mail darf nicht leer sein</string>
+    <string name="friends_toast_request_sent">Freundesanfrage gesendet!</string>
+    <string name="friends_toast_cancel_failed">Anfrage konnte nicht abgebrochen werden</string>
+    <string name="friends_toast_request_canceled">Anfrage abgebrochen</string>
+
+    <!-- Icon-Beschreibungen -->
+    <string name="friends_cd_incoming">Eingehend</string>
+    <string name="friends_cd_outgoing">Ausgehend</string>
+    <string name="friends_cd_blocked">Blockiert</string>
+
+    <!-- Inhaltsbeschreibungen -->
+    <string name="friends_cd_avatar_for">Avatar fuer %1$s</string>
+    <string name="friends_cd_locked">Gesperrt</string>
+    <string name="friends_cd_write">Schreiben</string>
+    <string name="friends_cd_delete_friend">Freund loeschen</string>
+    <string name="friends_cd_block_user">Nutzer blockieren</string>
+    <string name="friends_cd_unblock_user">Nutzer entblocken</string>
+    <string name="friends_cd_accept">Annehmen</string>
+    <string name="friends_cd_decline">Ablehnen</string>
+
+    <!-- Loeschen -->
+    <string name="friends_dialog_delete_title">Freund loeschen</string>
+    <string name="friends_dialog_delete_text">%1$s aus der Freundesliste loeschen?</string>
+
+    <!-- Blockieren -->
+    <string name="friends_dialog_block_title">Nutzer blockieren</string>
+    <string name="friends_dialog_block_text">%1$s blockieren? Dadurch wird die Person auch aus deiner Freundesliste entfernt.</string>
+    <string name="friends_dialog_block_confirm">Blockieren</string>
+
+    <!-- Entsperren -->
+    <string name="friends_dialog_unblock_title">Nutzer entblocken</string>
+    <string name="friends_dialog_unblock_text">%1$s entblocken? Du kannst direkt danach eine Freundesanfrage senden.</string>
+    <string name="friends_dialog_unblock_confirm">Entblocken</string>
+    <string name="friends_dialog_unblock_and_request">Entblocken und anfragen</string>
+</resources>

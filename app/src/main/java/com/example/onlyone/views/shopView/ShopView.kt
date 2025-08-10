@@ -20,6 +20,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
@@ -27,18 +29,12 @@ import com.example.onlyone.viewModels.userViewModel.UserViewModel
 @Composable
 fun ShopView(userViewModel: UserViewModel) {
     val moodImages = listOf(
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
-        R.drawable.ic_launcher_foreground,
+        R.drawable.ic_launcher_foreground, R.drawable.ic_launcher_foreground,
+        R.drawable.ic_launcher_foreground, R.drawable.ic_launcher_foreground,
+        R.drawable.ic_launcher_foreground, R.drawable.ic_launcher_foreground,
+        R.drawable.ic_launcher_foreground, R.drawable.ic_launcher_foreground,
+        R.drawable.ic_launcher_foreground, R.drawable.ic_launcher_foreground,
+        R.drawable.ic_launcher_foreground, R.drawable.ic_launcher_foreground,
     )
     val user by userViewModel.user.observeAsState()
     var showMessageLengthDialog by remember { mutableStateOf(false) }
@@ -49,8 +45,7 @@ fun ShopView(userViewModel: UserViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(2.dp)
-        )
-        {
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -65,25 +60,23 @@ fun ShopView(userViewModel: UserViewModel) {
                 ) {
                     // 🔷 Shop Title
                     Text(
-                        text = "Shop",
+                        text = stringResource(R.string.shop_title),
                         style = MaterialTheme.typography.h5,
                         color = Color.White,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
                     // 🔷 Coins + Value
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Gold",
+                            text = stringResource(R.string.common_gold),
                             style = MaterialTheme.typography.h5,
                             color = Color.White,
                             modifier = Modifier.padding(end = 8.dp, bottom = 16.dp)
                         )
 
                         Text(
-                            text = user?.gold.toString(),
+                            text = (user?.gold ?: 0).toString(),
                             style = MaterialTheme.typography.h5,
                             color = Color.White,
                             modifier = Modifier.padding(bottom = 16.dp)
@@ -91,13 +84,14 @@ fun ShopView(userViewModel: UserViewModel) {
                     }
                 }
 
+                // Avatars
                 AvatarsSection(
                     user = user,
                     onBuyAvatar = { avatarId ->
                         userViewModel.buyAvatar(
                             avatarId = avatarId,
-                            onSuccess = { /* toast */ },
-                            onFailure = { /* error */ }
+                            onSuccess = { /* show toast using common_buy/common_owned if needed */ },
+                            onFailure = { /* show error using common_purchase_failed */ }
                         )
                     },
                     onSelectAvatar = { avatarId ->
@@ -111,20 +105,31 @@ fun ShopView(userViewModel: UserViewModel) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Moods (title inside your section can use common_moods if you display one)
                 MoodsSection(moodImages)
 
                 if (user != null) {
+                    // Build current values with plurals
+                    val currentChars = pluralStringResource(
+                        R.plurals.common_chars,
+                        user!!.maxMessageLength,
+                        user!!.maxMessageLength
+                    )
+                    val currentSwipesPerDay = pluralStringResource(
+                        R.plurals.common_swipes_per_day,
+                        user!!.maxSwipes,
+                        user!!.maxSwipes
+                    )
+
                     val upgrades = listOf(
                         Triple(
-                            "Message Length Limit",
-                            "Current: ${user!!.maxMessageLength} chars"
+                            stringResource(R.string.shop_message_length_label),
+                            stringResource(R.string.common_current, currentChars)
                         ) { showMessageLengthDialog = true },
                         Triple(
-                            "Swipes Limit",
-                            "Current: ${user!!.maxSwipes} swipes/day"
+                            stringResource(R.string.shop_swipes_limit_label),
+                            stringResource(R.string.common_current, currentSwipesPerDay)
                         ) { showSwipesDialog = true }
-
-                        // You can add more here in future
                     )
 
                     upgrades.forEach { (label, valueText, onClick) ->
@@ -139,11 +144,12 @@ fun ShopView(userViewModel: UserViewModel) {
             }
         }
 
-        if (showMessageLengthDialog && user != null) {//maxMessageLength  "Upgrade Message Length" showMessageLengthDialog
+        // 🔧 Dialogs
+        if (showMessageLengthDialog && user != null) {
             UpgradeDialog(
-                title = "Upgrade Message Length",
+                title = stringResource(R.string.shop_upgrade_message_length_title),
                 feature = "maxMessageLength",
-                currentValue = user!!.maxSwipes,
+                currentValue = user!!.maxMessageLength, // ✅ bugfix: was maxSwipes
                 userGold = user!!.gold,
                 userRunesRare = user!!.runes_rare,
                 userRunesSuperRare = user!!.runes_super_rare,
@@ -162,7 +168,7 @@ fun ShopView(userViewModel: UserViewModel) {
 
         if (showSwipesDialog && user != null) {
             UpgradeDialog(
-                title = "Upgrade Swipes Limit",
+                title = stringResource(R.string.shop_upgrade_swipes_title),
                 feature = "maxSwipes",
                 currentValue = user!!.maxSwipes,
                 userGold = user!!.gold,

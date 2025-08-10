@@ -37,6 +37,11 @@ import com.example.onlyone.BuildConfig
 import com.example.onlyone.Screen
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
+import com.example.onlyone.R
+import com.example.onlyone.utils.applyAppLocale
+import com.example.onlyone.views.settingsView.LanguageDropdown
 
 @Composable
 fun LoginView(
@@ -68,11 +73,35 @@ fun LoginView(
                     }
                 }
             },
-            onError = {
-                Toast.makeText(context, "Google Sign-in failed: ${it.message}", Toast.LENGTH_SHORT).show()
+            onError = { ex ->
+                val reason = ex.message?.takeIf { it.isNotBlank() }
+                    ?: context.getString(R.string.auth_error_unknown)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.auth_google_failed_reason, reason),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         )
     }
+
+    // --- NEW: App language state + maps (reuse the same ones from LanguageSettingsView) ---
+    var currentAppLang by remember { mutableStateOf("en") }
+    val availableLanguages = listOf("English", "Deutsch", "Français", "Español", "Português")
+    val languageMap = mapOf(
+        "en" to "English",
+        "de" to "Deutsch",
+        "fr" to "Français",
+        "es" to "Español",
+        "pt" to "Português"
+    )
+    val reverseMap = languageMap.entries.associate { it.value to it.key }
+
+    // Load saved app language just to display the current selection (do NOT apply here)
+    LaunchedEffect(Unit) {
+        userViewModel.getAppLanguage { saved -> currentAppLang = saved }
+    }
+    // --- END new ---
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -86,7 +115,7 @@ fun LoginView(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Login", style = MaterialTheme.typography.h4)
+        Text(stringResource(R.string.auth_title), style = MaterialTheme.typography.h4)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -96,7 +125,7 @@ fun LoginView(
                 email = it
                 errorMessage = null
             },
-            label = { Text("Email") }
+            label = { Text(stringResource(R.string.auth_email_label)) }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -107,15 +136,35 @@ fun LoginView(
                 password = it
                 errorMessage = null
             },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.auth_password_label)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                val cd   = if (passwordVisible) R.string.auth_toggle_hide else R.string.auth_toggle_show
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = icon, contentDescription = if (passwordVisible) "Hide" else "Show")
+                    Icon(imageVector = icon, contentDescription = stringResource(cd))
                 }
             }
         )
+
+        // --- NEW: App Language section (uses your LanguageDropdown) ---
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(stringResource(R.string.settings_app_language_label))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LanguageDropdown(
+            currentCode = currentAppLang,
+            availableLanguages = availableLanguages,
+            languageMap = languageMap,
+            reverseMap = reverseMap
+        ) { code ->
+            // Persist + apply immediately
+            userViewModel.saveAppLanguage(code)
+            currentAppLang = code
+            applyAppLocale(code)
+        }
+        // --- END new ---
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -142,22 +191,19 @@ fun LoginView(
                         }
                     }
                 },
-                onFailure = {
-                    errorMessage = when (it.message?.lowercase()) {
-                        null -> "Login failed"
-                        else -> {
-                            when {
-                                "no user record" in it.message!!.lowercase() -> "No account found for this email."
-                                "password is invalid" in it.message!!.lowercase() -> "Incorrect password."
-                                "badly formatted" in it.message!!.lowercase() -> "Invalid email format."
-                                else -> it.message
-                            }
-                        }
+                onFailure = { ex ->
+                    val msg = ex.message?.lowercase()
+                    errorMessage = when {
+                        msg == null -> context.getString(R.string.auth_login_failed)
+                        "no user record" in msg -> context.getString(R.string.auth_error_no_user)
+                        "password is invalid" in msg -> context.getString(R.string.auth_error_bad_password)
+                        "badly formatted" in msg -> context.getString(R.string.auth_error_bad_email)
+                        else -> ex.message
                     }
                 }
             )
         }) {
-            Text("Sign In with Email")
+            Text(stringResource(R.string.auth_sign_in_email))
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -176,22 +222,23 @@ fun LoginView(
                         }
                     }
                 },
-                onFailure = {
-                    errorMessage = when (it.message?.lowercase()) {
-                        null -> "Registration failed"
-                        else -> {
-                            when {
-                                "already in use" in it.message!! -> "An account with this email already exists."
-                                "badly formatted" in it.message!! -> "Invalid email format."
-                                "password should be at least" in it.message!! -> "Password is too weak."
-                                else -> it.message
-                            }
-                        }
+                onFailure = { ex ->
+                    val msg = ex.message?.lowercase().orEmpty()
+                    errorMessage = when {
+                        msg.isBlank() ->
+                            context.getString(R.string.auth_registration_failed)
+                        "already in use" in msg ->
+                            context.getString(R.string.auth_error_email_in_use)
+                        "badly formatted" in msg ->
+                            context.getString(R.string.auth_error_bad_email)
+                        "password should be at least" in msg ->
+                            context.getString(R.string.auth_error_password_weak)
+                        else -> ex.message
                     }
                 }
             )
         }) {
-            Text("Register")
+            Text(stringResource(R.string.auth_register))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -200,9 +247,10 @@ fun LoginView(
             val signInIntent = googleSignInClient.signInIntent
             launcher.launch(signInIntent)
         }) {
-            Text("Sign in with Google")
+            Text(stringResource(R.string.auth_sign_in_google))
         }
     }
 }
+
 
 

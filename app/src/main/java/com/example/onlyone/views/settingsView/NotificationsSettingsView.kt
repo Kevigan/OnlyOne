@@ -1,5 +1,6 @@
 package com.example.onlyone.views.settingsView
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onlyone.R
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
@@ -29,28 +32,38 @@ fun NotificationsSettingsView(userViewModel: UserViewModel) {
     val user = userViewModel.user.value ?: return
     val uid = user.uid
 
-    val toggleMap = mapOf(
-        "Message notifications" to "message",
-        "Feedback notifications" to "feedback"
-    )
+    data class NotificationToggleItem(@StringRes val labelRes: Int, val key: String)
 
+    // Stable items: key is locale-independent
+    val items = remember {
+        listOf(
+            NotificationToggleItem(R.string.settings_notifications_message, "message"),
+            NotificationToggleItem(R.string.settings_notifications_feedback, "feedback")
+        )
+    }
+
+    // State keyed by stable keys
     val toggles = remember { mutableStateMapOf<String, Boolean>() }
 
     // Load initial state
     LaunchedEffect(uid) {
         userViewModel.getNotificationToggles { msgEnabled, fbEnabled ->
-            toggles["Message notifications"] = msgEnabled
-            toggles["Feedback notifications"] = fbEnabled
+            toggles["message"] = msgEnabled
+            toggles["feedback"] = fbEnabled
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column {
-            Text("🔔 Notifications", color = Color.White, fontSize = 18.sp)
+            Text(
+                text = stringResource(R.string.settings_notifications_header),
+                color = Color.White,
+                fontSize = 18.sp
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            toggleMap.forEach { (label, key) ->
-                val isChecked = toggles[label] ?: true
+            items.forEach { item ->
+                val isChecked = toggles[item.key] ?: true
 
                 Row(
                     modifier = Modifier
@@ -59,20 +72,24 @@ fun NotificationsSettingsView(userViewModel: UserViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(label, color = Color.White, style = MaterialTheme.typography.body1)
+                    Text(
+                        text = stringResource(item.labelRes),
+                        color = Color.White,
+                        style = MaterialTheme.typography.body1
+                    )
 
                     Switch(
                         checked = isChecked,
                         onCheckedChange = { checked ->
-                            toggles[label] = checked
+                            toggles[item.key] = checked
 
-                            // Save locally
-                            val msgToggle = toggles["Message notifications"] ?: true
-                            val fbToggle = toggles["Feedback notifications"] ?: true
+                            // Save locally (both toggles together)
+                            val msgToggle = toggles["message"] ?: true
+                            val fbToggle  = toggles["feedback"] ?: true
                             userViewModel.saveNotificationToggles(msgToggle, fbToggle)
 
-                            // Save remotely
-                            userViewModel.updateNotificationPreference(key, checked)
+                            // Save remotely (individual)
+                            userViewModel.updateNotificationPreference(item.key, checked)
                         },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.Green,

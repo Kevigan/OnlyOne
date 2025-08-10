@@ -23,7 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.onlyone.R
 import com.example.onlyone.composables.AvatarCatalog
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.data.UserComposite
@@ -35,12 +37,14 @@ fun AvatarsSection(
     onSelectAvatar: (Int) -> Unit
 ) {
     val avatarItems = AvatarCatalog.avatars
+
     Text(
-        text = "Avatars",
+        text = stringResource(R.string.common_avatars),
         style = MaterialTheme.typography.h6,
         color = Color.White,
         modifier = Modifier.padding(start = 6.dp, bottom = 4.dp)
     )
+
     CustomColorOverlay(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(percent = 21),
@@ -61,7 +65,7 @@ fun AvatarsSection(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Image(
                         painter = painterResource(id = avatar.imageRes),
-                        contentDescription = "Avatar",
+                        contentDescription = stringResource(R.string.common_avatar),
                         modifier = Modifier
                             .size(100.dp)
                             .clip(CircleShape)
@@ -80,17 +84,17 @@ fun AvatarsSection(
                                 onClick = { onBuyAvatar(avatar.id) },
                                 enabled = canAfford
                             ) {
-                                Text("Buy (${avatar.cost})")
+                                Text(stringResource(R.string.common_buy_with_cost, avatar.cost))
                             }
                         }
                         alreadyOwned && !isSelected -> {
                             Button(onClick = { onSelectAvatar(avatar.id) }) {
-                                Text("Select")
+                                Text(stringResource(R.string.common_select))
                             }
                         }
                         isSelected -> {
                             Button(onClick = {}, enabled = false) {
-                                Text("Selected")
+                                Text(stringResource(R.string.common_selected))
                             }
                         }
                     }
@@ -99,3 +103,4 @@ fun AvatarsSection(
         }
     }
 }
+

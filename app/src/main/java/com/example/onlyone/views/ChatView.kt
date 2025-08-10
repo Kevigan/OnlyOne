@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -48,35 +49,34 @@ fun ChatView(
     var selectedLanguage by remember { mutableStateOf("any") }
 
     LaunchedEffect(user.uid) {
-        userViewModel.getSearchUserLanguage { savedLang ->
-            selectedLanguage = savedLang
-        }
+        userViewModel.getSearchUserLanguage { savedLang -> selectedLanguage = savedLang }
     }
-    Log.w("Chatview", "isRandom: $isRandom")
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // 🟢 Header
+        // Header
         Text(
-            text = "Send a happy message 😊",
+            text = stringResource(R.string.chat_title),
             style = MaterialTheme.typography.h6,
             color = Color.White,
             modifier = Modifier.padding(bottom = 16.dp)
         )
+
         if (isRandom && engagementStatus != null) {
             val swipesUsed = engagementStatus!!.swipesUsed
             val maxSwipes = user.maxSwipes
-
             Text(
-                text = "Swipes: $swipesUsed / $maxSwipes",
+                text = stringResource(R.string.chat_swipes, swipesUsed, maxSwipes),
                 style = MaterialTheme.typography.subtitle1,
                 color = Color.White,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
-        // 👤 Public Info Card
+
+        // Public Info Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -91,18 +91,16 @@ fun ChatView(
             ) {
                 Image(
                     painter = painterResource(
-                        id = mapAvatarIdToDrawable(
-                            targetUser?.avatarId ?: 0
-                        )
+                        id = mapAvatarIdToDrawable(targetUser?.avatarId ?: 0)
                     ),
-                    contentDescription = "Avatar",
+                    contentDescription = stringResource(R.string.chat_cd_avatar),
                     modifier = Modifier
                         .size(48.dp)
                         .padding(end = 12.dp)
                 )
                 Column {
                     Text(
-                        text = targetUser?.username ?: "...",
+                        text = targetUser?.username ?: stringResource(R.string.chat_username_placeholder),
                         style = MaterialTheme.typography.subtitle1
                     )
                     Text(
@@ -124,22 +122,20 @@ fun ChatView(
             if (targetUser != null) {
                 OutlinedTextField(
                     value = messageText,
-                    onValueChange = {
-                        if (it.length <= maxLength) messageText = it
-                    },
-                    label = { Text("Write your message (${messageText.length}/$maxLength)") },
+                    onValueChange = { if (it.length <= maxLength) messageText = it },
+                    label = { Text(stringResource(R.string.chat_input_label, messageText.length, maxLength)) },
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Image(
                         painter = painterResource(id = R.drawable.ghosthead_sad),
-                        contentDescription = "Waiting for match",
+                        contentDescription = stringResource(R.string.chat_cd_waiting),
                         modifier = Modifier
                             .size(160.dp)
                             .padding(bottom = 12.dp)
                     )
-                    Text("Searching for someone...", style = MaterialTheme.typography.body1)
+                    Text(stringResource(R.string.chat_searching), style = MaterialTheme.typography.body1)
                 }
             }
         }
@@ -155,8 +151,7 @@ fun ChatView(
             Button(
                 onClick = {
                     if (messageText.trim().length > user.maxMessageLength) {
-                        Toast.makeText(context, "Your message is too long!", Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(context, context.getString(R.string.chat_toast_too_long), Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
@@ -177,31 +172,16 @@ fun ChatView(
                         when (result) {
                             is MessageResult.Success -> {
                                 messageText = ""
-
-                                val rewardText =
-                                    "Earned: +${result.gold} gold, +${result.points} points"
-                                val runeText =
-                                    result.rune?.let { "\n🎉 Lucky drop: $it rune!" } ?: ""
-
-                                Toast.makeText(context, "$rewardText$runeText", Toast.LENGTH_LONG)
-                                    .show()
+                                val rewardText = context.getString(R.string.chat_reward_text, result.gold, result.points)
+                                val runeText = result.rune?.let { "\n" + context.getString(R.string.chat_rune_drop, it) } ?: ""
+                                Toast.makeText(context, rewardText + runeText, Toast.LENGTH_LONG).show()
                                 navController.popBackStack()
                             }
-
                             is MessageResult.AlreadySent -> {
-                                Toast.makeText(
-                                    context,
-                                    "You already messaged this user today.",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                Toast.makeText(context, context.getString(R.string.chat_already_sent), Toast.LENGTH_LONG).show()
                             }
-
                             is MessageResult.Error -> {
-                                Toast.makeText(
-                                    context,
-                                    "❌ Couldn't send message. Try again later.",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                Toast.makeText(context, context.getString(R.string.chat_send_error), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
@@ -218,12 +198,12 @@ fun ChatView(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Send", fontSize = 18.sp)
+                    Text(stringResource(R.string.chat_send_button), fontSize = 18.sp)
                 }
             }
         }
 
-        // 🌐 Language filter + next user
+        // Language filter + next user
         if (isRandom) {
             Row(
                 modifier = Modifier
@@ -237,7 +217,7 @@ fun ChatView(
 
                 Box {
                     OutlinedButton(onClick = { expanded = true }) {
-                        Text("Language: ${selectedLanguage.uppercase()}")
+                        Text(stringResource(R.string.chat_language_prefix, selectedLanguage.uppercase()))
                     }
 
                     DropdownMenu(
@@ -249,7 +229,6 @@ fun ChatView(
                                 onClick = {
                                     selectedLanguage = lang
                                     expanded = false
-
                                     userViewModel.saveSearchUserLanguage(lang)
                                     coroutineScope.launch {
                                         userViewModel.loadRandomUserBatch(showToasts = true)
@@ -268,7 +247,7 @@ fun ChatView(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Next user",
+                        contentDescription = stringResource(R.string.chat_cd_next_user),
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
