@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_reset_in">Reset in: %1$dh %2$dm UTC</string>
+    <string name="stats_gold">Gold: %1$d</string>
+    <string name="stats_points">Points: %1$s</string>
+    <string name="stats_rank">Rank: %1$s</string>
+    <string name="stats_runes_label">Runes:</string>
+    <string name="stats_cd_achievements">Achievements</string>
+
+    <plurals name="stats_runes_rare">
+        <item quantity="one">%1$d rare rune</item>
+        <item quantity="other">%1$d rare runes</item>
+    </plurals>
+    <plurals name="stats_runes_super">
+        <item quantity="one">%1$d super rune</item>
+        <item quantity="other">%1$d super runes</item>
+    </plurals>
+    <plurals name="stats_runes_mega">
+        <item quantity="one">%1$d mega rune</item>
+        <item quantity="other">%1$d mega runes</item>
+    </plurals>
+
+    <!-- Rank labels -->
+    <string name="rank_s_class">S-Class</string>
+    <string name="rank_a2">A-Class 2</string>
+    <string name="rank_a3">A-Class 3</string>
+    <string name="rank_b1">B-Class 1</string>
+    <string name="rank_b2">B-Class 2</string>
+    <string name="rank_b3">B-Class 3</string>
+    <string name="rank_c1">C-Class 1</string>
+    <string name="rank_c2">C-Class 2</string>
+    <string name="rank_c3">C-Class 3</string>
+    <string name="rank_trainee">Trainee</string>
+</resources>

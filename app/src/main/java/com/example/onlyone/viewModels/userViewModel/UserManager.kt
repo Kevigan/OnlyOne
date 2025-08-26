@@ -65,9 +65,11 @@ class UserManager @Inject constructor(
                     val updated = currentUser.copy(
                         moodStatus = updates["moodStatus"] as? String ?: currentUser.moodStatus,
                         chatLanguage = updates["chatLanguage"] as? String ?: currentUser.chatLanguage,
-                        avatarId = (updates["avatarId"] as? Number)?.toInt() ?: currentUser.avatarId
+                        avatarId = (updates["avatarId"] as? Number)?.toInt() ?: currentUser.avatarId,
+                        // ⭐ add this:
+                        moodId   = (updates["moodId"]   as? Number)?.toInt() ?: currentUser.moodId
                     )
-                    updateUser(updated)
+                    updateUser(updated)   // triggers Compose to recompose → green ring “Selected”
                     onSuccess()
                 },
                 onFailure = { e ->
@@ -293,5 +295,70 @@ class UserManager @Inject constructor(
         }
     }
 
+    /** ⭐ Publish a favourite message (server-verified via CFN) */
+    fun setFavouriteMessage(
+        messageId: String,
+        onSuccess: () -> Unit = {},
+        onFailure: (String) -> Unit = {}
+    ) {
+        val currentUser = getUser() ?: return
+        viewModelScope.launch {
+            userRepository.setFavouriteMessage(
+                messageId = messageId,
+                onSuccess = {
+                    // Light refresh: read just the public doc to get the new favouriteMessage
+                    userRepository.getPublicUser(currentUser.uid)
+                        .addOnSuccessListener { doc ->
+                            val public = doc.toObject(PublicUser::class.java)
+                            val updated = currentUser.copy(favouriteMessage = public?.favouriteMessage)
+                            updateUser(updated)
+                            onSuccess()
+                        }
+                        .addOnFailureListener { e ->
+                            // The server update succeeded; local refresh failed
+                            onFailure(e.message ?: "Updated, but failed to refresh favourite")
+                        }
+                },
+                onFailure = { e ->
+                    onFailure(e.message ?: "Failed to set favourite")
+                }
+            )
+        }
+    }
+
+    /** 🗑️ Clear the favourite message */
+    fun clearFavouriteMessage(
+        onSuccess: () -> Unit = {},
+        onFailure: (String) -> Unit = {}
+    ) {
+        val currentUser = getUser() ?: return
+        viewModelScope.launch {
+            userRepository.clearFavouriteMessage(
+                onSuccess = {
+                    // We can update locally without a read
+                    val updated = currentUser.copy(favouriteMessage = null)
+                    updateUser(updated)
+                    onSuccess()
+                },
+                onFailure = { e ->
+                    onFailure(e.message ?: "Failed to clear favourite")
+                }
+            )
+        }
+    }
+
+    fun toggleFavouriteMessage(
+        messageId: String,
+        onSuccess: () -> Unit = {},
+        onFailure: (String) -> Unit = {}
+    ) {
+        val currentUser = getUser() ?: return
+        val isSame = currentUser.favouriteMessage?.messageId == messageId
+        if (isSame) {
+            clearFavouriteMessage(onSuccess, onFailure)
+        } else {
+            setFavouriteMessage(messageId, onSuccess, onFailure)
+        }
+    }
     // ... Add more methods here in the same structure ...
 }

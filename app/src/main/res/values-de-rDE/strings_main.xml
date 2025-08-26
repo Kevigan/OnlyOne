@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_greeting">Hallo %1$s</string>
+    <string name="main_cd_logout">Abmelden</string>
+
+    <string name="main_reset_prefix">Zuruecksetzen %1$s</string>
+    <string name="main_reset_written">WM</string>
+    <string name="main_reset_friends">F</string>
+    <string name="main_reset_local_messages">LM</string>
+
+    <string name="main_received_messages">Empfangene Nachrichten</string>
+    <string name="main_saved_messages">Gespeicherte Nachrichten</string> <!-- NEU -->
+    <string name="main_tab_received">Empfangen</string>                   <!-- NEU -->
+    <string name="main_tab_saved">Gespeichert</string>                    <!-- NEU -->
+    <string name="main_exp_in_label">laeuft ab in</string>                <!-- NEU -->
+
+    <string name="main_error_loading_messages">Nachrichten konnten nicht geladen werden. Bitte Verbindung pruefen.</string>
+    <string name="main_no_messages">Noch keine Nachrichten.</string>
+
+    <string name="main_logout_title">Abmelden</string>
+    <string name="main_logout_text">Moechtest du dich abmelden?</string>
+
+    <!-- Toasts -->
+    <string name="toast_favourite_set">Als Favorit gesetzt.</string>
+    <string name="toast_favourite_cleared">Favorit entfernt.</string>
+    <string name="toast_favourite_update_failed">Favorit konnte nicht aktualisiert werden.</string>
+
+    <string name="toast_saved_locally">Lokal gespeichert.</string>
+    <string name="toast_removed_from_saved">Aus „Gespeichert“ entfernt.</string>
+    <string name="toast_save_failed">Lokales Speichern fehlgeschlagen.</string>
+    <string name="toast_unsave_failed">Entfernen aus „Gespeichert“ fehlgeschlagen.</string>
+
+    <!-- NEU: Big Sheet & Accessibility -->
+    <string name="main_give_feedback">Feedback geben</string>
+    <string name="cd_thumb_up">Daumen hoch</string>
+    <string name="cd_neutral">Neutral</string>
+    <string name="cd_thumb_down">Daumen runter</string>
+    <string name="cd_save_locally">Lokal speichern</string>
+    <string name="cd_unsave_locally">Lokal entfernen</string>
+    <string name="cd_block_user">Benutzer blockieren</string>
+
+    <!-- NEU: Feedback-Zusammenfassungen -->
+    <string name="feedback_you_gave_thumbs_up">Du hast Daumen hoch gegeben</string>
+    <string name="feedback_you_gave_neutral">Du hast neutral bewertet</string>
+    <string name="feedback_you_gave_thumbs_down">Du hast Daumen runter gegeben</string>
+    <string name="feedback_none">Kein Feedback gegeben</string>
+
+    <!-- NEU: Block-Dialog -->
+    <string name="dialog_block_title">Benutzer blockieren?</string>
+    <string name="dialog_block_text">Bist du sicher, dass du diesen Benutzer blockieren moechtest? Du siehst keine Nachrichten mehr von ihm.</string>
+    <string name="common_block">Blockieren</string>
+
+    <string name="dialog_delete_saved_title">Gespeicherte Nachricht entfernen?</string>
+    <string name="dialog_delete_saved_text">Moechtest du diese Nachricht wirklich aus "Gespeichert" entfernen?</string>
+    <string name="cd_delete_saved">Gespeicherte Nachricht loeschen</string>
+
+</resources>
+
+

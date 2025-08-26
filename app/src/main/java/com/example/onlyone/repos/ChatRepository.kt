@@ -1,7 +1,9 @@
 package com.example.onlyone.repos
 
 import android.util.Log
+import com.example.dao.FavoriteMessageDao
 import com.example.dao.MessageDao
+import com.example.onlyone.data.LocalFavoriteMessage
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.utils.toFirestoreMap
 import com.example.onlyone.data.Message
@@ -30,7 +32,8 @@ import javax.inject.Singleton
 @Singleton
 class ChatRepository @Inject constructor(
     private val db: FirebaseFirestore,
-    private val messageDao: MessageDao
+    private val messageDao: MessageDao,
+    private val favoriteMessageDao: FavoriteMessageDao
 ) {
 
     private var readCount = 0
@@ -132,27 +135,6 @@ class ChatRepository @Inject constructor(
         }
     }
 
-    suspend fun addFeedbackOffline(messageId: String, feedback: Int) {
-        try {
-            // Update feedback in Firestore
-            db.collection("messages").document(messageId)
-                .update("feedback", feedback)
-                .await()
-
-            // Update local Room entry (optional: ensure it exists)
-            val localMessage = messageDao.getMessageById(messageId)
-            if (localMessage != null) {
-                val updated = localMessage.copy(feedback = feedback)
-                messageDao.insertAll(listOf(updated))
-            }
-
-            trackWrite("messages/$messageId → feedback:$feedback", "addFeedbackOffline")
-        } catch (e: Exception) {
-            Log.e("ChatRepo", "❌ addFeedbackOffline failed", e)
-            throw e
-        }
-    }
-
     /////////////ROOM Database///////////////
 
     fun observeMessagesForUser(uid: String): Flow<List<LocalMessage>> {
@@ -160,7 +142,7 @@ class ChatRepository @Inject constructor(
         return messageDao.getMessagesForUser(uid)
     }
 
-    fun observeWrittenToday(): Flow<List<WrittenTodayEntity>> {
+   fun observeWrittenToday(): Flow<List<WrittenTodayEntity>> {
         //trackRead("room/writtenToday", "observeWrittenToday")
         return messageDao.observeWrittenToday()
     }
@@ -238,6 +220,13 @@ class ChatRepository @Inject constructor(
         messageDao.clearWrittenToday()
     }
 
+    suspend fun fetchMessageById(messageId: String): Message? =
+        try {
+            val doc = db.collection("messages").document(messageId).get().await()
+            doc.toObject(Message::class.java)?.copy(id = doc.id)
+        } catch (e: Exception) { Log.e("ChatRepo","fetchMessageById failed", e); null }
+
+
     fun Message.toLocal(): LocalMessage = LocalMessage(
         id = this.id,
         senderId = this.senderId,
@@ -250,5 +239,33 @@ class ChatRepository @Inject constructor(
         read = this.read,
         feedback = this.feedback
     )
+
+    // ---------- FAVORITES (new) ----------
+    fun observeFavoriteMessages(): Flow<List<LocalFavoriteMessage>> =
+        favoriteMessageDao.observeAll()
+
+    suspend fun saveMessageToFavorites(msg: LocalMessage) {
+        val fav = LocalFavoriteMessage(
+            id = msg.id,
+            senderId = msg.senderId,
+            senderUsername = msg.senderUsername,
+            senderAvatarId = msg.senderAvatarId,
+            senderMood = msg.senderMood,
+            receiverId = msg.receiverId,
+            content = msg.content,
+            originalTimestamp = msg.timestamp,
+            savedAt = System.currentTimeMillis()
+        )
+        favoriteMessageDao.upsert(fav)
+        trackWrite("room/LocalFavoriteMessage/${msg.id}", "saveMessageToFavorites")
+    }
+
+    suspend fun removeFavorite(messageId: String) {
+        favoriteMessageDao.deleteById(messageId)
+        trackWrite("room/LocalFavoriteMessage/$messageId", "removeFavorite")
+    }
+
+    suspend fun isFavorite(messageId: String): Boolean =
+        favoriteMessageDao.countById(messageId) > 0
 }
 

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen -->
+    <string name="achv_title">Erfolge</string>
+    <string name="achv_empty">Keine Erfolge gefunden</string>
+    <string name="achv_section">%1$s</string>
+
+    <!-- Card labels -->
+    <string name="achv_unlocked">Freigeschaltet</string>
+    <string name="achv_progress_xy">%1$d / %2$d</string>
+    <string name="achv_label_id">ID: %1$s</string>
+    <string name="achv_label_type">Typ: %1$s</string>
+    <string name="achv_label_completed">Abgeschlossen: %1$s</string>
+    <string name="achv_label_progress_xy">Fortschritt: %1$d / %2$d</string>
+
+    <!-- MessageAchievements - German -->
+    <string name="achv_send_1_name">Erste Nachricht</string>
+    <string name="achv_send_1_desc">Sende deine allererste Nachricht.</string>
+
+    <string name="achv_send_10_name">Wird warm</string>
+    <string name="achv_send_10_desc">Sende 10 Nachrichten.</string>
+
+    <string name="achv_send_25_name">Aufwärmen</string>
+    <string name="achv_send_25_desc">Sende 25 Nachrichten.</string>
+
+    <string name="achv_send_50_name">Plaudertasche</string>
+    <string name="achv_send_50_desc">Sende 50 Nachrichten.</string>
+
+    <string name="achv_send_100_name">Sprechmaschine</string>
+    <string name="achv_send_100_desc">Sende 100 Nachrichten.</string>
+
+    <string name="achv_send_250_name">Nachrichtenmeister</string>
+    <string name="achv_send_250_desc">Sende 250 Nachrichten.</string>
+
+    <string name="achv_send_500_name">Überragender Bote</string>
+    <string name="achv_send_500_desc">Sende 500 Nachrichten.</string>
+
+    <string name="achv_send_1000_name">Legendäre Stimme</string>
+    <string name="achv_send_1000_desc">Sende 1000 Nachrichten.</string>
+</resources>
+

@@ -41,5 +41,31 @@ class ShopManager(
         }
     }
 
+    fun buyMood(
+        moodId: Int,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val currentUser = getUser() ?: return
+        viewModelScope.launch {
+            val updatedInventory = userRepository.buyMood(moodId)
+            if (updatedInventory != null) {
+                val updatedUser = currentUser.copy(
+                    gold = updatedInventory.gold,
+                    runes_rare = updatedInventory.runes_rare,
+                    runes_super_rare = updatedInventory.runes_super_rare,
+                    runes_mega_rare = updatedInventory.runes_mega_rare,
+                    ownedAvatars = updatedInventory.ownedAvatars,
+                    // ⭐ reflect moods
+                    ownedMoods = updatedInventory.ownedMoods
+                )
+                updateUser(updatedUser)
+                onSuccess()
+            } else {
+                onFailure("Could not complete purchase.")
+                Log.e("ShopManager", "❌ buyMood failed for moodId=$moodId")
+            }
+        }
+    }
     // Future: buyRune(...), buyTheme(...), etc.
 }

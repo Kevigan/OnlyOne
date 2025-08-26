@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_cd_current_avatar">Aktueller Avatar</string>
+    <string name="profile_mood_label">Stimmung: %1$s</string>
+
+    <string name="profile_mood_dialog_title">Stimmung aktualisieren</string>
+    <string name="profile_mood_placeholder">Stimmung eingeben…</string>
+
+    <string name="profile_save">Speichern</string>
+    <string name="profile_cancel">Abbrechen</string>
+</resources>

@@ -7,14 +7,15 @@ data class UpgradeCost(
     val runesMegaRare: Int = 0
 )
 
- val upgradeSteps = mapOf(
+val upgradeSteps = mapOf(
     "maxMoments" to 25,
     "maxSwipes" to 25,
     "maxMessageLength" to 25,
+    "maxMoodLength" to 25,   // ⭐ new
     "maxAdsPerDay" to 1
 )
 
- val upgradeCosts = mapOf(
+val upgradeCosts = mapOf(
     "maxMoments" to listOf(
         mapOf("gold" to 40),
         mapOf("gold" to 40),
@@ -39,12 +40,21 @@ data class UpgradeCost(
         mapOf("gold" to 100, "runes_mega_rare" to 1),
         mapOf("gold" to 120, "runes_mega_rare" to 2)
     ),
+    "maxMoodLength" to listOf(              // ⭐ new
+        mapOf("gold" to 50),
+        mapOf("gold" to 50),
+        mapOf("gold" to 70, "runes_rare" to 1),
+        mapOf("gold" to 80, "runes_super_rare" to 1),
+        mapOf("gold" to 100, "runes_mega_rare" to 1),
+        mapOf("gold" to 120, "runes_mega_rare" to 2)
+    ),
     "maxAdsPerDay" to listOf(
         mapOf("gold" to 100),
         mapOf("gold" to 120, "runes_rare" to 1),
         mapOf("gold" to 150, "runes_super_rare" to 1)
     )
 )
+
 
 fun calculateUpgradeCost(feature: String, currentValue: Int, levels: Int): UpgradeCost {
     val stepSize = upgradeSteps[feature] ?: return UpgradeCost()

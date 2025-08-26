@@ -1,5 +1,6 @@
 package com.example.onlyone.viewModels.userViewModel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -17,15 +18,11 @@ import com.example.onlyone.repos.userRepos.UserRepository
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,6 +31,7 @@ class UserViewModel @Inject constructor(
     val userRepository: UserRepository,
     private val friendDao: FriendDao,
     private val messageDao: MessageDao,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
     val repository: UserRepository
         get() = userRepository
@@ -68,7 +66,8 @@ class UserViewModel @Inject constructor(
             getUser = { _user.value }
         )
     }
-    fun loadUser(){userManager.loadUser()}
+
+    fun loadUser() { userManager.loadUser() }
     fun updatePublicProfile(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (String) -> Unit) { userManager.updatePublicProfile(updates, onSuccess, onFailure) }
     fun blockUser(targetUid: String) { userManager.blockUser(targetUid) }
     fun unblockUser(targetUid: String) { userManager.unblockUser(targetUid) }
@@ -79,6 +78,10 @@ class UserViewModel @Inject constructor(
     fun declineFriendRequest(requesterUid: String) { userManager.declineFriendRequest(requesterUid) }
     fun deleteFriend(friendUid: String) { userManager.deleteFriend(friendUid) }
     fun fetchUserInventory() { userManager.fetchUserInventory() }
+    fun setFavouriteMessage(messageId: String, onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) { userManager.setFavouriteMessage(messageId, onSuccess, onFailure) }
+    fun clearFavouriteMessage(onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) { userManager.clearFavouriteMessage(onSuccess, onFailure) }
+    fun toggleFavouriteMessage(messageId: String, onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) { userManager.toggleFavouriteMessage(messageId, onSuccess, onFailure) }
+
 
 
 
@@ -138,6 +141,7 @@ class UserViewModel @Inject constructor(
         )
     }
     fun buyAvatar(avatarId: Int, onSuccess: () -> Unit, onFailure: (String) -> Unit) { shopManager.buyAvatar(avatarId, onSuccess, onFailure) }
+    fun buyMood(moodId: Int, onSuccess: () -> Unit, onFailure: (String) -> Unit) { shopManager.buyMood(moodId, onSuccess, onFailure) }
 
 
     var achievementManager: AchievementManager
@@ -149,19 +153,13 @@ class UserViewModel @Inject constructor(
         )
     }
     fun loadAchievementsWithStats() {
-        achievementManager.fetchDefinitions(
+        // Skip fetching definitions from server – we already have MessageAchievements.definitions
+        achievementManager.loadUserAchievementsWithStats(
             onSuccess = {
-                achievementManager.loadUserAchievementsWithStats(
-                    onSuccess = {
-                        updateGroupedAchievements()
-                    },
-                    onFailure = { error ->
-                        Log.e("Achievements", "❌ Failed to load: $error")
-                    }
-                )
+                updateGroupedAchievements()
             },
             onFailure = { error ->
-                Log.e("Achievements", "❌ Failed to fetch definitions: $error")
+                Log.e("Achievements", "❌ Failed to load: $error")
             }
         )
     }
@@ -170,10 +168,7 @@ class UserViewModel @Inject constructor(
     val groupedAchievements: LiveData<Map<String, List<AchievementManager.AchievementWithProgress>>> = _groupedAchievements
 
     fun updateGroupedAchievements() {
-        val defs = achievementManager.getCachedDefinitions() ?: run {
-            Log.e("Achievements", "❌ No definitions cached")
-            return
-        }
+        val defs = MessageAchievements.definitions(appContext)
 
         val user = achievementManager.getCachedUserAchievements() ?: run {
             Log.e("Achievements", "❌ No achievement user data cached")
@@ -265,7 +260,7 @@ class UserViewModel @Inject constructor(
         onFailure: (Exception) -> Unit
     ) {
         userRepository.seedAchievementDefinitions(
-            definitions = MessageAchievements.definitions,
+            definitions = MessageAchievements.definitions(appContext),
             onSuccess = onSuccess,
             onFailure = onFailure
         )

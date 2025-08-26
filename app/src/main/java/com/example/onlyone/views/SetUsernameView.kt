@@ -24,8 +24,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.onlyone.R
 import com.example.onlyone.Screen
 import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
@@ -43,78 +45,92 @@ fun SetUsernameView(
     var username by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
 
-    // 🔤 Chat language (existing)
-    val chatLanguageOptions = listOf("en", "de", "fr", "es", "it")
+    // Chat language — can be broader
+    val chatLanguageCodes = listOf("en", "de", "fr", "es", "pt")
     var selectedChatLanguage by remember { mutableStateOf("en") }
     var chatLangExpanded by remember { mutableStateOf(false) }
 
-    // 🛠 App language (new)
-    // you can reuse the same options, or add "pt" if you support it
-    val appLanguageOptions = listOf("en", "de", "fr", "es", "it")
+    // App language — ONLY en/de for now
+    val appLanguageCodes = listOf("en", "de")
     var selectedAppLanguage by remember { mutableStateOf("en") }
     var appLangExpanded by remember { mutableStateOf(false) }
 
+    // Localized display names
+    val langName = mapOf(
+        "en" to stringResource(R.string.lang_english),
+        "de" to stringResource(R.string.lang_german),
+        "fr" to stringResource(R.string.lang_french),
+        "es" to stringResource(R.string.lang_spanish),
+        "pt" to stringResource(R.string.lang_portuguese)
+    )
+
+    // Safety: force app language to one of the supported codes
+    fun clampAppLanguage(code: String): String =
+        if (code in appLanguageCodes) code else "en"
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Choose your username")
+        Text(stringResource(R.string.onboarding_title))
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") }
+            label = { Text(stringResource(R.string.onboarding_username_label)) }
         )
 
         Spacer(Modifier.height(16.dp))
 
         // 💬 Chat Language
-        Text("Select your chat language")
+        Text(stringResource(R.string.onboarding_chat_language_label))
         Spacer(Modifier.height(8.dp))
         Box(Modifier.fillMaxWidth().clickable { chatLangExpanded = true }) {
             OutlinedTextField(
-                value = selectedChatLanguage,
+                value = langName[selectedChatLanguage] ?: selectedChatLanguage,
                 onValueChange = {},
-                label = { Text("Chat Language") },
+                label = { Text(stringResource(R.string.onboarding_chat_language_label)) },
                 readOnly = true,
                 enabled = false,
                 modifier = Modifier.fillMaxWidth()
             )
             DropdownMenu(expanded = chatLangExpanded, onDismissRequest = { chatLangExpanded = false }) {
-                chatLanguageOptions.forEach { lang ->
+                chatLanguageCodes.forEach { code ->
                     DropdownMenuItem(onClick = {
-                        selectedChatLanguage = lang
+                        selectedChatLanguage = code
                         chatLangExpanded = false
-                    }) { Text(lang) }
+                    }) { Text(langName[code] ?: code.uppercase()) }
                 }
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // 🌐 App Language (NEW)
-        Text("Select your app language")
+        // 🌐 App Language (EN/DE only)
+        /*Text(stringResource(R.string.onboarding_app_language_label))
         Spacer(Modifier.height(8.dp))
         Box(Modifier.fillMaxWidth().clickable { appLangExpanded = true }) {
             OutlinedTextField(
-                value = selectedAppLanguage,
+                value = langName[selectedAppLanguage] ?: selectedAppLanguage,
                 onValueChange = {},
-                label = { Text("App Language") },
+                label = { Text(stringResource(R.string.onboarding_app_language_label)) },
                 readOnly = true,
                 enabled = false,
                 modifier = Modifier.fillMaxWidth()
             )
             DropdownMenu(expanded = appLangExpanded, onDismissRequest = { appLangExpanded = false }) {
-                appLanguageOptions.forEach { lang ->
+                appLanguageCodes.forEach { code ->
                     DropdownMenuItem(onClick = {
-                        selectedAppLanguage = lang
+                        selectedAppLanguage = code
                         appLangExpanded = false
-                    }) { Text(lang) }
+                    }) { Text(langName[code] ?: code.uppercase()) }
                 }
             }
-        }
+        }*/
 
         Spacer(Modifier.height(24.dp))
 
@@ -129,12 +145,12 @@ fun SetUsernameView(
                             fcmToken = token,
                             chatLanguage = selectedChatLanguage,
                             onSuccess = {
-                                // persist both prefs
-                                userViewModel.saveSearchUserLanguage(selectedChatLanguage)
-                                userViewModel.saveAppLanguage(selectedAppLanguage)
+                                val appLang = clampAppLanguage(selectedAppLanguage)
 
-                                // apply locale immediately
-                                applyAppLocale(selectedAppLanguage)
+                                userViewModel.saveSearchUserLanguage(selectedChatLanguage)
+                                userViewModel.saveAppLanguage(appLang)
+
+                                applyAppLocale(appLang)
 
                                 userViewModel.loadUser()
                                 navController.navigate(Screen.MainScreen.route) {
@@ -142,19 +158,30 @@ fun SetUsernameView(
                                 }
                             },
                             onFailure = {
-                                Toast.makeText(context, "Failed to create user profile", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.onboarding_error_create_profile),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 isSaving = false
                             }
                         )
                     }
                     .addOnFailureListener {
-                        Toast.makeText(context, "Failed to get FCM token", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.onboarding_error_fcm_token),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         isSaving = false
                     }
             },
             enabled = !isSaving
         ) {
-            Text(if (isSaving) "Saving..." else "Continue")
+            Text(
+                if (isSaving) stringResource(R.string.common_saving)
+                else stringResource(R.string.onboarding_continue)
+            )
         }
     }
 }

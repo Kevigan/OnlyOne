@@ -1,31 +1,22 @@
 package com.example.onlyone.composables
 
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,7 +34,15 @@ fun ReceivedMessageItemBig(
     modifier: Modifier = Modifier,
     shape: Int = 45
 ) {
+    val context = LocalContext.current
     var showBlockDialog by remember { mutableStateOf(false) }
+
+    // Observe real local favourites (Room) to reflect bookmark state
+    val favorites by chatViewModel.observeFavoriteMessages().collectAsState(initial = emptyList())
+    val isSaved by remember(favorites, message.id) {
+        derivedStateOf { favorites.any { it.id == message.id } }
+    }
+
     LaunchedEffect(message.id) {
         chatViewModel.markMessageAsRead(message)
     }
@@ -73,21 +72,21 @@ fun ReceivedMessageItemBig(
                     .padding(bottom = 12.dp)
                     .align(Alignment.CenterHorizontally)
             )
+
             if (message.feedback == -10) {
                 Text(
-                    text = "Give Feedback",
+                    text = stringResource(R.string.main_give_feedback),
                     style = MaterialTheme.typography.subtitle1,
                     color = Color.Gray,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-
                 Row(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_thumb_up_off_alt_24),
-                        contentDescription = "Thumb Up",
+                        contentDescription = stringResource(R.string.cd_thumb_up),
                         tint = Color.Green,
                         modifier = Modifier
                             .size(32.dp)
@@ -95,7 +94,7 @@ fun ReceivedMessageItemBig(
                     )
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_sentiment_neutral_24),
-                        contentDescription = "Neutral",
+                        contentDescription = stringResource(R.string.cd_neutral),
                         tint = Color.Gray,
                         modifier = Modifier
                             .size(32.dp)
@@ -103,7 +102,7 @@ fun ReceivedMessageItemBig(
                     )
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_thumb_down_off_alt_24),
-                        contentDescription = "Thumb Down",
+                        contentDescription = stringResource(R.string.cd_thumb_down),
                         tint = Color.Red,
                         modifier = Modifier
                             .size(32.dp)
@@ -111,12 +110,27 @@ fun ReceivedMessageItemBig(
                     )
                 }
             } else {
-                // ✅ Show selected feedback
                 val (iconId, tint, description) = when (message.feedback) {
-                    1 -> Triple(R.drawable.baseline_thumb_up_off_alt_24, Color.Green, "You gave thumbs up")
-                    0 -> Triple(R.drawable.baseline_sentiment_neutral_24, Color.Gray, "You gave neutral")
-                    -1 -> Triple(R.drawable.baseline_thumb_down_off_alt_24, Color.Red, "You gave thumbs down")
-                    else -> Triple(R.drawable.baseline_sentiment_neutral_24, Color.LightGray, "No Feedback given")
+                    1 -> Triple(
+                        R.drawable.baseline_thumb_up_off_alt_24,
+                        Color.Green,
+                        stringResource(R.string.feedback_you_gave_thumbs_up)
+                    )
+                    0 -> Triple(
+                        R.drawable.baseline_sentiment_neutral_24,
+                        Color.Gray,
+                        stringResource(R.string.feedback_you_gave_neutral)
+                    )
+                    -1 -> Triple(
+                        R.drawable.baseline_thumb_down_off_alt_24,
+                        Color.Red,
+                        stringResource(R.string.feedback_you_gave_thumbs_down)
+                    )
+                    else -> Triple(
+                        R.drawable.baseline_sentiment_neutral_24,
+                        Color.LightGray,
+                        stringResource(R.string.feedback_none)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -135,15 +149,54 @@ fun ReceivedMessageItemBig(
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
+
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Save/Unsave + Block row
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // 📑 Local save/unsave toggle (reactive)
+                Icon(
+                    painter = painterResource(
+                        id = if (isSaved) R.drawable.baseline_bookmark_24
+                        else R.drawable.baseline_bookmark_border_24
+                    ),
+                    contentDescription = stringResource(
+                        if (isSaved) R.string.cd_unsave_locally else R.string.cd_save_locally
+                    ),
+                    tint = if (isSaved) Color.Cyan else Color.White,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable {
+                            if (isSaved) {
+                                chatViewModel.removeFavorite(message.id)
+                                Toast
+                                    .makeText(
+                                        context,
+                                        context.getString(R.string.toast_removed_from_saved),
+                                        Toast.LENGTH_SHORT
+                                    )
+                                    .show()
+                            } else {
+                                chatViewModel.saveMessageToFavorites(message)
+                                Toast
+                                    .makeText(
+                                        context,
+                                        context.getString(R.string.toast_saved_locally),
+                                        Toast.LENGTH_SHORT
+                                    )
+                                    .show()
+                            }
+                        }
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_block_24),
-                    contentDescription = "Block User",
+                    contentDescription = stringResource(R.string.cd_block_user),
                     tint = Color.Yellow,
                     modifier = Modifier
                         .size(28.dp)
@@ -155,25 +208,20 @@ fun ReceivedMessageItemBig(
         if (showBlockDialog) {
             AlertDialog(
                 onDismissRequest = { showBlockDialog = false },
-                title = { Text("Block User?") },
-                text = { Text("Are you sure you want to block this user? You will no longer see messages from them.") },
+                title = { Text(stringResource(R.string.dialog_block_title)) },
+                text = { Text(stringResource(R.string.dialog_block_text)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showBlockDialog = false
                         userViewModel.blockUser(message.senderId)
-                    }) {
-                        Text("Block", color = Color.Red)
-                    }
+                    }) { Text(stringResource(R.string.common_block), color = Color.Red) }
                 },
                 dismissButton = {
                     TextButton(onClick = { showBlockDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.common_cancel))
                     }
                 }
             )
         }
-
     }
 }
-
-

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_reset_in">Reset in: %1$dh %2$dm UTC</string>
+    <string name="stats_gold">Gold: %1$d</string>
+    <string name="stats_points">Punkte: %1$s</string>
+    <string name="stats_rank">Rang: %1$s</string>
+    <string name="stats_runes_label">Runen:</string>
+    <string name="stats_cd_achievements">Erfolge</string>
+
+    <plurals name="stats_runes_rare">
+        <item quantity="one">%1$d seltene Rune</item>
+        <item quantity="other">%1$d seltene Runen</item>
+    </plurals>
+    <plurals name="stats_runes_super">
+        <item quantity="one">%1$d super-seltene Rune</item>
+        <item quantity="other">%1$d super-seltene Runen</item>
+    </plurals>
+    <plurals name="stats_runes_mega">
+        <item quantity="one">%1$d mega-seltene Rune</item>
+        <item quantity="other">%1$d mega-seltene Runen</item>
+    </plurals>
+
+    <!-- Rank labels -->
+    <string name="rank_s_class">S-Klasse</string>
+    <string name="rank_a2">A-Klasse 2</string>
+    <string name="rank_a3">A-Klasse 3</string>
+    <string name="rank_b1">B-Klasse 1</string>
+    <string name="rank_b2">B-Klasse 2</string>
+    <string name="rank_b3">B-Klasse 3</string>
+    <string name="rank_c1">C-Klasse 1</string>
+    <string name="rank_c2">C-Klasse 2</string>
+    <string name="rank_c3">C-Klasse 3</string>
+    <string name="rank_trainee">Anfaenger</string>
+</resources>

@@ -89,46 +89,6 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    /*fun loadTargetUser(
-        uid: String,
-        isRandom: Boolean,
-        userViewModel: UserViewModel
-    ) {
-        Log.d("ChatViewModel", "loadTargetUser called with uid=$uid, isRandom=$isRandom")
-
-        viewModelScope.launch {
-            if (!isRandom) {
-                val cached = userViewModel.getLocalFriend(uid)
-                if (cached != null) {
-                    Log.d("ChatViewModel", "Found cached friend for uid=$uid: ${cached.username}")
-                    _targetUser.value = cached.toPublicUser()
-                    return@launch
-                } else {
-                    Log.d("ChatViewModel", "No cached friend found for uid=$uid")
-                }
-            }
-
-            // Not cached or random user → fetch from Firestore
-            Log.d("ChatViewModel", "Fetching user $uid from Firestore")
-            userViewModel.repository.getPublicUser(uid)
-                .addOnSuccessListener { doc ->
-                    val user = doc.toObject(PublicUser::class.java)
-                    if (user != null) {
-                        Log.d("ChatViewModel", "Fetched user from Firestore: ${user.username}")
-                    } else {
-                        Log.w("ChatViewModel", "User document for $uid exists but couldn't be parsed")
-                    }
-                    _targetUser.value = user
-                }
-                .addOnFailureListener { e ->
-                    Log.e("ChatViewModel", "Failed to fetch user from Firestore for uid=$uid", e)
-                    _targetUser.value = null
-                }
-        }
-    }*/
-
-
-
     //////////////ROOM Database////////////////////
 
     fun observeLocalMessages(uid: String): Flow<List<LocalMessage>> {
@@ -157,4 +117,18 @@ class ChatViewModel @Inject constructor(
             onResult(!alreadySent)
         }
     }
+
+    // ---------- FAVORITES (new) ----------
+    fun observeFavoriteMessages() = chatRepository.observeFavoriteMessages()
+
+    fun saveMessageToFavorites(msg: LocalMessage) {
+        viewModelScope.launch { chatRepository.saveMessageToFavorites(msg) }
+    }
+
+    fun removeFavorite(messageId: String) {
+        viewModelScope.launch { chatRepository.removeFavorite(messageId) }
+    }
+
+    suspend fun isFavorite(messageId: String): Boolean =
+        chatRepository.isFavorite(messageId)
 }

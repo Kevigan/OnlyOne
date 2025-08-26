@@ -4,6 +4,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -34,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,6 +45,7 @@ import androidx.navigation.NavController
 import com.example.onlyone.R
 import com.example.onlyone.Screen
 import com.example.onlyone.composables.BlinkingIcon
+import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.composables.FriendItem
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.utils.toPublicUser
@@ -81,38 +85,56 @@ fun FriendsView(
             .padding(top = 32.dp, bottom = 16.dp)
     ) {
         // 🔹 Top bar
-        Row(
+        CustomColorOverlay(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth(),
+            paddingBox1 = PaddingValues(6.dp),
+            paddingBox2 = PaddingValues(1.dp),
+            gradientColor1 =  Color(0xFF001F54).copy(alpha = 0.95f),
+            gradientColor2 = Color(0xFF003366).copy(alpha = 0.95f),
+            borderWidth = 1.dp,
+            shape = RoundedCornerShape(24.dp),
+            onDismiss = {}
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.friends_header), style = MaterialTheme.typography.h5)
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = {
-                        userViewModel.loadUser()
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.friends_refreshing),
-                            Toast.LENGTH_SHORT
-                        ).show()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.friends_header),
+                        style = MaterialTheme.typography.h5,
+                        color = Color.White // ⬅ text color
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            userViewModel.loadUser()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.friends_refreshing),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.friends_cd_reload),
+                            tint = Color.White // ⬅ icon color
+                        )
                     }
-                ) {
+                }
+
+                IconButton(onClick = { showAddDialog = true }) {
                     Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = stringResource(R.string.friends_cd_reload)
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = stringResource(R.string.friends_cd_add),
+                        tint = Color.White // ⬅ icon color
                     )
                 }
-            }
-
-            IconButton(onClick = { showAddDialog = true }) {
-                Icon(
-                    imageVector = Icons.Default.PersonAdd,
-                    contentDescription = stringResource(R.string.friends_cd_add)
-                )
             }
         }
 
@@ -128,14 +150,17 @@ fun FriendsView(
                             contentDescription = stringResource(R.string.friends_cd_incoming),
                             shouldBlink = incomingCount > 0
                         )
+
                         2 -> Icon(
                             painter = painterResource(id = R.drawable.baseline_arrow_forward_24),
                             contentDescription = stringResource(R.string.friends_cd_outgoing)
                         )
+
                         3 -> Icon(
                             painter = painterResource(id = R.drawable.baseline_block_24),
                             contentDescription = stringResource(R.string.friends_cd_blocked)
                         )
+
                         else -> Text(tabTitles[0]) // "Friends"
                     }
                 }
@@ -165,7 +190,12 @@ fun FriendsView(
                             onWriteClick = {
                                 if (friend.uid !in writtenIds) {
                                     userViewModel.setTargetUser(friend.toPublicUser())
-                                    navController.navigate(Screen.ChatScreen.createRoute(friend.uid, false))
+                                    navController.navigate(
+                                        Screen.ChatScreen.createRoute(
+                                            friend.uid,
+                                            false
+                                        )
+                                    )
                                 }
                             },
                             showDelete = true,
@@ -180,14 +210,18 @@ fun FriendsView(
                 // 🔹 Incoming Requests
                 val incomingUids = user?.incomingFriendRequests ?: emptyList()
                 if (incomingUids.isEmpty()) {
-                    Text(stringResource(R.string.friends_empty_incoming), modifier = Modifier.padding(12.dp))
+                    Text(
+                        stringResource(R.string.friends_empty_incoming),
+                        modifier = Modifier.padding(12.dp)
+                    )
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
                         items(incomingUids) { uid ->
-                            val username = incomingRequests[uid] ?: stringResource(R.string.friends_unknown)
+                            val username =
+                                incomingRequests[uid] ?: stringResource(R.string.friends_unknown)
                             FriendItem(
                                 name = username,
                                 status = stringResource(R.string.friends_status_wants_connect),
@@ -207,14 +241,18 @@ fun FriendsView(
                 // 🔹 Outgoing Requests
                 val outgoingUids = user?.outgoingFriendRequests ?: emptyList()
                 if (outgoingUids.isEmpty()) {
-                    Text(stringResource(R.string.friends_empty_outgoing), modifier = Modifier.padding(12.dp))
+                    Text(
+                        stringResource(R.string.friends_empty_outgoing),
+                        modifier = Modifier.padding(12.dp)
+                    )
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
                         items(outgoingUids) { uid ->
-                            val username = outgoingUsernames[uid] ?: stringResource(R.string.friends_pending)
+                            val username =
+                                outgoingUsernames[uid] ?: stringResource(R.string.friends_pending)
                             FriendItem(
                                 name = username,
                                 status = stringResource(R.string.friends_status_request_sent),
@@ -246,10 +284,14 @@ fun FriendsView(
             }
 
             3 -> {
-                val blockedUsers = userViewModel.blockedUsers.collectAsState(initial = emptyList()).value
+                val blockedUsers =
+                    userViewModel.blockedUsers.collectAsState(initial = emptyList()).value
 
                 if (blockedUsers.isEmpty()) {
-                    Text(stringResource(R.string.friends_empty_blocked), modifier = Modifier.padding(12.dp))
+                    Text(
+                        stringResource(R.string.friends_empty_blocked),
+                        modifier = Modifier.padding(12.dp)
+                    )
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),

@@ -31,7 +31,9 @@ import androidx.compose.ui.window.Dialog
 fun CustomColorOverlay(
     modifier: Modifier = Modifier,
     overlayColor: Color = Color.Transparent,
-    borderColor: Color = Color.White,
+    borderColor: Color =  Color(0xFF80DFFF),
+    gradientColor1: Color = Color(0xFF353535).copy(alpha = 0.95f),      //Color(0xFF433A52)
+    gradientColor2: Color = Color(0xFF1F1F1F).copy(alpha = 0.95f),      //Color(0xFF5A4A6A)
     borderWidth : Dp = 0.1.dp,
     shape: Shape = RoundedCornerShape(32.dp),
     paddingBox1: PaddingValues = PaddingValues(horizontal = 4.dp), // outer Box padding
@@ -62,8 +64,8 @@ fun CustomColorOverlay(
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                Color(0xFF433A52),
-                                Color(0xFF5A4A6A)
+                                gradientColor1,
+                                gradientColor2
                             )
                         ),
                         shape = shape

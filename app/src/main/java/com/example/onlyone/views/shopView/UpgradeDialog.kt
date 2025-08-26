@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -66,8 +67,12 @@ fun UpgradeDialog(
         "maxSwipes" -> pluralStringResource(
             R.plurals.common_swipes_per_day, currentValue, currentValue
         )
+        "maxMoodLength" -> pluralStringResource(
+            R.plurals.common_chars, currentValue, currentValue
+        )
         else -> currentValue.toString()
     }
+
 
     Box(
         modifier = Modifier
@@ -106,7 +111,7 @@ fun UpgradeDialog(
 
                     if (cost.gold > 0) {
                         Text(
-                            text = stringResource(R.string.common_gold, cost.gold),
+                            text = stringResource(R.string.common_gold_with_amount, cost.gold),
                             color = Color.White
                         )
                     }
@@ -168,9 +173,17 @@ fun UpgradeDialog(
                             }
                         }
 
-                        Button(onClick = onDismiss, enabled = !isLoading) {
+                        Button(
+                            onClick = onDismiss,
+                            enabled = !isLoading,
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color.Red,
+                                contentColor = Color.White
+                            )
+                        ) {
                             Text(stringResource(R.string.common_cancel))
                         }
+
                     }
                 }
             }

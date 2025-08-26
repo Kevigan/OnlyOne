@@ -49,7 +49,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 4.dp, vertical = 6.dp)
     ) {
         Surface(
             modifier = Modifier
@@ -70,8 +70,8 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                Color(0xFF433A52), // Darker
-                                Color(0xFF5A4A6A)  // Lighter
+                                Color(0xFF353535).copy(alpha = 0.9f), // Darker
+                                Color(0xFF1F1F1F).copy(alpha = 0.9f)  // Lighter
                             )
                         ),
                         shape = RoundedCornerShape(32.dp)

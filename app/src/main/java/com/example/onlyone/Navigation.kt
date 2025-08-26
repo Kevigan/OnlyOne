@@ -1,6 +1,7 @@
 package com.example.onlyone
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -46,6 +50,7 @@ import com.example.onlyone.views.SplashView
 import com.example.onlyone.views.achievements.AchievementsView
 import kotlinx.coroutines.delay
 
+
 @Composable
 fun Navigation(
     navController: NavHostController = rememberNavController(),
@@ -62,6 +67,27 @@ fun Navigation(
     val isConnected by listener.isConnected.collectAsState(initial = null)
     val lastConnectionState = remember { mutableStateOf(true) } // store previous state
     val showToast = remember { mutableStateOf(false) }
+
+    val bottomBarRoutes = setOf(
+        Screen.MainScreen.route,
+        Screen.FriendsScreen.route,
+        Screen.ShopScreen.route,
+        Screen.SettingsScreen.route,
+        Screen.AchievementsScreen.route,
+        "ChatScreen"
+    )
+
+    // 2) Helper to strip arguments
+    fun String.baseRoute(): String = this.substringBefore("/")
+
+// 3) Use base-route comparison against the hierarchy
+    val showBottomBar = navBackStackEntry
+        ?.destination
+        ?.hierarchy
+        ?.any { dest ->
+            val destRoute = dest.route?.baseRoute()
+            bottomBarRoutes.any { it.baseRoute() == destRoute }
+        } == true
 
 
     LaunchedEffect(Unit) {
@@ -99,28 +125,34 @@ fun Navigation(
         RequestNotificationPermission()
     }
 
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 16.dp)
-            .background(
+            .padding(top = 0.dp)
+           /* .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         MaterialTheme.colors.background,
                         Color(0xFF230C36)
                     )
                 )
-            )
+            )*/
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.background2),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
         TopSnackbar(message = bannerMessage.value)
 
         Scaffold(
+            backgroundColor = Color.Transparent,
             bottomBar = {
-                if (currentRoute !in listOf(Screen.SplashScreen.route, Screen.LoginScreen.route)) {
+                if (showBottomBar) {
                     MainBottomBar(navController = navController, currentRoute = currentRoute)
                 }
-            },
+            }
             // other scaffold content...
         ) { innerPadding ->
             Box(

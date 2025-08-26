@@ -3,7 +3,7 @@
     <string name="common_avatars">Avatare</string>
     <string name="common_avatar">Avatar</string>
     <string name="common_moods">Stimmungen</string>
-    <string name="common_mood">Stimmungen</string>
+    <string name="common_mood">Stimmung</string>
     <string name="common_buy">Kaufen</string>
     <string name="common_select">Auswählen</string>
     <string name="common_owned">Besitzt</string>
@@ -16,10 +16,15 @@
     <string name="common_selected">Ausgewählt</string>
     <string name="common_buy_with_cost">Kaufen (%1$d)</string>
 
-    <string name="common_gold">Gold</string>
+    <string name="common_gold_label">Gold</string>
+    <string name="common_gold_with_amount">Gold: %1$d</string>
     <string name="common_runes_rare">Seltene Runen: %1$d</string>
     <string name="common_runes_super_rare">Sehr seltene Runen: %1$d</string>
     <string name="common_runes_mega_rare">Ultra-seltene Runen: %1$d</string>
+
+    <string name="common_user">Benutzer</string>
+    <string name="common_yes">Ja</string>
+    <string name="common_no">Nein</string>
 
     <plurals name="common_chars">
         <item quantity="one">%1$d Zeichen</item>
@@ -35,4 +40,6 @@
         <item quantity="one">%1$d Swipe/Tag</item>
         <item quantity="other">%1$d Swipes/Tag</item>
     </plurals>
+
+    <string name="common_open_menu">Menue oeffnen</string>
 </resources>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen -->
+    <string name="achv_title">Achievements</string>
+    <string name="achv_empty">No achievements found</string>
+    <string name="achv_section">%1$s</string>
+
+    <!-- Card labels -->
+    <string name="achv_unlocked">Unlocked</string>
+    <string name="achv_progress_xy">%1$d / %2$d</string>
+    <string name="achv_label_id">ID: %1$s</string>
+    <string name="achv_label_type">Type: %1$s</string>
+    <string name="achv_label_completed">Completed: %1$s</string>
+    <string name="achv_label_progress_xy">Progress: %1$d / %2$d</string>
+
+    <!-- MessageAchievements - English -->
+    <string name="achv_send_1_name">First Message</string>
+    <string name="achv_send_1_desc">Send your very first message.</string>
+
+    <string name="achv_send_10_name">Getting Warm</string>
+    <string name="achv_send_10_desc">Send 10 messages.</string>
+
+    <string name="achv_send_25_name">Warming Up</string>
+    <string name="achv_send_25_desc">Send 25 messages.</string>
+
+    <string name="achv_send_50_name">Chatterbox</string>
+    <string name="achv_send_50_desc">Send 50 messages.</string>
+
+    <string name="achv_send_100_name">Talking Machine</string>
+    <string name="achv_send_100_desc">Send 100 messages.</string>
+
+    <string name="achv_send_250_name">Message Master</string>
+    <string name="achv_send_250_desc">Send 250 messages.</string>
+
+    <string name="achv_send_500_name">Messenger Supreme</string>
+    <string name="achv_send_500_desc">Send 500 messages.</string>
+
+    <string name="achv_send_1000_name">Legendary Voice</string>
+    <string name="achv_send_1000_desc">Send 1000 messages.</string>
+</resources>
+

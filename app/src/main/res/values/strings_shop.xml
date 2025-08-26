@@ -3,6 +3,9 @@
     <string name="shop_title">Shop</string>
     <string name="shop_message_length_label">Message length limit</string>
     <string name="shop_swipes_limit_label">Swipes limit</string>
+    <string name="shop_mood_length_label">Mood message length</string>
+    <string name="shop_upgrade_mood_length_title">Upgrade mood message length</string>
+
     <string name="shop_upgrade_message_length_title">Upgrade message length</string>
     <string name="shop_upgrade_swipes_title">Upgrade swipes limit</string>
     <string name="shop_cost_header">Cost for next step:</string>
@@ -10,4 +13,25 @@
     <string name="shop_upgrade">Upgrade</string>
     <string name="shop_upgrade_success">Upgrade successful!</string>
     <string name="shop_upgrade_failed">Upgrade failed!</string>
+
+    <string name="shop_avatar_buy_success">Avatar purchased!</string>
+    <string name="shop_avatar_buy_failed">Avatar purchase failed.</string>
+    <string name="shop_avatar_select_success">Avatar selected.</string>
+    <string name="shop_avatar_select_failed">Couldn´t select avatar.</string>
+
+    <string name="shop_mood_buy_success">Mood purchased!</string>
+    <string name="shop_mood_buy_failed">Mood purchase failed.</string>
+    <string name="shop_mood_select_success">Mood selected.</string>
+    <string name="shop_mood_select_failed">Couldn´t select mood.</string>
+
+    <string name="shop_avatars_category_all">All</string>
+    <string name="shop_avatars_category_ghosts">Ghosts</string>
+    <string name="shop_avatars_category_aliens">Aliens</string>
+    <string name="shop_avatars_category_humans">Humans</string>
+
+    <string name="shop_moods_category_all">All</string>
+    <string name="shop_moods_category_activities">Activities</string>
+    <string name="shop_moods_category_love">Love</string>
+
+
 </resources>

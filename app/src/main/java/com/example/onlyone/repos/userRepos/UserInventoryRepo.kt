@@ -26,6 +26,10 @@ class UserInventoryRepo @Inject constructor(
                 ownedAvatars = (data["ownedAvatars"] as? List<*>)
                     ?.filterIsInstance<Number>()
                     ?.map { it.toInt() }
+                    ?: emptyList(),
+                ownedMoods = (data["ownedMoods"] as? List<*>)              // ⭐ NEW
+                    ?.filterIsInstance<Number>()
+                    ?.map { it.toInt() }
                     ?: emptyList()
             )
         } catch (e: Exception) {
@@ -41,7 +45,6 @@ class UserInventoryRepo @Inject constructor(
                 .call(mapOf("avatarId" to avatarId))
                 .await()
 
-            // Fetch updated inventory after purchase
             val uid = Firebase.auth.currentUser?.uid ?: return null
             fetchInventory(uid)
         } catch (e: Exception) {
@@ -50,6 +53,20 @@ class UserInventoryRepo @Inject constructor(
         }
     }
 
+    // ⭐ NEW: mirror of buyAvatar for moods
+    suspend fun buyMood(moodId: Int): UserInventory? {
+        return try {
+            Firebase.functions("europe-west3")
+                .getHttpsCallable("buyMood")
+                .call(mapOf("moodId" to moodId))
+                .await()
 
-    // Optional: Add similar update functions for each rune type if needed
+            val uid = Firebase.auth.currentUser?.uid ?: return null
+            fetchInventory(uid)
+        } catch (e: Exception) {
+            Log.e("InventoryRepo", "❌ Failed to buy mood", e)
+            null
+        }
+    }
 }
+

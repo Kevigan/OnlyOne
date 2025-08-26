@@ -50,14 +50,26 @@ fun SettingsView(userViewModel: UserViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(0.dp)
     ) {
-        Column(modifier = Modifier.padding(top = 20.dp)) {
-            Text(
-                text = stringResource(R.string.settings_header),
-                style = MaterialTheme.typography.h5,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
+        Column(modifier = Modifier.padding(top = 36.dp, bottom = 16.dp, start = 4.dp, end = 4.dp)) {
+            CustomColorOverlay(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                paddingBox1 = PaddingValues(5.dp),
+                paddingBox2 = PaddingValues(5.dp),
+                gradientColor1 =  Color(0xFF001F54).copy(alpha = 0.95f),
+                gradientColor2 = Color(0xFF003366).copy(alpha = 0.95f),
+                borderWidth = 1.dp,
+                shape = RoundedCornerShape(12.dp),
+                onDismiss = {}
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_header),
+                    style = MaterialTheme.typography.h5,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
 
             LazyColumn {
                 items(sections) { section ->

@@ -2,6 +2,7 @@ package com.example.onlyone.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.dao.FavoriteMessageDao
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
 import com.example.dao.UserSettingsDao
@@ -37,6 +38,9 @@ object RoomModule {
 
     @Provides
     fun provideUserSettingsDao(db: AppDatabase): UserSettingsDao = db.userSettingsDao()
+
+    @Provides
+    fun provideFavoriteMessageDao(db: AppDatabase): FavoriteMessageDao = db.favoriteMessageDao()
 
 }
 

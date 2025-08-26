@@ -56,4 +56,40 @@ class UserPublicRepo @Inject constructor(
         val doc = db.collection("users_public").document(uid).get().await()
         return doc.toObject(PublicUser::class.java) ?: throw Exception("Invalid user_public/$uid")
     }
+
+    suspend fun setFavouriteMessage(
+        messageId: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        try {
+            Firebase.functions("europe-west3")
+                .getHttpsCallable("setFavouriteMessage")
+                .call(mapOf("messageId" to messageId))
+                .await()
+            trackWrite("users_public/<uid>.favouriteMessage", "setFavouriteMessage")
+            onSuccess()
+        } catch (e: Exception) {
+            Log.e("UserPublicRepo", "❌ setFavouriteMessage failed", e)
+            onFailure(e)
+        }
+    }
+
+    suspend fun clearFavouriteMessage(
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        try {
+            Firebase.functions("europe-west3")
+                .getHttpsCallable("clearFavouriteMessage")
+                .call()
+                .await()
+            trackWrite("users_public/<uid>.favouriteMessage=null", "clearFavouriteMessage")
+            onSuccess()
+        } catch (e: Exception) {
+            Log.e("UserPublicRepo", "❌ clearFavouriteMessage failed", e)
+            onFailure(e)
+        }
+    }
+
 }

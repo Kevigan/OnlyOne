@@ -1,6 +1,7 @@
 package com.example.onlyone.repos.userRepos
 
 import android.util.Log
+import com.example.onlyone.data.FavouriteMessage
 import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.UserComposite
@@ -33,6 +34,8 @@ class UserRepository @Inject constructor(
     //////////UserPublicRepo//////////
     suspend fun updatePublicProfileSecure(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.updateUserPublicProfileSecure(updates, onSuccess, onFailure)
     fun getPublicUser(uid: String) = publicRepo.getPublicUser(uid)
+    suspend fun setFavouriteMessage(messageId: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.setFavouriteMessage(messageId, onSuccess, onFailure)
+    suspend fun clearFavouriteMessage(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.clearFavouriteMessage(onSuccess, onFailure)
     //////////UserPublicRepo End//////////
 
 
@@ -56,6 +59,7 @@ class UserRepository @Inject constructor(
     //////////UserInventoryRepo//////////
     suspend fun fetchInventory(uid: String): UserInventory? = inventory.fetchInventory(uid)
     suspend fun buyAvatar(avatarId: Int): UserInventory?= inventory.buyAvatar(avatarId)
+    suspend fun buyMood(moodId: Int): UserInventory? = inventory.buyMood(moodId)
     //////////UserInventoryRepo End//////////
 
 
@@ -129,34 +133,68 @@ class UserRepository @Inject constructor(
                     (k as? String)?.let { key -> key to (v as? Boolean ?: true) }
                 }.toMap()
 
+                // Build FavouriteMessage from the mergedUser map (robust Timestamp handling)
+                val favouriteMessage = (userMap["favouriteMessage"] as? Map<*, *>)?.let { fm ->
+                    val chosenAtAny = fm["chosenAt"]
+                    val chosenAtTs = when (chosenAtAny) {
+                        is com.google.firebase.Timestamp -> chosenAtAny
+                        is Map<*, *> -> {
+                            val seconds = (chosenAtAny["seconds"] ?: chosenAtAny["_seconds"]) as? Number
+                            val nanos   = (chosenAtAny["nanoseconds"] ?: chosenAtAny["_nanoseconds"]) as? Number
+                            if (seconds != null && nanos != null)
+                                com.google.firebase.Timestamp(seconds.toLong(), nanos.toInt())
+                            else null
+                        }
+                        else -> null
+                    }
+
+                    FavouriteMessage(
+                        text = fm["text"] as? String ?: "",
+                        fromUid = fm["fromUid"] as? String ?: "",
+                        messageId = fm["messageId"] as? String ?: "",
+                        chosenAt = chosenAtTs
+                    )
+                }
+
                 val user = UserComposite(
                     uid = userMap["uid"] as? String ?: "",
                     email = userMap["email"] as? String ?: "",
                     username = userMap["username"] as? String ?: "",
                     avatarId = (userMap["avatarId"] as? Number)?.toInt() ?: 0,
+                    moodId = (userMap["moodId"] as? Number)?.toInt() ?: 0,
                     moodStatus = userMap["moodStatus"] as? String ?: "",
                     chatLanguage = userMap["chatLanguage"] as? String ?: "en",
                     isPro = userMap["isPro"] as? Boolean ?: false,
+
                     gold = (userMap["gold"] as? Number)?.toInt() ?: 0,
                     points = (userMap["points"] as? Number)?.toInt() ?: 0,
+
                     runes_rare = (userMap["runes_rare"] as? Number)?.toInt() ?: 0,
                     runes_super_rare = (userMap["runes_super_rare"] as? Number)?.toInt() ?: 0,
                     runes_mega_rare = (userMap["runes_mega_rare"] as? Number)?.toInt() ?: 0,
+
                     blockList = userMap["blockList"] as? List<String> ?: emptyList(),
                     friendList = userMap["friendList"] as? List<String> ?: emptyList(),
                     incomingFriendRequests = userMap["incomingFriendRequests"] as? List<String> ?: emptyList(),
                     outgoingFriendRequests = userMap["outgoingFriendRequests"] as? List<String> ?: emptyList(),
+
                     maxMessageLength = (userMap["maxMessageLength"] as? Number)?.toInt() ?: 25,
-                    maxMoments = (userMap["maxMoments"] as? Number)?.toInt() ?: 15,
+                    maxMoments = (userMap["maxMoments"] as? Number)?.toInt() ?: 75,  // 🔧 match backend default
                     maxSwipes = (userMap["maxSwipes"] as? Number)?.toInt() ?: 50,
                     maxAdsPerDay = (userMap["maxAdsPerDay"] as? Number)?.toInt() ?: 3,
+                    maxMoodLength = (userMap["maxMoodLength"] as? Number)?.toInt() ?: 25,
+
                     notifications = notifications,
                     reportCount = (userMap["reportCount"] as? Number)?.toInt() ?: 0,
-                    ownedAvatars = (userMap["ownedAvatars"] as? List<*>)
-                        ?.filterIsInstance<Number>()
-                        ?.map { it.toInt() }
-                        ?: emptyList()
+
+                    ownedAvatars = (userMap["ownedAvatars"] as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
+                    ownedMoods = (userMap["ownedMoods"] as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
+
+                    // NEW fields from users_public we now return in the callable
+                    achievementCount = (userMap["achievementCount"] as? Number)?.toInt() ?: 0,
+                    favouriteMessage = favouriteMessage
                 )
+
 
                 val engagementMap = data["engagementStatus"] as? Map<*, *> ?: emptyMap<String, Any>()
 
@@ -189,15 +227,42 @@ class UserRepository @Inject constructor(
             .addOnFailureListener(onFailure)
     }
 
+    private fun parseTimestamp(any: Any?): Timestamp? = when (any) {
+        is Timestamp -> any
+        is Map<*, *> -> {
+            val seconds = (any["seconds"] ?: any["_seconds"]) as? Number
+            val nanos = (any["nanoseconds"] ?: any["_nanoseconds"]) as? Number
+            if (seconds != null && nanos != null) Timestamp(seconds.toLong(), nanos.toInt()) else null
+        }
+        else -> null
+    }
+
+    private fun parseFavourite(map: Map<*, *>?): FavouriteMessage? {
+        if (map == null) return null
+        return FavouriteMessage(
+            text = map["text"] as? String ?: "",
+            fromUid = map["fromUid"] as? String ?: "",
+            messageId = map["messageId"] as? String ?: "",
+            chosenAt = parseTimestamp(map["chosenAt"])
+        )
+    }
+
     private fun parsePublicUser(map: Map<*, *>?): PublicUser? {
         if (map == null) return null
+        val uid = map["uid"] as? String ?: return null
+
+        val favourite = parseFavourite(map["favouriteMessage"] as? Map<*, *>)
+
         return PublicUser(
-            uid = map["uid"] as? String ?: return null,
+            uid = uid,
             username = map["username"] as? String ?: "",
             moodStatus = map["moodStatus"] as? String ?: "",
+            chatLanguage = map["chatLanguage"] as? String ?: "en",
             avatarId = (map["avatarId"] as? Number)?.toInt() ?: 0,
+            moodId = (map["moodId"] as? Number)?.toInt() ?: 0,
             points = (map["points"] as? Number)?.toInt() ?: 0,
-            chatLanguage = map["chatLanguage"] as? String ?: "en"
+            achievementCount = (map["achievementCount"] as? Number)?.toInt() ?: 0,
+            favouriteMessage = favourite
         )
     }
 

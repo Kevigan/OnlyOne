@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_cd_current_avatar">Current avatar</string>
+    <string name="profile_mood_label">Mood: %1$s</string>
+
+    <string name="profile_mood_dialog_title">Update mood status</string>
+    <string name="profile_mood_placeholder">Enter mood…</string>
+
+    <string name="profile_save">Save</string>
+    <string name="profile_cancel">Cancel</string>
+</resources>

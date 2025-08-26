@@ -1,10 +1,13 @@
 package com.example.onlyone.views.achievements
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -27,7 +30,6 @@ import com.example.onlyone.viewModels.userViewModel.UserViewModel
 fun AchievementsView(
     viewModel: UserViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val isLoading = remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
@@ -35,11 +37,13 @@ fun AchievementsView(
         isLoading.value = false
     }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text(
-            stringResource(R.string.Achievements),
+            stringResource(R.string.achv_title),
             style = MaterialTheme.typography.h4,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -49,14 +53,33 @@ fun AchievementsView(
         } else {
             val grouped by viewModel.groupedAchievements.observeAsState()
             if (grouped.isNullOrEmpty()) {
-                Text("⚠️ No achievements found", color = Color.Red)
+                Text(
+                    stringResource(R.string.achv_empty),
+                    color = Color.Red
+                )
             }
 
             grouped?.forEach { (type, achievements) ->
-                Text("🔹 $type", style = MaterialTheme.typography.subtitle1)
-                LazyRow {
+                Text(
+                    stringResource(R.string.achv_section, type),
+                    style = MaterialTheme.typography.subtitle1
+                )
+                /*LazyRow {
                     items(achievements) { ach ->
                         AchievementCard(ach)
+                    }
+                }*/
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp), // space between items
+                    contentPadding = PaddingValues(horizontal = 8.dp)    // optional: padding at start/end
+                ) {
+                    items(achievements) { a ->
+                        AchievementCardGradient(
+                            achievement = a,
+                            width = 160.dp,
+                            height = 200.dp,
+                            shape = RoundedCornerShape(20) // tweak freely
+                        )
                     }
                 }
             }

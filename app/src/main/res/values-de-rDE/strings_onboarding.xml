@@ -9,4 +9,8 @@
 
     <!-- Allgemein -->
     <string name="common_saving">Wird gespeichert …</string>
+
+    <!-- Errors -->
+    <string name="onboarding_error_create_profile">Profil konnte nicht erstellt werden</string>
+    <string name="onboarding_error_fcm_token">FCM-Token konnte nicht abgerufen werden</string>
 </resources>

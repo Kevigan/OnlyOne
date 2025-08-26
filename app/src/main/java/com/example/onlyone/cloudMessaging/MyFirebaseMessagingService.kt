@@ -15,6 +15,7 @@ import androidx.room.Room
 import com.example.dao.UserSettingsDao
 import com.example.onlyone.R
 import com.example.onlyone.repos.AppDatabase
+import com.example.onlyone.repos.ChatRepository
 import com.example.onlyone.repos.UserInventoryRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -30,52 +31,55 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MyFirebaseMessagingService : FirebaseMessagingService() {
-    @Inject
-    lateinit var userInventoryRepo: UserInventoryRepo
+
+    @Inject lateinit var userInventoryRepo: UserInventoryRepo
     @Inject lateinit var userSettingsDao: UserSettingsDao
     @Inject lateinit var firestore: FirebaseFirestore
+    @Inject lateinit var chatRepository: ChatRepository
+
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        remoteMessage.notification?.let {
-            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-            // 🔄 Check local Room settings before showing
-            val db = Room.databaseBuilder(
-                applicationContext,
-                AppDatabase::class.java,
-                "onlyone_db"
-            ).build()
-
-            val dao = db.userSettingsDao()
-
+        // 1) 💾 Save the message to Room immediately if we have its id
+        val messageIdFromData = remoteMessage.data["messageId"]
+       /* if (!messageIdFromData.isNullOrBlank()) {
             CoroutineScope(Dispatchers.IO).launch {
-                val settings = dao.getSettings()
+                try {
+                    chatRepository.saveByIdIfNew(messageIdFromData)
+                    Log.d("FCM", "💾 Saved message locally: $messageIdFromData")
+                } catch (e: Exception) {
+                    Log.e("FCM", "❌ Failed to save message $messageIdFromData", e)
+                }
+            }
+        }*/
 
+        // 2) 🔔 Respect local settings and show banner/notification
+        remoteMessage.notification?.let { notif ->
+            CoroutineScope(Dispatchers.IO).launch {
+                val settings = userSettingsDao.getSettings()
                 val messageAllowed = settings?.notifyMessages ?: true
                 if (!messageAllowed) {
-                    Log.d("FCM", "🔕 Local setting: message notifications disabled — skipping")
+                    Log.d("FCM", "🔕 message notifications disabled — skipping UI")
                     return@launch
                 }
-                // ✅ Fetch inventory
-                val inventory = userInventoryRepo.fetchInventory(uid)
 
-                // ✅ Fetch points from users_public
+                // (Optional) your side work: refresh inventory/points
+                val inventory = userInventoryRepo.fetchInventory(uid)
                 val publicDoc = firestore.collection("users_public").document(uid).get().await()
                 val points = (publicDoc.get("points") as? Number)?.toInt() ?: 0
-
-                Log.d("FCM", "📥 Updated inventory after feedback — gold=${inventory?.gold}, points=$points")
-
+                Log.d("FCM", "📥 Inventory updated — gold=${inventory?.gold}, points=$points")
 
                 withContext(Dispatchers.Main) {
                     if (isAppInForeground(this@MyFirebaseMessagingService)) {
-                        MessageNotifier.newMessageFlow.tryEmit(it.title to it.body)
+                        // your in-app banner flow
+                        MessageNotifier.newMessageFlow.tryEmit(notif.title to notif.body)
                     } else {
-                        showNotification(it.title, it.body)
+                        showNotification(notif.title, notif.body)
                     }
                 }
             }
         }
     }
-
 
     // Helper to check foreground state
     private fun isAppInForeground(context: Context): Boolean {

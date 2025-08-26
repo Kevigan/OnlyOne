@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_greeting">Hello %1$s</string>
+    <string name="main_cd_logout">Logout</string>
+
+    <string name="main_reset_prefix">Reset %1$s</string>
+    <string name="main_reset_written">WM</string>
+    <string name="main_reset_friends">F</string>
+    <string name="main_reset_local_messages">LM</string>
+
+    <string name="main_received_messages">Received Messages</string>
+    <string name="main_saved_messages">Saved Messages</string> <!-- NEW -->
+    <string name="main_tab_received">Received</string>         <!-- NEW -->
+    <string name="main_tab_saved">Saved</string>               <!-- NEW -->
+    <string name="main_exp_in_label">exp. in</string>          <!-- NEW -->
+
+    <string name="main_error_loading_messages">Could not load messages. Check your connection.</string>
+    <string name="main_no_messages">No messages yet.</string>
+
+    <string name="main_logout_title">Logout</string>
+    <string name="main_logout_text">Do you want to log out?</string>
+
+    <!-- Toasts -->
+    <string name="toast_favourite_set">Set as favourite.</string>
+    <string name="toast_favourite_cleared">Favourite cleared.</string>
+    <string name="toast_favourite_update_failed">Couldn\'t update favourite.</string>
+
+    <string name="toast_saved_locally">Saved locally.</string>
+    <string name="toast_removed_from_saved">Removed from saved.</string>
+    <string name="toast_save_failed">Couldn\'t save locally.</string>
+    <string name="toast_unsave_failed">Couldn\'t remove from saved.</string>
+
+    <!-- NEW: Big sheet & accessibility -->
+    <string name="main_give_feedback">Give Feedback</string>
+    <string name="cd_thumb_up">Thumb Up</string>
+    <string name="cd_neutral">Neutral</string>
+    <string name="cd_thumb_down">Thumb Down</string>
+    <string name="cd_save_locally">Save locally</string>
+    <string name="cd_unsave_locally">Unsave locally</string>
+    <string name="cd_block_user">Block User</string>
+
+    <!-- NEW: Feedback summaries -->
+    <string name="feedback_you_gave_thumbs_up">You gave thumbs up</string>
+    <string name="feedback_you_gave_neutral">You gave neutral</string>
+    <string name="feedback_you_gave_thumbs_down">You gave thumbs down</string>
+    <string name="feedback_none">No feedback given</string>
+
+    <!-- NEW: Block dialog -->
+    <string name="dialog_block_title">Block User?</string>
+    <string name="dialog_block_text">Are you sure you want to block this user? You will no longer see messages from them.</string>
+    <string name="common_block">Block</string>
+
+    <string name="dialog_delete_saved_title">Remove saved message?</string>
+    <string name="dialog_delete_saved_text">Are you sure you want to remove this message from Saved?</string>
+    <string name="cd_delete_saved">Delete saved message</string>
+
+</resources>
+
+

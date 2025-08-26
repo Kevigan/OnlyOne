@@ -1,4 +1,5 @@
 package com.example.onlyone.di
+import com.example.dao.FavoriteMessageDao
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
 import com.example.dao.UserSettingsDao
@@ -29,9 +30,10 @@ object FirebaseModule {
     @Singleton
     fun provideChatRepository(
         db: FirebaseFirestore,
-        messageDao: MessageDao
+        messageDao: MessageDao,
+        favoriteMessageDao: FavoriteMessageDao
     ): ChatRepository {
-        return ChatRepository(db, messageDao)
+        return ChatRepository(db, messageDao, favoriteMessageDao)
     }
 
     @Provides
