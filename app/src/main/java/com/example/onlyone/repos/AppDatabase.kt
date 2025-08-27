@@ -2,6 +2,7 @@ package com.example.onlyone.repos
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.example.dao.FavoriteMessageDao
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
@@ -16,8 +17,9 @@ import com.example.onlyone.data.*
         LocalUserSettings::class,
         LocalFavoriteMessage::class        // NEW
     ],
-    version = 10                          // bumped from 9 -> 10
+    version = 11                          // bumped from 9 -> 10
 )
+@TypeConverters(FavouriteMessageConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao
     abstract fun friendDao(): FriendDao

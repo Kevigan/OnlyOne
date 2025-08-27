@@ -99,7 +99,9 @@ class UserDiscoveryRepo @Inject constructor(
                 username = it.username,
                 moodStatus = it.moodStatus,
                 avatarId = it.avatarId,
-                points = it.points
+                points = it.points,
+                achievementCount = it.achievementCount ?: 0,
+                favouriteMessage = it.favouriteMessage
             )
         }.sortedBy { it.uid }
 

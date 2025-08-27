@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -140,7 +141,9 @@ fun ChatView(
                     Image(
                         painter = painterResource(id = mapAvatarIdToDrawable(targetUser?.avatarId ?: 0)),
                         contentDescription = stringResource(R.string.chat_cd_avatar),
-                        modifier = Modifier.size(48.dp).padding(end = 12.dp)
+                        modifier = Modifier
+                            .size(48.dp)
+                            .padding(end = 12.dp)
                     )
                     Column {
                         Text(
@@ -153,8 +156,29 @@ fun ChatView(
                             style = MaterialTheme.typography.body2,
                             color = Color.White
                         )
+
+                        // ⭐ Achievements (always show, default 0)
+                        val achievementCount = targetUser?.achievementCount ?: 0
+                        Text(
+                            text = "Achievements: $achievementCount",
+                            style = MaterialTheme.typography.caption,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+
+                        // 💌 Favourite message (always show, default placeholder)
+                        val favMsg = targetUser?.favouriteMessage?.text
+                            ?.takeIf { it.isNotBlank() }
+                            ?: "no favourite message yet"
+                        Text(
+                            text = "Favourite message: $favMsg",
+                            style = MaterialTheme.typography.caption,
+                            color = Color.White.copy(alpha = 0.8f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
+
 
                 Spacer(Modifier.height(12.dp))
 

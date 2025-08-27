@@ -70,6 +70,7 @@ fun FriendsView(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
+    var expandedUid by remember { mutableStateOf<String?>(null) }
 
     // Localized tab titles (used only for "Friends" text tab)
     val tabTitles = listOf(
@@ -181,31 +182,33 @@ fun FriendsView(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(horizontal = 12.dp)
                 ) {
-                    items(localFriends) { friend ->
+                    items(localFriends, key = { it.uid }) { friend ->
                         FriendItem(
                             avatarResId = mapAvatarIdToDrawable(friend.avatarId),
                             name = friend.username,
                             status = friend.moodStatus,
                             isLocked = friend.uid in writtenIds,
+                            expanded = expandedUid == friend.uid,
+                            onCardClick = { expandedUid = if (expandedUid == friend.uid) null else friend.uid },
                             onWriteClick = {
                                 if (friend.uid !in writtenIds) {
                                     userViewModel.setTargetUser(friend.toPublicUser())
                                     navController.navigate(
-                                        Screen.ChatScreen.createRoute(
-                                            friend.uid,
-                                            false
-                                        )
+                                        Screen.ChatScreen.createRoute(friend.uid, false)
                                     )
                                 }
                             },
                             showDelete = true,
                             onDelete = { userViewModel.deleteFriend(friend.uid) },
-                            onBlock = { userViewModel.blockUser(friend.uid) }
+                            onBlock = { userViewModel.blockUser(friend.uid) },
+
+                            // NEW:
+                            favouriteMessage  = friend.favouriteMessage,
+                            achievementCount = friend.achievementCount
                         )
                     }
                 }
             }
-
             1 -> {
                 // 🔹 Incoming Requests
                 val incomingUids = user?.incomingFriendRequests ?: emptyList()

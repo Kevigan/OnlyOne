@@ -85,17 +85,18 @@ fun SavedMessageItem(
                             color = Color.White
                         )
                     } else {
-                        Icon(
+                        Image(
                             painter = painterResource(
                                 id = if (isFavorite)
-                                    R.drawable.baseline_star_24
+                                    R.drawable.favourite_message_icon
                                 else
-                                    R.drawable.baseline_star_border_24
+                                    R.drawable.favourite_message_icon_grey
                             ),
                             contentDescription = if (isFavorite) "Selected favourite" else "Set as favourite",
-                            tint = Color(0xFFFFD54F),
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(24.dp)
+                                .clip(CircleShape) // ⬅ make it round
                                 .clickable(enabled = !isProcessing) { onStarClick() }
                         )
                     }
