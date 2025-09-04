@@ -1,6 +1,7 @@
 // utils/AvatarOwnedFilter.kt (or next to your AvatarCatalog)
 package com.example.onlyone.ui.avatar
 
+import CustomAlertDialog
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -14,6 +15,7 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
@@ -33,6 +35,7 @@ import com.example.onlyone.composables.AvatarCatalog
 import com.example.onlyone.composables.AvatarCategory
 import com.example.onlyone.composables.AvatarItem
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 
 fun ownedAvatarItems(ownedIds: Collection<Int>): List<AvatarItem> {
     if (ownedIds.isEmpty()) return emptyList()
@@ -42,6 +45,7 @@ fun ownedAvatarItems(ownedIds: Collection<Int>): List<AvatarItem> {
 
 @Composable
 fun AvatarPickerDialog(
+    theme: ThemeTokens,
     ownedAvatarIds: List<Int>,
     currentAvatarId: Int?,
     onSelect: (Int) -> Unit,
@@ -72,102 +76,130 @@ fun AvatarPickerDialog(
     val dialogWidth = 360.dp           // tweak if needed
     val gridHeight = 320.dp            // viewport for the grid area
 
-    AlertDialog(
-        modifier = Modifier.width(dialogWidth),   // fixed dialog width
-        onDismissRequest = onDismiss,
-        title = { Text("Choose avatar") },        // simple title; use a string res if you prefer
-        text = {
-            Column(Modifier.fillMaxWidth()) {
-                // Category selector with rotating arrow
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Box {
-                        val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "")
-                        TextButton(onClick = { expanded = true }) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(stringResource(selectedCategory.labelRes))
-                                Icon(
-                                    painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
-                                    contentDescription = null,
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .graphicsLayer { rotationZ = rotation }
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
+    CustomAlertDialog(
+        theme = theme,
+        borderColor = theme.borderColor,
+        onDismiss = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .width(dialogWidth)      // keep your fixed width
+                .fillMaxWidth()
+        ) {
+            // Title
+            Text(
+                text = "Choose avatar",
+                style = MaterialTheme.typography.h6,
+                color = theme.textColor
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Category selector with rotating arrow
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                Box {
+                    val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "")
+                    TextButton(onClick = { expanded = true }) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            availableCategories.forEach { cat ->
-                                DropdownMenuItem(
-                                    onClick = {
-                                        selectedCategory = cat
-                                        expanded = false
-                                    }
-                                ) {
-                                    Text(text = stringResource(cat.labelRes))
-                                }
-                            }
+                            Text(
+                                text = stringResource(selectedCategory.labelRes),
+                                color = theme.textColor
+                            )
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
+                                contentDescription = null,
+                                tint = theme.textColor,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .graphicsLayer { rotationZ = rotation }
+                            )
                         }
                     }
-                }
-
-                // 🔒 Fixed-height viewport so the dialog height stays constant
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(gridHeight)
-                ) {
-                    if (filteredItems.isEmpty()) {
-                        // Centered placeholder but within the same fixed-height box
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No owned avatars yet.")
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(56.dp),
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(filteredItems) { avatar ->
-                                val selected = (avatar.id == currentAvatarId)
-                                Image(
-                                    painter = painterResource(id = avatar.imageRes),
-                                    contentDescription = "Avatar ${avatar.id}",
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(CircleShape)
-                                        .border(
-                                            width = if (selected) 2.dp else 1.dp,
-                                            color = if (selected) Color.Cyan else Color.White.copy(alpha = 0.25f),
-                                            shape = CircleShape
-                                        )
-                                        .clickable {
-                                            onSelect(avatar.id)
-                                            onDismiss()
-                                        }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        availableCategories.forEach { cat ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedCategory = cat
+                                    expanded = false
+                                }
+                            ) {
+                                Text(
+                                    text = stringResource(cat.labelRes),
+                                    color = theme.textColor
                                 )
                             }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+
+            // Fixed-height viewport so the dialog height stays constant
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(gridHeight)
+            ) {
+                if (filteredItems.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No owned avatars yet.", color = theme.textColor)
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(56.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(filteredItems) { avatar ->
+                            val selected = (avatar.id == currentAvatarId)
+                            Image(
+                                painter = painterResource(id = avatar.imageRes),
+                                contentDescription = "Avatar ${avatar.id}",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .border(
+                                        width = if (selected) 2.dp else 1.dp,
+                                        color = if (selected) theme.borderColor
+                                        else theme.cardContentColor.copy(alpha = 0.25f),
+                                        shape = CircleShape
+                                    )
+                                    .clickable {
+                                        onSelect(avatar.id)
+                                        onDismiss()
+                                    }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("Close", color = theme.textColor)
+                }
+            }
         }
-    )
+    }
+
 }
 
 

@@ -8,13 +8,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
+import com.example.onlyone.ads.AdCounter
 import com.example.onlyone.cloudMessaging.MessageNotifier
+import com.example.onlyone.data.LocalFavoriteMessage
 import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.UserComposite
 import com.example.onlyone.data.UserEngagementStatus
 import com.example.onlyone.data.achievementDefinitions.MessageAchievements
 import com.example.onlyone.repos.userRepos.UserRepository
+import com.google.firebase.auth.FirebaseAuth // ✅ NEW
+import com.google.firebase.auth.FirebaseUser // ✅ NEW
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -55,8 +60,26 @@ class UserViewModel @Inject constructor(
     private var lastLoadedMessageUid: String? = null
     private var hasLoadedInitialBatch = false
 
+    // ✅ NEW — keep track of which uid we last hydrated to avoid duplicate work
+    private var lastUidLoaded: String? = null
 
-    var userManager: UserManager  // Or UserSessionManager
+    // ✅ NEW — Firebase Auth wiring
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+        val current = firebaseAuth.currentUser
+        onAuthUserChanged(current)
+    }
+
+    private val adCounter = AdCounter(appContext)
+
+    val adCountToday = adCounter.countToday   // Flow<Int>
+    val showAdFlow = adCountToday.map { it > 0 && it % 10 == 0 }  // every 10th
+
+    fun onRandomCardVisible() {
+        viewModelScope.launch { adCounter.increment() }
+    }
+
+    var userManager: UserManager
     init {
         userManager = UserManager(
             userRepository,
@@ -65,9 +88,32 @@ class UserViewModel @Inject constructor(
             updateEngagementStatus = { _engagementStatus.value = it },
             getUser = { _user.value }
         )
+
+        // ✅ NEW — start listening to auth and prime once
+        auth.addAuthStateListener(authListener)
+        onAuthUserChanged(auth.currentUser) // prime immediately in case listener is late
+    }
+
+    // ✅ NEW — central handler whenever Firebase auth user changes (including app resume)
+    private fun onAuthUserChanged(current: FirebaseUser?) {
+        if (current == null) {
+            lastUidLoaded = null
+            _user.postValue(null)
+            return
+        }
+        if (current.uid == lastUidLoaded && _user.value != null) {
+            // Already loaded for this uid; nothing to do.
+            return
+        }
+        lastUidLoaded = current.uid
+        // Your UserManager already pushes into _user via updateUser; just trigger it.
+        loadUser()
+        // Optionally re-warm engagement too, if needed:
+        refreshEngagementStatus()
     }
 
     fun loadUser() { userManager.loadUser() }
+
     fun updatePublicProfile(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (String) -> Unit) { userManager.updatePublicProfile(updates, onSuccess, onFailure) }
     fun blockUser(targetUid: String) { userManager.blockUser(targetUid) }
     fun unblockUser(targetUid: String) { userManager.unblockUser(targetUid) }
@@ -78,11 +124,19 @@ class UserViewModel @Inject constructor(
     fun declineFriendRequest(requesterUid: String) { userManager.declineFriendRequest(requesterUid) }
     fun deleteFriend(friendUid: String) { userManager.deleteFriend(friendUid) }
     fun fetchUserInventory() { userManager.fetchUserInventory() }
-    fun setFavouriteMessage(messageId: String, onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) { userManager.setFavouriteMessage(messageId, onSuccess, onFailure) }
-    fun clearFavouriteMessage(onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) { userManager.clearFavouriteMessage(onSuccess, onFailure) }
-    fun toggleFavouriteMessage(messageId: String, onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) { userManager.toggleFavouriteMessage(messageId, onSuccess, onFailure) }
+     fun clearFavouriteMessage(onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) { userManager.clearFavouriteMessage(onSuccess, onFailure) }
+    // ADD these one-liners next to your existing ones:
+    fun setFavouriteMessage(
+        fav: LocalFavoriteMessage,
+        onSuccess: () -> Unit = {},
+        onFailure: (String) -> Unit = {}
+    ) { userManager.setFavouriteMessage(fav, onSuccess, onFailure) }
 
-
+    fun toggleFavouriteMessage(
+        fav: LocalFavoriteMessage,
+        onSuccess: () -> Unit = {},
+        onFailure: (String) -> Unit = {}
+    ) { userManager.toggleFavouriteMessage(fav, onSuccess, onFailure) }
 
 
     var upgradeManager: UpgradeManager
@@ -90,12 +144,10 @@ class UserViewModel @Inject constructor(
         upgradeManager = UpgradeManager(
             userRepository,
             viewModelScope,
-            loadUser = { loadUser() } // ✅ Pass your ViewModel method
+            loadUser = { loadUser() }
         )
     }
     fun upgradeFeature(feature: String, levels: Int, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) { upgradeManager.upgradeFeature(feature, levels, onSuccess, onFailure) }
-
-
 
     var settingsManager: UserSettingsManager
     init {
@@ -113,7 +165,6 @@ class UserViewModel @Inject constructor(
     fun saveSearchUserLanguage(lang: String) { settingsManager.saveSearchUserLanguage(lang) }
     fun getSearchUserLanguage(onResult: (String) -> Unit) { settingsManager.getSearchUserLanguage(onResult) }
 
-
     var swipeManager: SwipeManager
     init {
         swipeManager = SwipeManager(
@@ -130,7 +181,6 @@ class UserViewModel @Inject constructor(
     fun consumeNextUserFromQueue() = swipeManager.consumeNextUserFromQueue()
     fun setTargetUser(user: PublicUser) { swipeManager.setTargetUser(user) }
 
-
     var shopManager: ShopManager
     init {
         shopManager = ShopManager(
@@ -142,7 +192,7 @@ class UserViewModel @Inject constructor(
     }
     fun buyAvatar(avatarId: Int, onSuccess: () -> Unit, onFailure: (String) -> Unit) { shopManager.buyAvatar(avatarId, onSuccess, onFailure) }
     fun buyMood(moodId: Int, onSuccess: () -> Unit, onFailure: (String) -> Unit) { shopManager.buyMood(moodId, onSuccess, onFailure) }
-
+    fun buyTheme(themeId: Int, onSuccess: () -> Unit, onFailure: (String) -> Unit){shopManager.buyTheme(themeId, onSuccess, onFailure)}
 
     var achievementManager: AchievementManager
     init {
@@ -185,14 +235,6 @@ class UserViewModel @Inject constructor(
         Log.d("Achievements", "✅ Grouped count: ${grouped.size}")
         _groupedAchievements.value = grouped
     }
-
-
-
-    /*init {
-        DailyResetTimer.start {
-            checkAndResetSwipeLimit()
-        }
-    }*/
 
     init {
         viewModelScope.launch {
@@ -253,8 +295,6 @@ class UserViewModel @Inject constructor(
             }
     }
 
-
-
     fun seedAchievementDefinitions(
         onSuccess: (Int) -> Unit,
         onFailure: (Exception) -> Unit
@@ -264,5 +304,11 @@ class UserViewModel @Inject constructor(
             onSuccess = onSuccess,
             onFailure = onFailure
         )
+    }
+
+    override fun onCleared() {
+        // ✅ NEW — remove listener to avoid leaks
+        auth.removeAuthStateListener(authListener)
+        super.onCleared()
     }
 }

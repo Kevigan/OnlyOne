@@ -24,16 +24,24 @@ import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.composables.MoodCatalog
 import com.example.onlyone.composables.MoodCategory
 import com.example.onlyone.data.UserComposite
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun MoodsSection(
     user: UserComposite?,
     loadingMoodId: Int?,
     onBuyMood: (Int) -> Unit,
-    onSelectMood: (Int) -> Unit
+    onSelectMood: (Int) -> Unit,
+    theme: ThemeTokens
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf(MoodCategory.ALL) }
+    val buttonColors =  ButtonDefaults.buttonColors(
+        backgroundColor = theme.buttonColor,           // ← button fill
+        contentColor = theme.textColor,         // ← text & icon tint
+        disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+        disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+    )
 
     val moodItems = remember(selectedCategory) {
         when (selectedCategory) {
@@ -49,7 +57,8 @@ fun MoodsSection(
         overlayColor = Color.Gray,
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-        paddingBox2 = PaddingValues(6.dp)
+        paddingBox2 = PaddingValues(6.dp),
+        theme = theme,
     ) {
         Column(
             modifier = Modifier
@@ -64,7 +73,7 @@ fun MoodsSection(
                 Text(
                     text = stringResource(R.string.common_moods),
                     style = MaterialTheme.typography.h6,
-                    color = Color.White,
+                    color = theme.textColor,
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 6.dp, bottom = 4.dp)
@@ -77,11 +86,11 @@ fun MoodsSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text(stringResource(selectedCategory.labelRes), color = Color.White)
+                            Text(stringResource(selectedCategory.labelRes), color = theme.textColor)
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
                                 contentDescription = stringResource(R.string.common_open_menu),
-                                tint = Color.White,
+                                tint = theme.textColor,
                                 modifier = Modifier
                                     .size(16.dp)
                                     .graphicsLayer { rotationZ = rotation }
@@ -99,7 +108,7 @@ fun MoodsSection(
                                     expanded = false
                                 }
                             ) {
-                                Text(text = stringResource(cat.labelRes))
+                                Text(text = stringResource(cat.labelRes), color = theme.textColor)
                             }
                         }
                     }
@@ -138,35 +147,36 @@ fun MoodsSection(
                             !alreadyOwned -> {
                                 Button(
                                     onClick = { onBuyMood(mood.id) },
+                                    colors = buttonColors,
                                     enabled = canAfford && !isLoading
                                 ) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
                                             strokeWidth = 2.dp,
-                                            color = Color.White
+                                            color = theme.textColor
                                         )
                                     } else {
-                                        Text(stringResource(R.string.common_buy_with_cost, mood.cost))
+                                        Text(stringResource(R.string.common_buy_with_cost, mood.cost), color = theme.textColor)
                                     }
                                 }
                             }
                             alreadyOwned && !isSelected -> {
-                                Button(onClick = { onSelectMood(mood.id) }, enabled = !isLoading) {
+                                Button(onClick = { onSelectMood(mood.id) }, colors = buttonColors, enabled = !isLoading) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
                                             strokeWidth = 2.dp,
-                                            color = Color.White
+                                            color = theme.textColor
                                         )
                                     } else {
-                                        Text(stringResource(R.string.common_select))
+                                        Text(stringResource(R.string.common_select), color = theme.textColor)
                                     }
                                 }
                             }
                             else -> {
-                                Button(onClick = {}, enabled = false) {
-                                    Text(stringResource(R.string.common_selected))
+                                Button(onClick = {}, colors = buttonColors, enabled = false) {
+                                    Text(stringResource(R.string.common_selected), color = theme.textColor)
                                 }
                             }
                         }

@@ -12,9 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.composables.CustomColorOverlay
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
-fun SettingsItemRow(title: String, onClick: () -> Unit) {
+fun SettingsItemRow(title: String, onClick: () -> Unit, theme: ThemeTokens) {
     CustomColorOverlay(
         modifier = Modifier
             .fillMaxWidth()
@@ -25,13 +26,14 @@ fun SettingsItemRow(title: String, onClick: () -> Unit) {
         borderWidth = 1.dp,
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
-        paddingBox2 = PaddingValues(6.dp)
+        paddingBox2 = PaddingValues(6.dp),
+        theme = theme
     ) {
         Text(
             text = title,
             modifier = Modifier.padding(8.dp),
             style = MaterialTheme.typography.body1,
-            color = Color.White
+            color = theme.textColor
         )
     }
 }

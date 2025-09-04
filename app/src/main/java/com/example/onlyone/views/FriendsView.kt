@@ -1,8 +1,11 @@
 package com.example.onlyone.views
 
+import CustomAlertDialog
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,8 +25,11 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
+import androidx.compose.material.TabRowDefaults
+import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
@@ -36,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -48,6 +55,7 @@ import com.example.onlyone.composables.BlinkingIcon
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.composables.FriendItem
 import com.example.onlyone.composables.mapAvatarIdToDrawable
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.utils.toPublicUser
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
@@ -56,7 +64,8 @@ import com.example.onlyone.viewModels.userViewModel.UserViewModel
 fun FriendsView(
     userViewModel: UserViewModel,
     navController: NavController,
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    theme: ThemeTokens
 ) {
     val user by userViewModel.user.observeAsState()
     val incomingRequests by userViewModel.incomingRequestUsernames.collectAsState()
@@ -95,6 +104,7 @@ fun FriendsView(
             gradientColor2 = Color(0xFF003366).copy(alpha = 0.95f),
             borderWidth = 1.dp,
             shape = RoundedCornerShape(24.dp),
+            theme = theme,
             onDismiss = {}
         ) {
             Row(
@@ -108,7 +118,7 @@ fun FriendsView(
                     Text(
                         stringResource(R.string.friends_header),
                         style = MaterialTheme.typography.h5,
-                        color = Color.White // ⬅ text color
+                        color = theme.textColor// ⬅ text color
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
@@ -124,7 +134,7 @@ fun FriendsView(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = stringResource(R.string.friends_cd_reload),
-                            tint = Color.White // ⬅ icon color
+                            tint = theme.textColor // ⬅ icon color
                         )
                     }
                 }
@@ -133,7 +143,7 @@ fun FriendsView(
                     Icon(
                         imageVector = Icons.Default.PersonAdd,
                         contentDescription = stringResource(R.string.friends_cd_add),
-                        tint = Color.White // ⬅ icon color
+                        tint = theme.textColor // ⬅ icon color
                     )
                 }
             }
@@ -142,34 +152,56 @@ fun FriendsView(
         Spacer(modifier = Modifier.height(12.dp))
 
         // 🔹 Tabs
-        TabRow(selectedTabIndex = selectedTabIndex) {
-            (0..3).forEach { index ->
-                val label: @Composable () -> Unit = {
-                    when (index) {
-                        1 -> BlinkingIcon(
-                            painter = painterResource(id = R.drawable.baseline_arrow_back_24),
-                            contentDescription = stringResource(R.string.friends_cd_incoming),
-                            shouldBlink = incomingCount > 0
-                        )
+        val tabsBg = Brush.horizontalGradient(
+            listOf(
+                theme.gradientColor1.copy(alpha = 0.9f),
+                theme.gradientColor2.copy(alpha = 0.9f)
+                // or just repeat the same color twice if you want a flat tint
+                // theme.cardBackground.copy(alpha = 0.9f), theme.cardBackground.copy(alpha = 0.9f)
+            )
+        )
 
-                        2 -> Icon(
-                            painter = painterResource(id = R.drawable.baseline_arrow_forward_24),
-                            contentDescription = stringResource(R.string.friends_cd_outgoing)
-                        )
-
-                        3 -> Icon(
-                            painter = painterResource(id = R.drawable.baseline_block_24),
-                            contentDescription = stringResource(R.string.friends_cd_blocked)
-                        )
-
-                        else -> Text(tabTitles[0]) // "Friends"
-                    }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(tabsBg, shape = RoundedCornerShape(24.dp))
+        ) {
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                backgroundColor = Color.Transparent,     // <-- important
+                contentColor = theme.cardContentColor,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = theme.textColor
+                    )
+                },
+                divider = {} // optional: remove bottom divider
+            ) {
+                (0..3).forEach { index ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        selectedContentColor   = theme.textColor,
+                        unselectedContentColor = theme.textColor.copy(alpha = 0.6f),
+                        icon = {
+                            when (index) {
+                                1 -> BlinkingIcon(
+                                    painter = painterResource(R.drawable.baseline_arrow_back_24),
+                                    contentDescription = stringResource(R.string.friends_cd_incoming),
+                                    shouldBlink = incomingCount > 0,
+                                    baseColor = theme.textColor
+                                )
+                                2 -> Icon(painterResource(R.drawable.baseline_arrow_forward_24), null)
+                                3 -> Icon(painterResource(R.drawable.baseline_block_24), null)
+                                else -> Icon(
+                                    painter = painterResource(R.drawable.baseline_group_24),
+                                    contentDescription = stringResource(R.string.friends_tab_friends)
+                                )
+                            }
+                        }
+                    )
                 }
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = label
-                )
             }
         }
 
@@ -204,7 +236,8 @@ fun FriendsView(
 
                             // NEW:
                             favouriteMessage  = friend.favouriteMessage,
-                            achievementCount = friend.achievementCount
+                            achievementCount = friend.achievementCount,
+                            theme = theme,
                         )
                     }
                 }
@@ -215,7 +248,8 @@ fun FriendsView(
                 if (incomingUids.isEmpty()) {
                     Text(
                         stringResource(R.string.friends_empty_incoming),
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
+                        color = theme.textColor
                     )
                 } else {
                     LazyColumn(
@@ -233,7 +267,8 @@ fun FriendsView(
                                 showDecline = true,
                                 onAccept = { userViewModel.acceptFriendRequest(uid) },
                                 onDecline = { userViewModel.declineFriendRequest(uid) },
-                                onBlock = { userViewModel.blockUser(uid) }
+                                onBlock = { userViewModel.blockUser(uid) },
+                                theme = theme,
                             )
                         }
                     }
@@ -246,7 +281,8 @@ fun FriendsView(
                 if (outgoingUids.isEmpty()) {
                     Text(
                         stringResource(R.string.friends_empty_outgoing),
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
+                        color = theme.textColor
                     )
                 } else {
                     LazyColumn(
@@ -261,6 +297,7 @@ fun FriendsView(
                                 status = stringResource(R.string.friends_status_request_sent),
                                 avatarResId = mapAvatarIdToDrawable(0),
                                 showDecline = true,
+                                theme = theme,
                                 onDecline = {
                                     userViewModel.cancelOutgoingFriendRequest(
                                         targetUid = uid,
@@ -293,7 +330,8 @@ fun FriendsView(
                 if (blockedUsers.isEmpty()) {
                     Text(
                         stringResource(R.string.friends_empty_blocked),
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
+                        color = theme.textColor
                     )
                 } else {
                     LazyColumn(
@@ -306,6 +344,7 @@ fun FriendsView(
                                 name = blocked.username,
                                 status = stringResource(R.string.friends_status_blocked),
                                 isLocked = true,
+                                theme = theme,
                                 onUnblock = { userViewModel.unblockUser(blocked.uid) },
                                 onUnblockAndRequest = {
                                     userViewModel.unblockUser(blocked.uid)
@@ -323,50 +362,85 @@ fun FriendsView(
     if (showAddDialog) {
         var email by remember { mutableStateOf("") }
 
-        AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { Text(stringResource(R.string.friends_dialog_title)) },
-            text = {
+        CustomAlertDialog(
+            theme = theme,
+            onDismiss = { showAddDialog = false }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                // Title
+                Text(
+                    text = stringResource(R.string.friends_dialog_title),
+                    style = MaterialTheme.typography.h6,
+                    color = theme.textColor
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                // Email input
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text(stringResource(R.string.friends_dialog_email_label)) }
+                    label = { Text(stringResource(R.string.friends_dialog_email_label)) },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = theme.cardContentColor,
+                        cursorColor = theme.borderColor,
+                        focusedBorderColor = theme.borderColor,
+                        unfocusedBorderColor = theme.cardContentColor.copy(alpha = 0.5f),
+                        focusedLabelColor = theme.textColor,
+                        unfocusedLabelColor = theme.textColor.copy(alpha = 0.8f),
+                        placeholderColor = theme.cardContentColor.copy(alpha = 0.6f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (email.isBlank()) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.friends_toast_email_empty),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        return@TextButton
-                    }
 
-                    userViewModel.sendFriendRequestByEmail(
-                        email = email,
-                        onSuccess = {
+                Spacer(Modifier.height(16.dp))
+
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { showAddDialog = false }) {
+                        Text(
+                            text = stringResource(R.string.friends_dialog_cancel),
+                            color = theme.textColor
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        if (email.isBlank()) {
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.friends_toast_request_sent),
+                                context.getString(R.string.friends_toast_email_empty),
                                 Toast.LENGTH_SHORT
                             ).show()
-                            showAddDialog = false
-                        },
-                        onFailure = { reason ->
-                            Toast.makeText(context, reason, Toast.LENGTH_SHORT).show()
+                            return@TextButton
                         }
-                    )
-                }) {
-                    Text(stringResource(R.string.friends_dialog_send))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) {
-                    Text(stringResource(R.string.friends_dialog_cancel))
+                        userViewModel.sendFriendRequestByEmail(
+                            email = email,
+                            onSuccess = {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.friends_toast_request_sent),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                showAddDialog = false
+                            },
+                            onFailure = { reason ->
+                                Toast.makeText(context, reason, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }) {
+                        Text(
+                            text = stringResource(R.string.friends_dialog_send),
+                            color = theme.textColor
+                        )
+                    }
                 }
             }
-        )
+        }
     }
 }

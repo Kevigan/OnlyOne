@@ -32,10 +32,10 @@ data class PublicUser(
     val moodStatus: String = "",
     val chatLanguage: String = "en",
     val avatarId: Int = 0,
-    val moodId: Int = 0,                 // ✅ added
+    val moodId: Int = 0,
     val points: Int = 0,
-    val achievementCount: Int = 0,       // ✅ optional but present in your docs
-    val favouriteMessage: FavouriteMessage? = null // ✅ added
+    val achievementCount: Int = 0,
+    val favouriteMessage: FavouriteMessage? = null
 )
 
 // ✨ Upgrades (users_upgrades/{uid})
@@ -54,7 +54,8 @@ data class UserInventory(
     val runes_super_rare: Int = 0,
     val runes_mega_rare: Int = 0,
     val ownedAvatars: List<Int> = emptyList(),
-    val ownedMoods: List<Int> = emptyList()
+    val ownedMoods: List<Int> = emptyList(),
+    val ownedThemes: List<Int> = emptyList() // ⭐ NEW: theme IDs (e.g., 0=LIGHT,1=DARK,2=OCEAN)
 )
 
 // 🔁 Engagement (engagement_status/{uid})
@@ -85,6 +86,7 @@ data class UserComposite(
     val runes_mega_rare: Int,
     val ownedAvatars: List<Int>,
     val ownedMoods: List<Int>,
+    val ownedThemes: List<Int>, // ⭐ NEW
 
     // Social
     val blockList: List<String>,
@@ -102,7 +104,6 @@ data class UserComposite(
     val maxMoodLength: Int,
 
     // Extras from users_public
-    val achievementCount: Int,                 // ✅ add
-    val favouriteMessage: FavouriteMessage?    // ✅ add
+    val achievementCount: Int,
+    val favouriteMessage: FavouriteMessage?
 )
-

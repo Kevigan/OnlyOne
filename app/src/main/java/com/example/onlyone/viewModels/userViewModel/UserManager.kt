@@ -1,6 +1,7 @@
 package com.example.onlyone.viewModels.userViewModel
 
 import android.util.Log
+import com.example.onlyone.data.LocalFavoriteMessage
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.UserComposite
 import com.example.onlyone.data.UserEngagementStatus
@@ -295,18 +296,22 @@ class UserManager @Inject constructor(
         }
     }
 
-    /** ⭐ Publish a favourite message (server-verified via CFN) */
+    // UserManager.kt
     fun setFavouriteMessage(
-        messageId: String,
+        fav: LocalFavoriteMessage,
         onSuccess: () -> Unit = {},
         onFailure: (String) -> Unit = {}
     ) {
         val currentUser = getUser() ?: return
         viewModelScope.launch {
+            if (fav.content.isBlank() || fav.senderId.isBlank()) {
+                onFailure("Missing local content or sender.")
+                return@launch
+            }
+
             userRepository.setFavouriteMessage(
-                messageId = messageId,
+                fav = fav,
                 onSuccess = {
-                    // Light refresh: read just the public doc to get the new favouriteMessage
                     userRepository.getPublicUser(currentUser.uid)
                         .addOnSuccessListener { doc ->
                             val public = doc.toObject(PublicUser::class.java)
@@ -315,13 +320,10 @@ class UserManager @Inject constructor(
                             onSuccess()
                         }
                         .addOnFailureListener { e ->
-                            // The server update succeeded; local refresh failed
                             onFailure(e.message ?: "Updated, but failed to refresh favourite")
                         }
                 },
-                onFailure = { e ->
-                    onFailure(e.message ?: "Failed to set favourite")
-                }
+                onFailure = { e -> onFailure(e.message ?: "Failed to set favourite") }
             )
         }
     }
@@ -348,16 +350,16 @@ class UserManager @Inject constructor(
     }
 
     fun toggleFavouriteMessage(
-        messageId: String,
+        fav: LocalFavoriteMessage,
         onSuccess: () -> Unit = {},
         onFailure: (String) -> Unit = {}
     ) {
         val currentUser = getUser() ?: return
-        val isSame = currentUser.favouriteMessage?.messageId == messageId
+        val isSame = currentUser.favouriteMessage?.messageId == fav.id
         if (isSame) {
             clearFavouriteMessage(onSuccess, onFailure)
         } else {
-            setFavouriteMessage(messageId, onSuccess, onFailure)
+            setFavouriteMessage(fav, onSuccess, onFailure)
         }
     }
     // ... Add more methods here in the same structure ...

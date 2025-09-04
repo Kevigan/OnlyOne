@@ -2,11 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Required for Firebase + Internet access -->
+    <!-- Network + Ads -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- For push notifications on Android 13+ -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Android 13+ Advertising ID (needed if you access the ad ID via the ads SDK) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
+    <!-- Notifications & boot (you already had these) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Optional: to handle token refresh after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -20,6 +23,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OnlyOne"
         tools:targetApi="31">
+
+        <!-- AdMob App ID (REPLACE with your real one) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7925168977173280~7797397563" />
 
         <!-- Main activity -->
         <activity

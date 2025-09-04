@@ -30,11 +30,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
-fun LanguageSettingsView(userViewModel: UserViewModel) {
+fun LanguageSettingsView(userViewModel: UserViewModel, theme: ThemeTokens,) {
     var currentAppLang by remember { mutableStateOf("en") }
     var currentChatLang by remember { mutableStateOf("en") }
 
@@ -63,12 +64,13 @@ fun LanguageSettingsView(userViewModel: UserViewModel) {
         Column {
             Text(
                 text = stringResource(R.string.settings_app_language_header),
-                color = Color.White,
+                color = theme.textColor,
                 fontSize = 18.sp
             )
             Spacer(Modifier.height(12.dp))
 
             LanguageDropdown(
+                theme = theme,
                 currentCode = currentAppLang,
                 availableLanguages = availableLanguages,
                 languageMap = languageMap,
@@ -83,12 +85,13 @@ fun LanguageSettingsView(userViewModel: UserViewModel) {
 
             Text(
                 text = stringResource(R.string.settings_chat_language_header),
-                color = Color.White,
+                color = theme.textColor,
                 fontSize = 18.sp
             )
             Spacer(Modifier.height(12.dp))
 
             LanguageDropdown(
+                theme = theme,
                 currentCode = currentChatLang,
                 availableLanguages = availableLanguages,
                 languageMap = languageMap,

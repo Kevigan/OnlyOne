@@ -22,9 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun LanguageDropdown(
+    theme: ThemeTokens,
     currentCode: String,
     availableLanguages: List<String>,
     languageMap: Map<String, String>,     // code -> display
@@ -46,12 +48,12 @@ fun LanguageDropdown(
                 .fillMaxWidth()
                 .clickable { expanded = true },
             enabled = false,
-            label = { Text(stringResource(R.string.settings_select_language_label)) },
+            label = { Text(stringResource(R.string.settings_select_language_label), color = theme.textColor) },
             colors = TextFieldDefaults.outlinedTextFieldColors(
-                disabledTextColor = Color.White,
+                disabledTextColor = theme.textColor,
                 disabledLabelColor = Color.LightGray,
-                disabledBorderColor = Color.White,
-                disabledTrailingIconColor = Color.White
+                disabledBorderColor = theme.textColor,
+                disabledTrailingIconColor = theme.textColor
             ),
             trailingIcon = {
                 Icon(
@@ -71,7 +73,7 @@ fun LanguageDropdown(
                     expanded = false
                     onLanguageSelected(reverseMap[display] ?: "en")
                 }) {
-                    Text(display)
+                    Text(display, color = theme.textColor)
                 }
             }
         }

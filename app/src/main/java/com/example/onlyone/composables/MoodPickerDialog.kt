@@ -20,9 +20,11 @@ import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.MoodCategory
 import com.example.onlyone.composables.ownedMoodItems
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun MoodPickerDialog(
+    theme: ThemeTokens,
     ownedMoodIds: List<Int>,
     currentMoodId: Int?,
     onSelect: (Int) -> Unit,
@@ -54,100 +56,129 @@ fun MoodPickerDialog(
     val dialogWidth = 360.dp
     val gridHeight = 320.dp
 
-    AlertDialog(
-        modifier = Modifier.width(dialogWidth),
-        onDismissRequest = onDismiss,
-        title = { Text("Choose mood") }, // keep hardcoded to avoid adding strings
-        text = {
-            Column(Modifier.fillMaxWidth()) {
+    CustomAlertDialog(
+        theme = theme,
+        borderColor = theme.borderColor,
+        onDismiss = onDismiss
+    ) {
+        // Make the dialog the same width you had before
+        Column(
+            modifier = Modifier
+                .width(dialogWidth)
+                .fillMaxWidth()
+        ) {
+            // Title
+            Text(
+                text = "Choose mood", // keep hardcoded as you noted
+                style = MaterialTheme.typography.h6,
+                color = theme.textColor
+            )
 
-                // Category selector with rotating arrow
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Box {
-                        val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "")
-                        TextButton(onClick = { expanded = true }) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(stringResource(selectedCategory.labelRes))
-                                Icon(
-                                    painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
-                                    contentDescription = null,
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .graphicsLayer { rotationZ = rotation }
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
+            Spacer(Modifier.height(12.dp))
+
+            // Category selector with rotating arrow
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                Box {
+                    val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "")
+                    TextButton(onClick = { expanded = true }) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            availableCategories.forEach { cat ->
-                                DropdownMenuItem(
-                                    onClick = {
-                                        selectedCategory = cat
-                                        expanded = false
-                                    }
-                                ) {
-                                    Text(text = stringResource(cat.labelRes))
-                                }
-                            }
+                            Text(
+                                text = stringResource(selectedCategory.labelRes),
+                                color = theme.textColor
+                            )
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
+                                contentDescription = null,
+                                tint = theme.textColor,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .graphicsLayer { rotationZ = rotation }
+                            )
                         }
                     }
-                }
-
-                // 🔒 Fixed-height viewport for the grid
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(gridHeight)
-                ) {
-                    if (filteredItems.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No owned moods yet.")
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(56.dp),
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(filteredItems) { mood ->
-                                val selected = (mood.id == currentMoodId)
-                                Image(
-                                    painter = painterResource(id = mood.imageRes),
-                                    contentDescription = "Mood ${mood.id}",
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(CircleShape)
-                                        .border(
-                                            width = if (selected) 2.dp else 1.dp,
-                                            color = if (selected) Color.Cyan else Color.White.copy(alpha = 0.25f),
-                                            shape = CircleShape
-                                        )
-                                        .clickable {
-                                            onSelect(mood.id)
-                                            onDismiss()
-                                        }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        availableCategories.forEach { cat ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedCategory = cat
+                                    expanded = false
+                                }
+                            ) {
+                                Text(
+                                    text = stringResource(cat.labelRes),
+                                    color = theme.textColor
                                 )
                             }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+
+            // Fixed-height viewport for the grid
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(gridHeight)
+            ) {
+                if (filteredItems.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No owned moods yet.", color = theme.textColor)
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(56.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(filteredItems) { mood ->
+                            val selected = (mood.id == currentMoodId)
+                            Image(
+                                painter = painterResource(id = mood.imageRes),
+                                contentDescription = "Mood ${mood.id}",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .border(
+                                        width = if (selected) 2.dp else 1.dp,
+                                        color = if (selected) theme.borderColor
+                                        else theme.cardContentColor.copy(alpha = 0.25f),
+                                        shape = CircleShape
+                                    )
+                                    .clickable {
+                                        onSelect(mood.id)
+                                        onDismiss()
+                                    }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("Close", color = theme.textColor)
+                }
+            }
         }
-    )
+    }
+
 }

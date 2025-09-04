@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -17,20 +18,29 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun UpgradeRow(
     label: String,
     currentValueText: String,
-    onUpgradeClick: () -> Unit
+    onUpgradeClick: () -> Unit,
+    theme: ThemeTokens
 ) {
+    val buttonColors =  ButtonDefaults.buttonColors(
+        backgroundColor = theme.buttonColor,           // ← button fill
+        contentColor = theme.textColor,         // ← text & icon tint
+        disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+        disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+    )
     CustomColorOverlay(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(percent = 21),
         overlayColor = Color.Gray,
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-        paddingBox2 = PaddingValues(6.dp)
+        paddingBox2 = PaddingValues(6.dp),
+        theme = theme
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -41,18 +51,19 @@ fun UpgradeRow(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.body2,
-                    color = Color.White
+                    color = theme.textColor
                 )
                 Text(
                     text = currentValueText,
                     style = MaterialTheme.typography.body1,
-                    color = Color.White
+                    color = theme.textColor
                 )
             }
-            Button(onClick = onUpgradeClick) {
+            Button(onClick = onUpgradeClick, colors = buttonColors,) {
                 Text(
                     text = stringResource(R.string.shop_upgrade),
-                    style = MaterialTheme.typography.button // or labelLarge for M3
+                    style = MaterialTheme.typography.button, // or labelLarge for M3
+                    color = theme.textColor
                 )
             }
 

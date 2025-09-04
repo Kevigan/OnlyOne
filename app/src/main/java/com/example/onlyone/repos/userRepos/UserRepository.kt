@@ -2,6 +2,7 @@ package com.example.onlyone.repos.userRepos
 
 import android.util.Log
 import com.example.onlyone.data.FavouriteMessage
+import com.example.onlyone.data.LocalFavoriteMessage
 import com.example.onlyone.data.LocalFriend
 import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.UserComposite
@@ -11,6 +12,7 @@ import com.example.onlyone.data.WrittenTodayEntity
 import com.example.onlyone.repos.UserEngagementRepo
 import com.example.onlyone.repos.UserInventoryRepo
 import com.example.onlyone.repos.UserSettingsRepo
+import com.example.onlyone.theme.ThemeId
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.functions.ktx.functions
@@ -34,7 +36,23 @@ class UserRepository @Inject constructor(
     //////////UserPublicRepo//////////
     suspend fun updatePublicProfileSecure(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.updateUserPublicProfileSecure(updates, onSuccess, onFailure)
     fun getPublicUser(uid: String) = publicRepo.getPublicUser(uid)
-    suspend fun setFavouriteMessage(messageId: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.setFavouriteMessage(messageId, onSuccess, onFailure)
+    // UserRepository.kt
+    // ADD this overload (keep your existing messageId variants if needed)
+    suspend fun setFavouriteMessage(
+        fav: LocalFavoriteMessage,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) = publicRepo.setFavouriteMessage(
+        messageId = fav.id,
+        text = fav.content,                 // Non-null in your entity
+        fromUid = fav.senderId,
+        senderUsername = fav.senderUsername,
+        senderMood = fav.senderMood,
+        onSuccess = onSuccess,
+        onFailure = onFailure
+    )
+
+
     suspend fun clearFavouriteMessage(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.clearFavouriteMessage(onSuccess, onFailure)
     //////////UserPublicRepo End//////////
 
@@ -60,6 +78,7 @@ class UserRepository @Inject constructor(
     suspend fun fetchInventory(uid: String): UserInventory? = inventory.fetchInventory(uid)
     suspend fun buyAvatar(avatarId: Int): UserInventory?= inventory.buyAvatar(avatarId)
     suspend fun buyMood(moodId: Int): UserInventory? = inventory.buyMood(moodId)
+    suspend fun buyTheme(themeId: Int): UserInventory? = inventory.buyTheme(themeId)
     //////////UserInventoryRepo End//////////
 
 
@@ -173,28 +192,28 @@ class UserRepository @Inject constructor(
                     runes_super_rare = (userMap["runes_super_rare"] as? Number)?.toInt() ?: 0,
                     runes_mega_rare = (userMap["runes_mega_rare"] as? Number)?.toInt() ?: 0,
 
-                    blockList = userMap["blockList"] as? List<String> ?: emptyList(),
-                    friendList = userMap["friendList"] as? List<String> ?: emptyList(),
-                    incomingFriendRequests = userMap["incomingFriendRequests"] as? List<String> ?: emptyList(),
-                    outgoingFriendRequests = userMap["outgoingFriendRequests"] as? List<String> ?: emptyList(),
+                    ownedAvatars = (userMap["ownedAvatars"] as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
+                    ownedMoods   = (userMap["ownedMoods"]   as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
+                    ownedThemes  = (userMap["ownedThemes"]  as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(), // ← NEW
+
+                    blockList = (userMap["blockList"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                    friendList = (userMap["friendList"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                    incomingFriendRequests = (userMap["incomingFriendRequests"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                    outgoingFriendRequests = (userMap["outgoingFriendRequests"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
 
                     maxMessageLength = (userMap["maxMessageLength"] as? Number)?.toInt() ?: 25,
-                    maxMoments = (userMap["maxMoments"] as? Number)?.toInt() ?: 75,  // 🔧 match backend default
-                    maxSwipes = (userMap["maxSwipes"] as? Number)?.toInt() ?: 50,
-                    maxAdsPerDay = (userMap["maxAdsPerDay"] as? Number)?.toInt() ?: 3,
-                    maxMoodLength = (userMap["maxMoodLength"] as? Number)?.toInt() ?: 25,
+                    maxMoments       = (userMap["maxMoments"]       as? Number)?.toInt() ?: 75,
+                    maxSwipes        = (userMap["maxSwipes"]        as? Number)?.toInt() ?: 50,
+                    maxAdsPerDay     = (userMap["maxAdsPerDay"]     as? Number)?.toInt() ?: 3,
+                    maxMoodLength    = (userMap["maxMoodLength"]    as? Number)?.toInt() ?: 25,
 
                     notifications = notifications,
                     reportCount = (userMap["reportCount"] as? Number)?.toInt() ?: 0,
 
-                    ownedAvatars = (userMap["ownedAvatars"] as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
-                    ownedMoods = (userMap["ownedMoods"] as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
-
-                    // NEW fields from users_public we now return in the callable
+                    // from users_public
                     achievementCount = (userMap["achievementCount"] as? Number)?.toInt() ?: 0,
                     favouriteMessage = favouriteMessage
                 )
-
 
                 val engagementMap = data["engagementStatus"] as? Map<*, *> ?: emptyMap<String, Any>()
 

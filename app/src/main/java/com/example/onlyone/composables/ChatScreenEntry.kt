@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.example.onlyone.views.ChatView
@@ -21,7 +22,8 @@ fun ChatScreenEntry(
     isRandom: Boolean,
     userViewModel: UserViewModel,
     chatViewModel: ChatViewModel,
-    navController: NavController
+    navController: NavController,
+    theme: ThemeTokens
 ) {
     val currentUser by userViewModel.user.observeAsState()
     val targetUser by userViewModel.targetUser.collectAsState()
@@ -61,7 +63,8 @@ fun ChatScreenEntry(
             onNextUser = { userViewModel.consumeNextUserFromQueue() },
             chatViewModel = chatViewModel,
             userViewModel = userViewModel,
-            navController = navController
+            navController = navController,
+            theme = theme
         )
     }
 }

@@ -67,5 +67,34 @@ class ShopManager(
             }
         }
     }
-    // Future: buyRune(...), buyTheme(...), etc.
+
+    fun buyTheme(
+        themeId: Int,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val currentUser = getUser() ?: return
+
+        viewModelScope.launch {
+            val updatedInventory = userRepository.buyTheme(themeId)
+
+            if (updatedInventory != null) {
+                val updatedUser = currentUser.copy(
+                    gold = updatedInventory.gold,
+                    runes_rare = updatedInventory.runes_rare,
+                    runes_super_rare = updatedInventory.runes_super_rare,
+                    runes_mega_rare = updatedInventory.runes_mega_rare,
+                    ownedAvatars = updatedInventory.ownedAvatars,
+                    ownedMoods = updatedInventory.ownedMoods,
+                    ownedThemes = updatedInventory.ownedThemes   // ← requires this field
+                )
+                updateUser(updatedUser)
+                onSuccess()
+            } else {
+                onFailure("Could not complete purchase.")
+                Log.e("ShopManager", "❌ buyTheme failed for themeId=$themeId")
+            }
+        }
+    }
+
 }

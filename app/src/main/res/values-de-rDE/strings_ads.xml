@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ad_sponsored">Gesponsert</string>
+    <string name="ad_continue">Weiter</string>
+    <string name="ad_cta_learn_more">Mehr erfahren</string>
+    <string name="ad_btn_continue">Weiter</string>
+</resources>

@@ -66,6 +66,11 @@ android {
 }
 
 dependencies {
+    //Goolge AdMob
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
+    implementation("com.google.android.ump:user-messaging-platform:3.2.0")
+    //Goolge AdMob End
+
     implementation("com.google.code.gson:gson:2.10.1")
 
     implementation("androidx.hilt:hilt-work:1.1.0")

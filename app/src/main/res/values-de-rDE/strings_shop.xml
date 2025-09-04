@@ -11,7 +11,7 @@
 
     <string name="shop_cost_header">Kosten für den nächsten Schritt:</string>
 
-    <string name="shop_upgrade">Upgrade</string>
+    <string name="shop_upgrade">Aufwärten</string>
     <string name="shop_upgrade_success">Upgrade erfolgreich!</string>
     <string name="shop_upgrade_failed">Upgrade fehlgeschlagen!</string>
 
@@ -33,5 +33,15 @@
     <string name="shop_moods_category_all">Alle</string>
     <string name="shop_moods_category_activities">Aktivitaeten</string>
     <string name="shop_moods_category_love">Liebe</string>
+
+    <string name="shop_themes_title">Designs</string>
+    <string name="shop_theme_preview">Design-Vorschau</string>
+
+    <string name="shop_theme_buy_success">Theme gekauft!</string>
+    <string name="shop_theme_buy_failed">Theme-Kauf fehlgeschlagen.</string>
+    <string name="shop_theme_select_success">Theme ausgewählt.</string>
+    <string name="shop_theme_select_failed">Theme konnte nicht ausgewählt werden.</string>
+
+
 </resources>
 

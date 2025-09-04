@@ -1,5 +1,6 @@
 package com.example.onlyone.composables
 
+import CustomAlertDialog
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.data.FavouriteMessage
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun FriendItem(
@@ -42,7 +44,7 @@ fun FriendItem(
     onBlock: (() -> Unit)? = null,
     onUnblock: (() -> Unit)? = null,
     onUnblockAndRequest: (() -> Unit)? = null,
-
+    theme: ThemeTokens,
     // expand behavior
     expanded: Boolean = false,
     onCardClick: (() -> Unit)? = null,
@@ -63,7 +65,6 @@ fun FriendItem(
     val expandedHeight = 108.dp
     val targetHeight = if (expanded) expandedHeight else compactHeight
     val animatedHeight by animateDpAsState(targetValue = targetHeight, label = "friendItemHeight")
-
     val cornerShape = if (expanded) RoundedCornerShape(20.dp) else RoundedCornerShape(percent = 45)
 
     CustomColorOverlay(
@@ -73,6 +74,7 @@ fun FriendItem(
             .then(if (onCardClick != null) Modifier.clickable { onCardClick() } else Modifier),
         shape = cornerShape,
         overlayColor = Color.Gray,
+        theme = theme,
         onDismiss = {},
         paddingBox1 = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
         paddingBox2 = PaddingValues(vertical = 6.dp, horizontal = 6.dp)
@@ -104,14 +106,14 @@ fun FriendItem(
                     Text(
                         text = name,
                         style = MaterialTheme.typography.body1,
-                        color = Color.White,
+                        color = theme.textColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = status,
                         style = MaterialTheme.typography.caption,
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = theme.textColor.copy(alpha = 0.7f),
                         maxLines = if (expanded) 3 else 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -223,93 +225,117 @@ fun FriendItem(
             // ───── Dialogs ──────────────────────────────────────────────
 
             // Delete confirmation
+            // Delete confirmation (RED)
             if (deleteDialogVisible) {
-                AlertDialog(
-                    onDismissRequest = { deleteDialogVisible = false },
-                    title = { Text(stringResource(R.string.friends_dialog_delete_title)) },
-                    text = { Text(stringResource(R.string.friends_dialog_delete_text, name)) },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            deleteDialogVisible = false
-                            onDelete?.invoke()
-                        }) { Text(stringResource(R.string.common_confirm)) }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { deleteDialogVisible = false }) {
-                            Text(stringResource(R.string.common_cancel))
+                CustomAlertDialog(
+                    borderColor = Color.Red,
+                    theme = theme,
+                    onDismiss = { deleteDialogVisible = false }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.friends_dialog_delete_title), style = MaterialTheme.typography.h6, color = theme.textColor)
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(R.string.friends_dialog_delete_text, name), color = theme.textColor)
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { deleteDialogVisible = false }) {
+                                Text(stringResource(R.string.common_cancel))
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = {
+                                deleteDialogVisible = false
+                                onDelete?.invoke()
+                            }) {
+                                Text(stringResource(R.string.common_confirm), color = Color.Red)
+                            }
                         }
                     }
-                )
+                }
             }
 
-            // Block confirmation
+// Block confirmation (YELLOW)
             if (blockDialogVisible) {
-                AlertDialog(
-                    onDismissRequest = { blockDialogVisible = false },
-                    title = { Text(stringResource(R.string.friends_dialog_block_title)) },
-                    text = { Text(stringResource(R.string.friends_dialog_block_text, name)) },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            blockDialogVisible = false
-                            onBlock?.invoke()
-                        }) { Text(stringResource(R.string.friends_dialog_block_confirm)) }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { blockDialogVisible = false }) {
-                            Text(stringResource(R.string.common_cancel))
+                CustomAlertDialog(
+                    borderColor = Color.Yellow,
+                    theme = theme,
+                    onDismiss = { blockDialogVisible = false }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.friends_dialog_block_title), style = MaterialTheme.typography.h6, color = theme.textColor)
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(R.string.friends_dialog_block_text, name), color = theme.textColor)
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { blockDialogVisible = false }) {
+                                Text(stringResource(R.string.common_cancel), color = theme.textColor)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = {
+                                blockDialogVisible = false
+                                onBlock?.invoke()
+                            }) {
+                                Text(stringResource(R.string.friends_dialog_block_confirm), color = Color.Yellow)
+                            }
                         }
                     }
-                )
+                }
             }
 
-            // Unblock / Unblock & request
+// Unblock / Unblock & request (DEFAULT color)
             if (unblockDialogVisible) {
-                AlertDialog(
-                    onDismissRequest = { unblockDialogVisible = false },
-                    title = { Text(stringResource(R.string.friends_dialog_unblock_title)) },
-                    text = { Text(stringResource(R.string.friends_dialog_unblock_text, name)) },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            unblockDialogVisible = false
-                            onUnblock?.invoke()
-                        }) { Text(stringResource(R.string.friends_dialog_unblock_confirm)) }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = {
-                            unblockDialogVisible = false
-                            onUnblockAndRequest?.invoke()
-                        }) { Text(stringResource(R.string.friends_dialog_unblock_and_request)) }
+                CustomAlertDialog(theme = theme, onDismiss = { unblockDialogVisible = false }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.friends_dialog_unblock_title), style = MaterialTheme.typography.h6, color = theme.textColor)
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(R.string.friends_dialog_unblock_text, name), color = theme.textColor)
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = {
+                                unblockDialogVisible = false
+                                onUnblockAndRequest?.invoke()
+                            }) {
+                                Text(stringResource(R.string.friends_dialog_unblock_and_request), color = Color.Yellow)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = {
+                                unblockDialogVisible = false
+                                onUnblock?.invoke()
+                            }) {
+                                Text(stringResource(R.string.friends_dialog_unblock_confirm), color = theme.textColor)
+                            }
+                        }
                     }
-                )
+                }
             }
 
-            // ⭐ Favourite message dialog (uses the object)
+// Favourite message (DEFAULT color)
             if (favDialogVisible) {
-                AlertDialog(
-                    onDismissRequest = { favDialogVisible = false },
-                    title = { Text("Favourite message") },
-                    text = {
-                        Text(
-                            favouriteMessage?.text?.takeIf { it.isNotBlank() }
-                                ?: "No favourite message yet."
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { favDialogVisible = false }) { Text("OK") }
+                CustomAlertDialog(theme = theme,onDismiss = { favDialogVisible = false }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Favourite message", style = MaterialTheme.typography.h6)
+                        Spacer(Modifier.height(8.dp))
+                        Text(favouriteMessage?.text?.takeIf { it.isNotBlank() } ?: "No favourite message yet.")
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { favDialogVisible = false }) { Text("OK") }
+                        }
                     }
-                )
+                }
             }
 
-            // ⭐ Achievement count dialog
+// Achievement count (DEFAULT color)
             if (achDialogVisible) {
-                AlertDialog(
-                    onDismissRequest = { achDialogVisible = false },
-                    title = { Text("Achievements") },
-                    text = { Text("Total achievements: $achievementCount") },
-                    confirmButton = {
-                        TextButton(onClick = { achDialogVisible = false }) { Text("OK") }
+                CustomAlertDialog(theme = theme,onDismiss = { achDialogVisible = false }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Achievements", style = MaterialTheme.typography.h6)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Total achievements: $achievementCount")
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { achDialogVisible = false }) { Text("OK") }
+                        }
                     }
-                )
+                }
             }
         }
     }

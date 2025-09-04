@@ -41,9 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.R
 import com.example.onlyone.Screen
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
-fun MainBottomBar(navController: NavController, currentRoute: String?) {
+fun MainBottomBar(navController: NavController, currentRoute: String?, theme: ThemeTokens) {
     val navBarHeight = 32.dp
 
     Box(
@@ -70,8 +71,10 @@ fun MainBottomBar(navController: NavController, currentRoute: String?) {
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                Color(0xFF353535).copy(alpha = 0.9f), // Darker
-                                Color(0xFF1F1F1F).copy(alpha = 0.9f)  // Lighter
+                                theme.gradientColor1.copy(alpha = 0.9f),
+                                theme.gradientColor1.copy(alpha = 0.9f),
+                                //Color(0xFF353535).copy(alpha = 0.9f), // Darker
+                                //Color(0xFF1F1F1F).copy(alpha = 0.9f)  // Lighter
                             )
                         ),
                         shape = RoundedCornerShape(32.dp)

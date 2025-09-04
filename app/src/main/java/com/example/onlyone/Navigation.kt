@@ -1,5 +1,6 @@
 package com.example.onlyone
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,6 +38,7 @@ import com.example.onlyone.composables.ChatScreenEntry
 import com.example.onlyone.composables.MainBottomBar
 import com.example.onlyone.composables.TopSnackbar
 import com.example.onlyone.connection.ConnectivityListener
+import com.example.onlyone.theme.ThemeViewModel
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
@@ -56,7 +58,8 @@ fun Navigation(
     navController: NavHostController = rememberNavController(),
     sessionViewModel: SessionViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel(),
-    chatViewModel: ChatViewModel = hiltViewModel()
+    chatViewModel: ChatViewModel = hiltViewModel(),
+    themeViewModel: ThemeViewModel = hiltViewModel()
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentUser by sessionViewModel.currentUser.collectAsState()
@@ -67,7 +70,8 @@ fun Navigation(
     val isConnected by listener.isConnected.collectAsState(initial = null)
     val lastConnectionState = remember { mutableStateOf(true) } // store previous state
     val showToast = remember { mutableStateOf(false) }
-
+    val tokens by themeViewModel.tokens.collectAsState()
+    val theme = themeViewModel.tokens.collectAsState().value
     val bottomBarRoutes = setOf(
         Screen.MainScreen.route,
         Screen.FriendsScreen.route,
@@ -89,6 +93,10 @@ fun Navigation(
             bottomBarRoutes.any { it.baseRoute() == destRoute }
         } == true
 
+    LaunchedEffect(tokens) {
+        // Quick sanity check in Logcat whenever theme changes
+        Log.d("ThemeToken", "Navigation tokens changed -> bgRes=${tokens.backgroundRes}")
+    }
 
     LaunchedEffect(Unit) {
         listener.startListening()
@@ -129,28 +137,37 @@ fun Navigation(
         modifier = Modifier
             .fillMaxSize()
             .padding(top = 0.dp)
-           /* .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colors.background,
-                        Color(0xFF230C36)
-                    )
-                )
-            )*/
+
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.background2),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        // ---- THEME BACKGROUND (first child, behind everything) ----
+        tokens.backgroundRes?.let { resId ->
+            Image(
+                painter = painterResource(id = resId),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Optional contrast veil
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                        //.background(tokens.overlayColor)
+            )
+        } ?: run {
+            // Fallback if a theme has no image
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colors.background)
+            )
+        }
         TopSnackbar(message = bannerMessage.value)
 
         Scaffold(
             backgroundColor = Color.Transparent,
             bottomBar = {
                 if (showBottomBar) {
-                    MainBottomBar(navController = navController, currentRoute = currentRoute)
+                    MainBottomBar(navController = navController, currentRoute = currentRoute, theme = theme)
                 }
             }
             // other scaffold content...
@@ -177,7 +194,8 @@ fun Navigation(
                             userViewModel = userViewModel,
                             chatViewModel = chatViewModel,
                             navController = navController,
-                            sessionViewModel = sessionViewModel
+                            sessionViewModel = sessionViewModel,
+                            theme = theme
                         )
                     }
 
@@ -185,20 +203,22 @@ fun Navigation(
                         FriendsView(
                             userViewModel = userViewModel,
                             navController = navController,
-                            chatViewModel = chatViewModel
+                            chatViewModel = chatViewModel,
+                            theme = theme,
                         )
                     }
 
                     composable(Screen.ShopScreen.route) {
-                        ShopView(userViewModel = userViewModel)
+                        ShopView(userViewModel = userViewModel, themeViewModel = themeViewModel,theme = theme)
                     }
 
                     composable(Screen.SettingsScreen.route) {
-                        SettingsView(userViewModel = userViewModel)
+                        SettingsView(userViewModel = userViewModel,theme = theme)
                     }
 
                     composable(Screen.LoginScreen.route) {
                         LoginView(
+                            theme = theme,
                             navController = navController,
                             sessionViewModel = sessionViewModel,
                             userViewModel = userViewModel
@@ -243,7 +263,8 @@ fun Navigation(
                             isRandom = isRandom,
                             userViewModel = userViewModel,
                             chatViewModel = chatViewModel,
-                            navController = navController
+                            navController = navController,
+                            theme = theme
                         )
                     }
 

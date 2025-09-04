@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Divider
+import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -21,10 +22,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.ui.avatar.AvatarPickerDialog
 
 @Composable
 fun UserStatsCardContent(
+    theme: ThemeTokens,
     user: UserComposite?,                 // nullable for loading
     onMoodSubmit: (String) -> Unit,
     onMoodIconSelected: (Int) -> Unit,
@@ -58,20 +61,21 @@ fun UserStatsCardContent(
                 Text(
                     text = username,
                     style = MaterialTheme.typography.h6,
-                    color = Color.White,
+                    color = theme.textColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = stringResource(R.string.stats_gold, gold),
                     style = MaterialTheme.typography.body1,
-                    color = Color.White
+                    color = theme.textColor
                 )
             }
             IconButton(onClick = onLogoutClick) {
-                Image(
+                Icon(
                     painter = painterResource(id = R.drawable.baseline_logout_24),
-                    contentDescription = stringResource(R.string.main_cd_logout)
+                    contentDescription = stringResource(R.string.main_cd_logout),
+                    tint = theme.textColor
                 )
             }
         }
@@ -96,7 +100,7 @@ fun UserStatsCardContent(
                 Text(
                     text = stringResource(R.string.common_avatar),   // "Avatar"
                     style = MaterialTheme.typography.caption,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = theme.textColor.copy(alpha = 0.8f)
                 )
                 Spacer(Modifier.height(6.dp))
                 Image(
@@ -129,13 +133,14 @@ fun UserStatsCardContent(
                 Text(
                     text = stringResource(R.string.common_mood),     // "Mood"
                     style = MaterialTheme.typography.caption,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = theme.textColor.copy(alpha = 0.8f)
                 )
                 Spacer(Modifier.height(6.dp))
                 MoodStatusCardContent(
                     user = user,
                     onMoodSubmit = onMoodSubmit,
-                    onMoodIconSelected = onMoodIconSelected
+                    onMoodIconSelected = onMoodIconSelected,
+                    theme = theme
                 )
             }
         }
@@ -147,7 +152,8 @@ fun UserStatsCardContent(
             ownedAvatarIds = ownedAvatarIds,
             currentAvatarId = user?.avatarId,
             onSelect = { id -> onAvatarSelected(id) },
-            onDismiss = { showAvatarDialog = false }
+            onDismiss = { showAvatarDialog = false },
+            theme = theme
         )
     }
 }

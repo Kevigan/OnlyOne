@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.utils.calculateUpgradeCost
 import com.example.onlyone.utils.upgradeCosts
 import com.example.onlyone.utils.upgradeSteps
@@ -48,7 +49,8 @@ fun UpgradeDialog(
     userRunesSuperRare: Int,
     userRunesMegaRare: Int,
     onConfirm: (onResult: (success: Boolean) -> Unit) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    theme: ThemeTokens
 ) {
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -91,46 +93,47 @@ fun UpgradeDialog(
                 overlayColor = Color.Gray,
                 onDismiss = onDismiss,
                 paddingBox1 = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                paddingBox2 = PaddingValues(12.dp)
+                paddingBox2 = PaddingValues(12.dp),
+                theme = theme,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(title, style = MaterialTheme.typography.h6, color = Color.White)
+                    Text(title, style = MaterialTheme.typography.h6, color = theme.textColor)
 
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.common_current, currentValueText),
-                        color = Color.White
+                        color = theme.textColor
                     )
 
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.shop_cost_header),
                         style = MaterialTheme.typography.body1,
-                        color = Color.White
+                        color = theme.textColor
                     )
 
                     if (cost.gold > 0) {
                         Text(
                             text = stringResource(R.string.common_gold_with_amount, cost.gold),
-                            color = Color.White
+                            color = theme.textColor
                         )
                     }
                     if (cost.runesRare > 0) {
                         Text(
                             text = stringResource(R.string.common_runes_rare, cost.runesRare),
-                            color = Color.White
+                            color = theme.textColor
                         )
                     }
                     if (cost.runesSuperRare > 0) {
                         Text(
                             text = stringResource(R.string.common_runes_super_rare, cost.runesSuperRare),
-                            color = Color.White
+                            color = theme.textColor
                         )
                     }
                     if (cost.runesMegaRare > 0) {
                         Text(
                             text = stringResource(R.string.common_runes_mega_rare, cost.runesMegaRare),
-                            color = Color.White
+                            color = theme.textColor
                         )
                     }
 
@@ -169,7 +172,7 @@ fun UpgradeDialog(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text(stringResource(R.string.common_confirm))
+                                Text(stringResource(R.string.common_confirm), color = theme.textColor)
                             }
                         }
 
@@ -181,7 +184,7 @@ fun UpgradeDialog(
                                 contentColor = Color.White
                             )
                         ) {
-                            Text(stringResource(R.string.common_cancel))
+                            Text(stringResource(R.string.common_cancel), color = theme.textColor)
                         }
 
                     }

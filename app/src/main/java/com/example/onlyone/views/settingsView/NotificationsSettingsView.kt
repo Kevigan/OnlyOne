@@ -25,10 +25,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
-fun NotificationsSettingsView(userViewModel: UserViewModel) {
+fun NotificationsSettingsView(userViewModel: UserViewModel, theme: ThemeTokens,) {
     val user = userViewModel.user.value ?: return
     val uid = user.uid
 
@@ -57,7 +58,7 @@ fun NotificationsSettingsView(userViewModel: UserViewModel) {
         Column {
             Text(
                 text = stringResource(R.string.settings_notifications_header),
-                color = Color.White,
+                color = theme.textColor,
                 fontSize = 18.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -74,7 +75,7 @@ fun NotificationsSettingsView(userViewModel: UserViewModel) {
                 ) {
                     Text(
                         text = stringResource(item.labelRes),
-                        color = Color.White,
+                        color = theme.textColor,
                         style = MaterialTheme.typography.body1
                     )
 

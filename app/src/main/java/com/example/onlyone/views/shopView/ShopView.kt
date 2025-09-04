@@ -1,10 +1,12 @@
 package com.example.onlyone.views.shopView
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -18,10 +20,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
+import com.example.onlyone.theme.ThemeTokens
+import com.example.onlyone.theme.ThemeViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
-fun ShopView(userViewModel: UserViewModel) {
+fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme: ThemeTokens) {
     val user by userViewModel.user.observeAsState()
     var showMessageLengthDialog by remember { mutableStateOf(false) }
     var showSwipesDialog by remember { mutableStateOf(false) }
@@ -29,8 +33,10 @@ fun ShopView(userViewModel: UserViewModel) {
     var loadingAvatarId by remember { mutableStateOf<Int?>(null) }
     var loadingMoodId by remember { mutableStateOf<Int?>(null) }
     val context = LocalContext.current
-
+    val currentThemeId by themeViewModel.id.collectAsState()
+    var loadingThemeId by remember { mutableStateOf<com.example.onlyone.theme.ThemeId?>(null) }
     val scrollState = rememberScrollState()
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -48,6 +54,7 @@ fun ShopView(userViewModel: UserViewModel) {
                 gradientColor2 = Color(0xFF003366).copy(alpha = 0.95f),
                 borderWidth = 1.dp,
                 shape = RoundedCornerShape(12.dp),
+                theme = theme,
                 onDismiss = {}
             ) {
                 Row(
@@ -60,20 +67,20 @@ fun ShopView(userViewModel: UserViewModel) {
                     Text(
                         text = stringResource(R.string.shop_title),
                         style = MaterialTheme.typography.h5,
-                        color = Color.White,
+                        color = theme.textColor,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = stringResource(R.string.common_gold_label),
                             style = MaterialTheme.typography.h5,
-                            color = Color.White,
+                            color = theme.textColor,
                             modifier = Modifier.padding(end = 8.dp, bottom = 16.dp)
                         )
                         Text(
                             text = (user?.gold ?: 0).toString(),
                             style = MaterialTheme.typography.h5,
-                            color = Color.White,
+                            color = theme.textColor,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                     }
@@ -106,6 +113,7 @@ fun ShopView(userViewModel: UserViewModel) {
                         }
                     )
                 },
+                theme = theme,
                 onSelectAvatar = { avatarId ->
                     loadingAvatarId = avatarId
                     userViewModel.updatePublicProfile(
@@ -158,6 +166,7 @@ fun ShopView(userViewModel: UserViewModel) {
                         }
                     )
                 },
+                theme = theme,
                 onSelectMood = { moodId ->
                     loadingMoodId = moodId
                     userViewModel.updatePublicProfile(
@@ -177,6 +186,38 @@ fun ShopView(userViewModel: UserViewModel) {
                                 context.getString(R.string.shop_mood_select_failed),
                                 Toast.LENGTH_SHORT
                             ).show()
+                        }
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // in ShopView
+            ThemesSection(
+                currentThemeId = currentThemeId,
+                ownedThemeIds = user?.ownedThemes ?: emptyList(),
+                loadingThemeId = loadingThemeId,
+                onSelectTheme = { id ->
+                    loadingThemeId = id
+                    themeViewModel.select(id)  // persist + apply
+                    loadingThemeId = null
+                    Toast.makeText(context, context.getString(R.string.shop_theme_select_success), Toast.LENGTH_SHORT).show()
+                },
+                theme = theme,
+                onBuyTheme = { id ->
+                    loadingThemeId = id
+                    userViewModel.buyTheme(
+                        themeId = id.ordinal,
+                        onSuccess = {
+                            // Auto-apply right after purchase
+                            themeViewModel.select(id)
+                            loadingThemeId = null
+                            Toast.makeText(context, context.getString(R.string.shop_theme_buy_success), Toast.LENGTH_SHORT).show()
+                        },
+                        onFailure = { reason ->
+                            loadingThemeId = null
+                            Toast.makeText(context, reason.ifBlank { context.getString(R.string.shop_theme_buy_failed) }, Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
@@ -214,7 +255,8 @@ fun ShopView(userViewModel: UserViewModel) {
                     UpgradeRow(
                         label = label,
                         currentValueText = valueText,
-                        onUpgradeClick = onClick
+                        onUpgradeClick = onClick,
+                        theme = theme,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -242,7 +284,8 @@ fun ShopView(userViewModel: UserViewModel) {
                         onFailure = { callback(false) }
                     )
                 },
-                onDismiss = { showMessageLengthDialog = false }
+                onDismiss = { showMessageLengthDialog = false },
+                theme = theme
             )
         }
 
@@ -263,7 +306,8 @@ fun ShopView(userViewModel: UserViewModel) {
                         onFailure = { callback(false) }
                     )
                 },
-                onDismiss = { showSwipesDialog = false }
+                onDismiss = { showSwipesDialog = false },
+                theme = theme
             )
         }
 
@@ -284,7 +328,8 @@ fun ShopView(userViewModel: UserViewModel) {
                         onFailure = { callback(false) }
                     )
                 },
-                onDismiss = { showMoodLengthDialog = false }
+                onDismiss = { showMoodLengthDialog = false },
+                theme = theme,
             )
         }
     }

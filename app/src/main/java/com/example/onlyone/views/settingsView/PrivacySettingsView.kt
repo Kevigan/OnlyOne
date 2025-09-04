@@ -11,14 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
-fun PrivacySettingsView() {
+fun PrivacySettingsView(theme: ThemeTokens,) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column {
-            Text("🔒 Privacy", color = Color.White, fontSize = 18.sp)
+            Text("🔒 Privacy", color = theme.textColor, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Manage your privacy settings here.", color = Color.White.copy(alpha = 0.7f))
+            Text("Manage your privacy settings here.", color = theme.textColor.copy(alpha = 0.7f))
         }
     }
 }

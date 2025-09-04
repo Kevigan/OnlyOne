@@ -11,14 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
-fun AccountSettingsView() {
+fun AccountSettingsView(theme: ThemeTokens,) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column {
-            Text("ℹ️ About This App", color = Color.White, fontSize = 18.sp)
+            Text("ℹ️ About This App", color = theme.textColor, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Version 1.0 • All rights reserved", color = Color.White.copy(alpha = 0.7f))
+            Text("Version 1.0 • All rights reserved", color = theme.textColor.copy(alpha = 0.7f))
         }
     }
 }

@@ -26,10 +26,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.userViewModel.AchievementManager
 
 @Composable
-fun AchievementCard(achievement: AchievementManager.AchievementWithProgress) {
+fun AchievementCard(achievement: AchievementManager.AchievementWithProgress, theme: ThemeTokens) {
     CustomColorOverlay(
         modifier = Modifier
             .fillMaxWidth()
@@ -38,7 +39,8 @@ fun AchievementCard(achievement: AchievementManager.AchievementWithProgress) {
         overlayColor = Color.Gray,
         onDismiss = {},
         paddingBox1 = PaddingValues(vertical = 1.dp),
-        paddingBox2 = PaddingValues(vertical = 1.dp)
+        paddingBox2 = PaddingValues(vertical = 1.dp),
+        theme = theme,
     ) {
         Card(
             modifier = Modifier

@@ -1,35 +1,26 @@
 package com.example.onlyone.composables
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun CustomColorOverlay(
     modifier: Modifier = Modifier,
+    theme: ThemeTokens,
     overlayColor: Color = Color.Transparent,
     borderColor: Color =  Color(0xFF80DFFF),
     gradientColor1: Color = Color(0xFF353535).copy(alpha = 0.95f),      //Color(0xFF433A52)
@@ -47,7 +38,7 @@ fun CustomColorOverlay(
             .padding(paddingBox1) // ✅ applied here
             .border(
                 width = borderWidth,
-                color = borderColor.copy(alpha = 0.6f),
+                color = theme.borderColor.copy(alpha = 0.6f),
                 shape = shape
             )
     ) {
@@ -64,8 +55,8 @@ fun CustomColorOverlay(
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                gradientColor1,
-                                gradientColor2
+                                theme.gradientColor1,
+                                theme.gradientColor2
                             )
                         ),
                         shape = shape

@@ -21,4 +21,10 @@
 
     <string name="chat_language_prefix">Sprache: %1$s</string>
     <string name="chat_cd_next_user">Naechster Nutzer</string>
+
+    <string name="chat_msg_title">Lieblingsnachricht</string>
+    <string name="chat_msg_no_fav">Noch keine Lieblingsnachricht</string>
+
+    <string name="chat_language_any">Alle</string>
+
 </resources>

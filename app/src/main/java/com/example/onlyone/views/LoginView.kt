@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.views.settingsView.LanguageDropdown
 
@@ -47,7 +50,8 @@ import com.example.onlyone.views.settingsView.LanguageDropdown
 fun LoginView(
     navController: NavController,
     sessionViewModel: SessionViewModel,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    theme: ThemeTokens
 ) {
     val context = LocalContext.current
 
@@ -115,17 +119,28 @@ fun LoginView(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(stringResource(R.string.auth_title), style = MaterialTheme.typography.h4)
+        Text(stringResource(R.string.auth_title), style = MaterialTheme.typography.h4, color = theme.textColor)
 
         Spacer(modifier = Modifier.height(16.dp))
-
+        val tfColors = TextFieldDefaults.outlinedTextFieldColors(
+            textColor = theme.textColor,                 // ← typed text color
+            cursorColor = theme.borderColor,
+            focusedBorderColor = theme.borderColor,
+            unfocusedBorderColor = theme.textColor.copy(alpha = 0.75f),
+            focusedLabelColor = theme.textColor,
+            unfocusedLabelColor = theme.textColor.copy(alpha = 0.8f),
+            placeholderColor = theme.cardContentColor.copy(alpha = 0.6f),
+            trailingIconColor = theme.textColor,
+            leadingIconColor = theme.textColor
+        )
         OutlinedTextField(
             value = email,
             onValueChange = {
                 email = it
                 errorMessage = null
             },
-            label = { Text(stringResource(R.string.auth_email_label)) }
+            label = { Text(stringResource(R.string.auth_email_label), color = theme.textColor.copy(0.9f)) },
+            colors = tfColors
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -136,7 +151,7 @@ fun LoginView(
                 password = it
                 errorMessage = null
             },
-            label = { Text(stringResource(R.string.auth_password_label)) },
+            label = { Text(stringResource(R.string.auth_password_label), color = theme.textColor.copy(0.9f)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
@@ -144,16 +159,18 @@ fun LoginView(
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(imageVector = icon, contentDescription = stringResource(cd))
                 }
-            }
+            },
+            colors = tfColors
         )
 
         // --- NEW: App Language section (uses your LanguageDropdown) ---
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(stringResource(R.string.settings_app_language_label))
+        Text(stringResource(R.string.settings_app_language_label), color = theme.textColor)
         Spacer(modifier = Modifier.height(8.dp))
 
         LanguageDropdown(
+            theme = theme,
             currentCode = currentAppLang,
             availableLanguages = availableLanguages,
             languageMap = languageMap,
@@ -202,7 +219,12 @@ fun LoginView(
                     }
                 }
             )
-        }) {
+        },colors = ButtonDefaults.buttonColors(
+            backgroundColor = theme.buttonColor,           // ← button fill
+            contentColor = theme.textColor,         // ← text & icon tint
+            disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+            disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+        )) {
             Text(stringResource(R.string.auth_sign_in_email))
         }
 
@@ -237,8 +259,13 @@ fun LoginView(
                     }
                 }
             )
-        }) {
-            Text(stringResource(R.string.auth_register))
+        },colors = ButtonDefaults.buttonColors(
+            backgroundColor = theme.buttonColor,           // ← button fill
+            contentColor = theme.textColor,         // ← text & icon tint
+            disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+            disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+        )) {
+            Text(stringResource(R.string.auth_register), color = theme.textColor)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -246,8 +273,13 @@ fun LoginView(
         Button(onClick = {
             val signInIntent = googleSignInClient.signInIntent
             launcher.launch(signInIntent)
-        }) {
-            Text(stringResource(R.string.auth_sign_in_google))
+        },colors = ButtonDefaults.buttonColors(
+            backgroundColor = theme.buttonColor,           // ← button fill
+            contentColor = theme.textColor,         // ← text & icon tint
+            disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+            disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+        )) {
+            Text(stringResource(R.string.auth_sign_in_google), color = theme.textColor)
         }
     }
 }

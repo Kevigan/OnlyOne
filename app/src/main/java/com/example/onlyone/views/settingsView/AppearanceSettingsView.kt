@@ -11,14 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
-fun AppearanceSettingsView() {
+fun AppearanceSettingsView(theme: ThemeTokens,) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column {
-            Text("🎨 Appearance", color = Color.White, fontSize = 18.sp)
+            Text("🎨 Appearance", color = theme.textColor, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Customize your app appearance here.", color = Color.White.copy(alpha = 0.7f))
+            Text("Customize your app appearance here.", color = theme.textColor.copy(alpha = 0.7f))
         }
     }
 }

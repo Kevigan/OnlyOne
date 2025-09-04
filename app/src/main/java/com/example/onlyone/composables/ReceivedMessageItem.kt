@@ -30,9 +30,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun ReceivedMessageItem(
+    theme: ThemeTokens,
     avatarResId: Int,
     name: String,
     message: String,
@@ -50,6 +52,7 @@ fun ReceivedMessageItem(
         shape = RoundedCornerShape(percent = 45),
         overlayColor = Color.Gray,
         borderColor = borderColor, // ✅ use dynamic color
+        theme = theme,
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
         paddingBox2 = PaddingValues(6.dp),
@@ -84,7 +87,7 @@ fun ReceivedMessageItem(
                     Text(
                         text = name,
                         style = MaterialTheme.typography.body1,
-                        color = Color.White
+                        color = theme.textColor
                     )
                 }
 
@@ -114,7 +117,7 @@ fun ReceivedMessageItem(
                     text = message,
                     style = MaterialTheme.typography.body2,
                     fontSize = 16.sp,
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = theme.textColor.copy(alpha = 0.85f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -129,13 +132,13 @@ fun ReceivedMessageItem(
                         text = stringResource(R.string.main_exp_in_label),
                         fontSize = 8.sp,
                         style = MaterialTheme.typography.caption,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = theme.textColor.copy(alpha = 0.7f)
                     )
                     Text(
                         text = expiration,
                         fontSize = 10.sp,
                         style = MaterialTheme.typography.body2,
-                        color = Color.White
+                        color = theme.textColor
                     )
                 }
             }

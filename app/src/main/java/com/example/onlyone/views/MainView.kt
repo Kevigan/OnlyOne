@@ -1,5 +1,6 @@
 package com.example.onlyone.views
 
+import CustomAlertDialog
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,8 +25,12 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.onlyone.R
 import com.example.onlyone.Screen
+import com.example.onlyone.ads.TestVideoAdButton
 import com.example.onlyone.composables.*
 import com.example.onlyone.data.LocalMessage
+import com.example.onlyone.theme.ThemeRegistry
+import com.example.onlyone.theme.ThemeTokens
+import com.example.onlyone.theme.ThemeViewModel
 import com.example.onlyone.utils.DailyResetTimer
 import com.example.onlyone.utils.formatTimeLeft
 import com.example.onlyone.viewModels.ChatViewModel
@@ -39,7 +44,8 @@ fun MainView(
     userViewModel: UserViewModel,
     chatViewModel: ChatViewModel,
     navController: NavController,
-    sessionViewModel: SessionViewModel
+    sessionViewModel: SessionViewModel,
+    theme: ThemeTokens
 ) {
     val systemUiController = rememberSystemUiController()
     val user by userViewModel.user.observeAsState()
@@ -61,7 +67,6 @@ fun MainView(
 
     val context = LocalContext.current
     val currentFavId = user?.favouriteMessage?.messageId
-
     // Local UI state to prevent double taps and show immediate selection
     var busyFavId by remember { mutableStateOf<String?>(null) }
     var pendingFavId by remember { mutableStateOf<String?>(null) }
@@ -97,63 +102,21 @@ fun MainView(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // === Header row ===
-            /*CustomColorOverlay(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                paddingBox1 = PaddingValues(6.dp),
-                paddingBox2 = PaddingValues(1.dp),
-                borderWidth = 1.dp,
-                gradientColor1 = Color(0xFF001F54).copy(alpha = 0.95f),
-                gradientColor2 = Color(0xFF003366).copy(alpha = 0.95f),
-                shape = RoundedCornerShape(24.dp),
-                onDismiss = {}
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    val displayName = user?.username ?: stringResource(R.string.common_user)
-                    Text(
-                        text = stringResource(R.string.main_greeting, displayName),
-                        style = MaterialTheme.typography.subtitle1,
-                        color = Color.White
-                    )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SmallResetButton("Reset FL") { userViewModel.hardResetFriends() }
-                        SmallResetButton("Reset LM") { userViewModel.hardResetLocalMessages() }
-
-                        IconButton(onClick = { showLogoutDialog = true }) {
-                            Image(
-                                painter = painterResource(id = R.drawable.baseline_logout_24),
-                                contentDescription = stringResource(R.string.main_cd_logout),
-                                modifier = Modifier.size(20.dp),
-                                colorFilter = ColorFilter.tint(Color.White)
-                            )
-                        }
-                    }
-                }
-            }*/
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Compute your mood icon exactly like before
             val moodResId = user?.moodId?.let {
                 if (it != 0) mapMoodIdToDrawable(it) else R.drawable.baseline_tag_faces_24
             } ?: R.drawable.baseline_tag_faces_24
-
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                SmallResetButton("WM") { chatViewModel.hardResetWritten() }
+                TestVideoAdButton()
+            }
             CustomColorOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(2f),
+                theme = theme,
                 onDismiss = {}
             ) {
                 UserStatsCardContent(
@@ -180,7 +143,8 @@ fun MainView(
                         )
                     },
                     onLogoutClick = { showLogoutDialog = true },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    theme = theme
                 )
             }
 
@@ -203,7 +167,7 @@ fun MainView(
                 TabRow(
                     selectedTabIndex = selectedTab,
                     backgroundColor = Color.Transparent,
-                    contentColor = Color.White,
+                    contentColor = theme.textColor,
                     indicator = { tabPositions ->
                         TabRowDefaults.Indicator(
                             Modifier
@@ -216,7 +180,7 @@ fun MainView(
                         Tab(
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
-                            text = { Text(label, color = Color.White) }
+                            text = { Text(label, color = theme.textColor) }
                         )
                     }
                 }
@@ -252,7 +216,7 @@ fun MainView(
                                         ) {
                                             Text(
                                                 text = stringResource(R.string.main_error_loading_messages),
-                                                color = Color.Red,
+                                                color = theme.textColor,
                                                 fontSize = 12.sp
                                             )
                                         }
@@ -266,7 +230,7 @@ fun MainView(
                                         ) {
                                             Text(
                                                 stringResource(R.string.main_no_messages),
-                                                color = Color.Gray,
+                                                color = theme.textColor,
                                                 fontSize = 14.sp
                                             )
                                         }
@@ -281,7 +245,8 @@ fun MainView(
                                             expiration = formatTimeLeft(message.timestamp),
                                             onClick = { selectedMessage = message },
                                             isRead = message.read,
-                                            feedback = message.feedback ?: -10
+                                            feedback = message.feedback ?: -10,
+                                            theme = theme
                                         )
                                     }
                                 }
@@ -298,7 +263,7 @@ fun MainView(
                             if (favoriteMessages.isEmpty()) {
                                 item {
                                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                        Text(text = "No saved messages yet.", color = Color.Gray, fontSize = 14.sp)
+                                        Text(text = "No saved messages yet.", color = theme.textColor, fontSize = 14.sp)
                                     }
                                 }
                             } else {
@@ -319,7 +284,7 @@ fun MainView(
                                             busyFavId = fav.id
                                             pendingFavId = if (wasSelected) null else fav.id
                                             userViewModel.toggleFavouriteMessage(
-                                                messageId = fav.id,
+                                                fav = fav,
                                                 onSuccess = {
                                                     busyFavId = null
                                                     Toast.makeText(
@@ -350,7 +315,8 @@ fun MainView(
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         },
-                                        onClick = { /* optional */ }
+                                        onClick = { /* optional */ },
+                                        theme = theme
                                     )
                                 }
                             }
@@ -361,27 +327,50 @@ fun MainView(
         }
     }
 
-    // Logout dialog
+    // Logout dialog (with CustomAlertDialog)
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            title = { Text(stringResource(R.string.main_logout_title)) },
-            text = { Text(stringResource(R.string.main_logout_text)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    sessionViewModel.signOut()
-                    showLogoutDialog = false
-                    navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo("MainScreen") { inclusive = true }
+        CustomAlertDialog(
+            theme = theme,
+            borderColor = theme.borderColor,
+            onDismiss = { showLogoutDialog = false }
+        ) {
+            Column(Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.main_logout_title),
+                    style = MaterialTheme.typography.h6,
+                    color = theme.textColor
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    text = stringResource(R.string.main_logout_text),
+                    style = MaterialTheme.typography.body1,
+                    color = theme.textColor
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text(stringResource(R.string.common_no), color = theme.textColor)
                     }
-                }) { Text(stringResource(R.string.common_yes)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text(stringResource(R.string.common_no))
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        sessionViewModel.signOut()
+                        showLogoutDialog = false
+                        navController.navigate(Screen.LoginScreen.route) {
+                            popUpTo("MainScreen") { inclusive = true }
+                        }
+                    }) {
+                        Text(stringResource(R.string.common_yes), color = theme.textColor)
+                    }
                 }
             }
-        )
+        }
     }
 
     // Fullscreen message preview (only for Received)
@@ -404,7 +393,8 @@ fun MainView(
                     .align(Alignment.Center)
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp),
-                shape = 20
+                shape = 20,
+                theme = theme
             )
         }
     }

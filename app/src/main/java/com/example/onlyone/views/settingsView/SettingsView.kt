@@ -39,10 +39,11 @@ import com.example.onlyone.composables.settings.AppLanguageBig
 import com.example.onlyone.composables.settings.AppearanceItemBig
 import com.example.onlyone.composables.settings.NotificationsItemBig
 import com.example.onlyone.composables.settings.PrivacyItemBig
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
-fun SettingsView(userViewModel: UserViewModel) {
+fun SettingsView(userViewModel: UserViewModel, theme: ThemeTokens) {
     val sections = remember { SettingSection.values().toList() }
     var selectedSection by remember { mutableStateOf<SettingSection?>(null) }
     val countFakeUsers = 20
@@ -61,12 +62,13 @@ fun SettingsView(userViewModel: UserViewModel) {
                 gradientColor2 = Color(0xFF003366).copy(alpha = 0.95f),
                 borderWidth = 1.dp,
                 shape = RoundedCornerShape(12.dp),
+                theme = theme,
                 onDismiss = {}
             ) {
                 Text(
                     text = stringResource(R.string.settings_header),
                     style = MaterialTheme.typography.h5,
-                    color = Color.White,
+                    color = theme.textColor,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
             }
@@ -75,6 +77,7 @@ fun SettingsView(userViewModel: UserViewModel) {
                 items(sections) { section ->
                     SettingsItemRow(
                         title = stringResource(section.titleRes),
+                        theme = theme,
                         onClick = { selectedSection = section }
                     )
                 }
@@ -87,7 +90,7 @@ fun SettingsView(userViewModel: UserViewModel) {
             ) {
                 Text(
                     text = stringResource(R.string.settings_create_fake_users, countFakeUsers),
-                    color = Color.White
+                    color = theme.textColor
                 )
             }
 
@@ -137,15 +140,16 @@ fun SettingsView(userViewModel: UserViewModel) {
                         shape = RoundedCornerShape(24.dp),
                         paddingBox1 = PaddingValues(0.dp),
                         paddingBox2 = PaddingValues(24.dp),
+                        theme = theme,
                         onDismiss = {}
                     ) {
                         when (section) {
-                            SettingSection.ACCOUNT -> AccountSettingsView()
-                            SettingSection.NOTIFICATIONS -> NotificationsSettingsView(userViewModel)
-                            SettingSection.LANGUAGE -> LanguageSettingsView(userViewModel)
-                            SettingSection.PRIVACY -> PrivacySettingsView()
-                            SettingSection.APPEARANCE -> AppearanceSettingsView()
-                            SettingSection.ABOUT -> AboutSettingsView()
+                            SettingSection.ACCOUNT -> AccountSettingsView(theme = theme)
+                            SettingSection.NOTIFICATIONS -> NotificationsSettingsView(userViewModel,theme = theme)
+                            SettingSection.LANGUAGE -> LanguageSettingsView(userViewModel,theme = theme)
+                            SettingSection.PRIVACY -> PrivacySettingsView(theme = theme)
+                            SettingSection.APPEARANCE -> AppearanceSettingsView(theme = theme)
+                            SettingSection.ABOUT -> AboutSettingsView(theme = theme)
                         }
                     }
                 }

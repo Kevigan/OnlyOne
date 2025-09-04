@@ -23,17 +23,26 @@ import com.example.onlyone.composables.AvatarCatalog
 import com.example.onlyone.composables.AvatarCategory
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.data.UserComposite
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun AvatarsSection(
     user: UserComposite?,
     loadingAvatarId: Int?,
     onBuyAvatar: (Int) -> Unit,
-    onSelectAvatar: (Int) -> Unit
+    onSelectAvatar: (Int) -> Unit,
+    theme: ThemeTokens
 ) {
     // Dropdown state
     var expanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf(AvatarCategory.ALL) }
+
+    val buttonColors =  ButtonDefaults.buttonColors(
+        backgroundColor = theme.buttonColor,           // ← button fill
+        contentColor = theme.textColor,         // ← text & icon tint
+        disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+        disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+    )
 
 // Filter the avatars by selected category
     val filteredAvatars = remember(selectedCategory) {
@@ -51,7 +60,8 @@ fun AvatarsSection(
         overlayColor = Color.Gray,
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-        paddingBox2 = PaddingValues(6.dp)
+        paddingBox2 = PaddingValues(6.dp),
+        theme = theme
     ) {
         Column(
             modifier = Modifier
@@ -67,7 +77,7 @@ fun AvatarsSection(
                 Text(
                     text = stringResource(R.string.common_avatars),
                     style = MaterialTheme.typography.h6,
-                    color = Color.White,
+                    color = theme.textColor,
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 6.dp, bottom = 4.dp)
@@ -81,11 +91,11 @@ fun AvatarsSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text(stringResource(selectedCategory.labelRes), color = Color.White)
+                            Text(stringResource(selectedCategory.labelRes), color = theme.textColor)
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_arrow_drop_down_24),
                                 contentDescription = stringResource(R.string.common_open_menu),
-                                tint = Color.White,
+                                tint = theme.textColor,
                                 modifier = Modifier
                                     .size(16.dp)
                                     .graphicsLayer { rotationZ = rotation }
@@ -104,7 +114,7 @@ fun AvatarsSection(
                                     expanded = false
                                 }
                             ) {
-                                Text(text = stringResource(cat.labelRes))
+                                Text(text = stringResource(cat.labelRes), color = theme.textColor)
                             }
                         }
                     }
@@ -133,7 +143,7 @@ fun AvatarsSection(
                                 .clip(CircleShape)
                                 .border(
                                     width = 3.dp,
-                                    color = if (isSelected) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.3f),
+                                    color = if (isSelected) Color(0xFF4CAF50) else theme.textColor.copy(alpha = 0.3f),
                                     shape = CircleShape
                                 )
                         )
@@ -144,37 +154,39 @@ fun AvatarsSection(
                             !alreadyOwned -> {
                                 Button(
                                     onClick = { onBuyAvatar(avatar.id) },
+                                    colors = buttonColors,
                                     enabled = canAfford && !isLoading
                                 ) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
                                             strokeWidth = 2.dp,
-                                            color = Color.White
+                                            color = theme.textColor
                                         )
                                     } else {
-                                        Text(stringResource(R.string.common_buy_with_cost, avatar.cost))
+                                        Text(stringResource(R.string.common_buy_with_cost, avatar.cost), color = theme.textColor)
                                     }
                                 }
                             }
                             alreadyOwned && !isSelected -> {
                                 Button(
                                     onClick = { onSelectAvatar(avatar.id) },
+                                    colors = buttonColors,
                                     enabled = !isLoading
                                 ) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
                                             strokeWidth = 2.dp,
-                                            color = Color.White
+                                            color = theme.textColor
                                         )
                                     } else {
-                                        Text(stringResource(R.string.common_select))
+                                        Text(stringResource(R.string.common_select), color = theme.textColor)
                                     }
                                 }
                             }
                             else -> {
-                                Button(onClick = {}, enabled = false) {
+                                Button(onClick = {},colors = buttonColors, enabled = false) {
                                     Text(stringResource(R.string.common_selected))
                                 }
                             }

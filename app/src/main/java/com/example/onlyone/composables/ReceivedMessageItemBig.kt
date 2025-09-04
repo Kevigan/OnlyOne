@@ -1,11 +1,10 @@
 package com.example.onlyone.composables
 
+import CustomAlertDialog
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AlertDialog
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -22,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.data.LocalMessage
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
@@ -32,7 +32,8 @@ fun ReceivedMessageItemBig(
     message: LocalMessage,
     onFeedbackSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    shape: Int = 45
+    shape: Int = 45,
+    theme: ThemeTokens
 ) {
     val context = LocalContext.current
     var showBlockDialog by remember { mutableStateOf(false) }
@@ -53,7 +54,8 @@ fun ReceivedMessageItemBig(
         overlayColor = Color.Gray,
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-        paddingBox2 = PaddingValues(10.dp)
+        paddingBox2 = PaddingValues(10.dp),
+        theme = theme
     ) {
         Column(
             modifier = Modifier
@@ -63,6 +65,7 @@ fun ReceivedMessageItemBig(
         ) {
             Text(
                 text = message.content,
+                color = theme.textColor,
                 style = MaterialTheme.typography.body1,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
@@ -77,7 +80,7 @@ fun ReceivedMessageItemBig(
                 Text(
                     text = stringResource(R.string.main_give_feedback),
                     style = MaterialTheme.typography.subtitle1,
-                    color = Color.Gray,
+                    color = theme.textColor,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(
@@ -145,7 +148,7 @@ fun ReceivedMessageItemBig(
                 Text(
                     text = description,
                     style = MaterialTheme.typography.body2,
-                    color = Color.White,
+                    color = theme.textColor,
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
@@ -206,22 +209,46 @@ fun ReceivedMessageItemBig(
         }
 
         if (showBlockDialog) {
-            AlertDialog(
-                onDismissRequest = { showBlockDialog = false },
-                title = { Text(stringResource(R.string.dialog_block_title)) },
-                text = { Text(stringResource(R.string.dialog_block_text)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showBlockDialog = false
-                        userViewModel.blockUser(message.senderId)
-                    }) { Text(stringResource(R.string.common_block), color = Color.Red) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showBlockDialog = false }) {
-                        Text(stringResource(R.string.common_cancel))
+            CustomAlertDialog(
+                borderColor = Color.Yellow,
+                theme = theme,
+                onDismiss = { showBlockDialog = false }
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.dialog_block_title),
+                        style = MaterialTheme.typography.h6,
+                        color = theme.textColor
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.dialog_block_text),
+                        style = MaterialTheme.typography.body2,
+                        textAlign = TextAlign.Center,
+                        color = theme.textColor
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = { showBlockDialog = false }) {
+                            Text(stringResource(R.string.common_cancel), color = theme.textColor)
+                        }
+                        TextButton(onClick = {
+                            showBlockDialog = false
+                            userViewModel.blockUser(message.senderId)
+                        }) {
+                            Text(stringResource(R.string.common_block), color = Color.Yellow)
+                        }
                     }
                 }
-            )
+            }
         }
+
     }
 }

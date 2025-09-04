@@ -20,6 +20,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // ✅ Show UMP consent (if required), then init Mobile Ads & preload interstitial
+        ConsentAndAds.showConsentThenInitAds(this, application)
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
@@ -31,12 +34,11 @@ class MainActivity : AppCompatActivity() {
                     ) {
                         Navigation()
                     }
-
-                    // ✅ Always rendered, layout stable
                 }
             }
         }
     }
 }
+
 
 

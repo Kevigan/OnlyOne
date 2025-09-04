@@ -1,5 +1,6 @@
 package com.example.onlyone.composables
 
+import CustomAlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,9 +19,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.onlyone.R
+import com.example.onlyone.theme.ThemeTokens
 
 @Composable
 fun SavedMessageItem(
+    theme: ThemeTokens,
     avatarResId: Int,
     name: String,
     message: String,
@@ -39,6 +42,7 @@ fun SavedMessageItem(
         shape = RoundedCornerShape(percent = 45),
         overlayColor = Color.Gray,
         borderColor = Color.White,
+        theme = theme,
         onDismiss = {},
         paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
         paddingBox2 = PaddingValues(6.dp),
@@ -72,7 +76,7 @@ fun SavedMessageItem(
                     Text(
                         text = name,
                         style = MaterialTheme.typography.body1,
-                        color = Color.White
+                        color = theme.textColor
                     )
                 }
 
@@ -82,7 +86,7 @@ fun SavedMessageItem(
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp,
-                            color = Color.White
+                            color = theme.textColor
                         )
                     } else {
                         Image(
@@ -122,7 +126,7 @@ fun SavedMessageItem(
                 text = message,
                 style = MaterialTheme.typography.body2,
                 fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.85f),
+                color = theme.textColor.copy(alpha = 0.85f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
@@ -130,24 +134,46 @@ fun SavedMessageItem(
         }
     }
 
+    // Delete saved item dialog (with CustomAlertDialog)
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.dialog_delete_saved_title)) },
-            text = { Text(stringResource(R.string.dialog_delete_saved_text)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    onDeleteConfirm()
-                }) {
-                    Text(stringResource(R.string.common_yes))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.common_no))
+        CustomAlertDialog(
+            theme = theme,
+            borderColor = theme.borderColor,
+            onDismiss = { showDeleteDialog = false }
+        ) {
+            Column(Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.dialog_delete_saved_title),
+                    style = MaterialTheme.typography.h6,
+                    color = theme.textColor
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    text = stringResource(R.string.dialog_delete_saved_text),
+                    style = MaterialTheme.typography.body1,
+                    color = theme.textColor
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text(stringResource(R.string.common_no), color = theme.textColor)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        onDeleteConfirm()
+                    }) {
+                        Text(stringResource(R.string.common_yes), color = Color.Red)
+                    }
                 }
             }
-        )
+        }
     }
 }

@@ -57,16 +57,34 @@ class UserPublicRepo @Inject constructor(
         return doc.toObject(PublicUser::class.java) ?: throw Exception("Invalid user_public/$uid")
     }
 
+    // UserPublicRepo.kt
     suspend fun setFavouriteMessage(
         messageId: String,
+        text: String,
+        fromUid: String,
+        senderUsername: String? = null,
+       // senderAvatarId: Int? = null,
+        senderMood: String? = null,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
         try {
+            val data = hashMapOf(
+                "messageId" to messageId,
+                "text" to text,
+                "fromUid" to fromUid,
+                "senderUsername" to (senderUsername ?: "")
+            ).apply {
+                // both exist in your LocalFavoriteMessage; include them if present
+                //senderAvatarId?.let { put("senderAvatarId", it) }
+                senderMood?.let { put("senderMood", it) }
+            }
+
             Firebase.functions("europe-west3")
                 .getHttpsCallable("setFavouriteMessage")
-                .call(mapOf("messageId" to messageId))
+                .call(data)
                 .await()
+
             trackWrite("users_public/<uid>.favouriteMessage", "setFavouriteMessage")
             onSuccess()
         } catch (e: Exception) {
@@ -74,6 +92,7 @@ class UserPublicRepo @Inject constructor(
             onFailure(e)
         }
     }
+
 
     suspend fun clearFavouriteMessage(
         onSuccess: () -> Unit,

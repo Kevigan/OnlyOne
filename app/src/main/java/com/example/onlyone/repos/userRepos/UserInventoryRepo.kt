@@ -68,5 +68,20 @@ class UserInventoryRepo @Inject constructor(
             null
         }
     }
+
+    suspend fun buyTheme(themeId: Int): UserInventory? {
+        return try {
+            Firebase.functions("europe-west3")
+                .getHttpsCallable("buyTheme")
+                .call(mapOf("themeId" to themeId))
+                .await()
+
+            val uid = Firebase.auth.currentUser?.uid ?: return null
+            fetchInventory(uid)
+        } catch (e: Exception) {
+            Log.e("InventoryRepo", "❌ Failed to buy theme", e)
+            null
+        }
+    }
 }
 
