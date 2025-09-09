@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_app_language_label">App language</string>
-    <string name="settings_select_language_label">Select language</string>
+    <!-- Settings: headers / sections -->
     <string name="settings_header">Settings</string>
-    <string name="settings_app_language_header">🌐 App language</string>
-    <string name="settings_chat_language_header">💬 Chat language</string>
-
-    <!-- Section titles -->
     <string name="settings_section_account">Account</string>
     <string name="settings_section_notifications">Notifications</string>
     <string name="settings_section_language">Language</string>
@@ -14,16 +9,22 @@
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_about">About</string>
 
-    <!-- Buttons -->
-    <string name="settings_create_fake_users">Create %1$d fake users</string>
-    <string name="settings_seed_achievements">Seed achievement definitions</string>
+    <!-- Language -->
+    <string name="settings_app_language_label">App language</string>
+    <string name="settings_select_language_label">Select language</string>
+    <string name="settings_app_language_header">🌐 App language</string>
+    <string name="settings_chat_language_header">💬 Chat language</string>
 
-    <!-- Notifications -->
+    <!-- Notifications (section labels for settings screen) -->
     <string name="settings_notifications_header">Notifications</string>
     <string name="settings_notifications_message">Messages</string>
     <string name="settings_notifications_feedback">Feedback</string>
 
-    <!-- Language names (displayed in dropdown) -->
+    <!-- Buttons / dev tools (if used) -->
+    <string name="settings_create_fake_users">Create %1$d fake users</string>
+    <string name="settings_seed_achievements">Seed achievement definitions</string>
+
+    <!-- Language names -->
     <string name="lang_english">English</string>
     <string name="lang_german">Deutsch</string>
     <string name="lang_french">Français</string>

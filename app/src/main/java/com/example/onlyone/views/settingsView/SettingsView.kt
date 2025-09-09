@@ -31,19 +31,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
-import com.example.onlyone.composables.settings.AboutItemBig
-import com.example.onlyone.composables.settings.AccountItemBig
-import com.example.onlyone.composables.settings.AppLanguageBig
-import com.example.onlyone.composables.settings.AppearanceItemBig
-import com.example.onlyone.composables.settings.NotificationsItemBig
-import com.example.onlyone.composables.settings.PrivacyItemBig
 import com.example.onlyone.theme.ThemeTokens
+import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
-fun SettingsView(userViewModel: UserViewModel, theme: ThemeTokens) {
+fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel,navController: NavController, theme: ThemeTokens) {
     val sections = remember { SettingSection.values().toList() }
     var selectedSection by remember { mutableStateOf<SettingSection?>(null) }
     val countFakeUsers = 20
@@ -144,7 +140,7 @@ fun SettingsView(userViewModel: UserViewModel, theme: ThemeTokens) {
                         onDismiss = {}
                     ) {
                         when (section) {
-                            SettingSection.ACCOUNT -> AccountSettingsView(theme = theme)
+                            SettingSection.ACCOUNT -> AccountSettingsView(sessionViewModel = sessionViewModel, navController = navController, theme = theme)
                             SettingSection.NOTIFICATIONS -> NotificationsSettingsView(userViewModel,theme = theme)
                             SettingSection.LANGUAGE -> LanguageSettingsView(userViewModel,theme = theme)
                             SettingSection.PRIVACY -> PrivacySettingsView(theme = theme)

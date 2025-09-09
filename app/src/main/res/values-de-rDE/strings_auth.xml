@@ -25,4 +25,37 @@
     <string name="auth_error_bad_email">Ungültiges E-Mail-Format.</string>
     <string name="auth_error_email_in_use">Für diese E-Mail existiert bereits ein Konto.</string>
     <string name="auth_error_password_weak">Passwort ist zu schwach.</string>
+
+    <!-- Konto / Passwort-Aktionen -->
+    <string name="auth_account_title">Kontoeinstellungen</string>
+    <string name="auth_action_change_password">Passwort ändern</string>
+    <string name="auth_action_send_reset_email">E-Mail zum Zurücksetzen des Passworts senden</string>
+    <string name="auth_action_add_password">Passwort zu diesem Konto hinzufügen</string>
+
+    <!-- Dialoge: Titel & Buttons -->
+    <string name="auth_change_dialog_title">Passwort ändern</string>
+    <string name="auth_reset_dialog_title">E-Mail zum Zurücksetzen des Passworts senden</string>
+    <string name="auth_addpw_dialog_title">Passwort hinzufügen</string>
+    <string name="auth_dialog_save">Speichern</string>
+    <string name="auth_dialog_cancel">Abbrechen</string>
+    <string name="auth_reset_dialog_send">Senden</string>
+
+    <!-- Dialogfelder / Labels -->
+    <string name="auth_current_password_label">Aktuelles Passwort</string>
+    <string name="auth_new_password_label">Neues Passwort (mind. 6 Zeichen)</string>
+    <string name="auth_confirm_password_label">Neues Passwort bestätigen</string>
+    <!-- Für die E-Mail-Eingabe kannst du auth_email_label wiederverwenden -->
+
+    <!-- Toaster / Fehlertexte -->
+    <string name="auth_toast_google_no_password">Du bist mit Google angemeldet. Passwortoptionen sind nicht verfügbar.</string>
+    <string name="auth_toast_google_no_reset">Du bist mit Google angemeldet – kein Passwort-Reset verfügbar.</string>
+    <string name="auth_change_success">Passwort aktualisiert.</string>
+    <string name="auth_addpw_success">Passwort hinzugefügt. Du kannst dich jetzt mit E-Mail und Passwort anmelden.</string>
+    <string name="auth_reset_sent_generic">Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.</string>
+    <string name="auth_error_invalid_email">Gib eine gültige E-Mail-Adresse ein.</string>
+    <string name="auth_error_password_mismatch">Passwörter stimmen nicht überein.</string>
+    <string name="auth_error_password_short">Das Passwort muss mindestens 6 Zeichen lang sein.</string>
+    <string name="auth_error_not_password_account">Dieses Konto verwendet kein Passwort (z. B. Google).</string>
+    <string name="auth_error_enter_current_password">Gib dein aktuelles Passwort ein.</string>
+
 </resources>

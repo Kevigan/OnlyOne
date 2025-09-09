@@ -25,4 +25,37 @@
     <string name="auth_error_bad_email">Invalid email format.</string>
     <string name="auth_error_email_in_use">An account with this email already exists.</string>
     <string name="auth_error_password_weak">Password is too weak.</string>
+
+    <!-- Account / Password actions -->
+    <string name="auth_account_title">Account Settings</string>
+    <string name="auth_action_change_password">Change password</string>
+    <string name="auth_action_send_reset_email">Send password reset email</string>
+    <string name="auth_action_add_password">Add a password to this account</string>
+
+    <!-- Dialogs: titles & buttons -->
+    <string name="auth_change_dialog_title">Change password</string>
+    <string name="auth_reset_dialog_title">Send password reset email</string>
+    <string name="auth_addpw_dialog_title">Add a password</string>
+    <string name="auth_dialog_save">Save</string>
+    <string name="auth_dialog_cancel">Cancel</string>
+    <string name="auth_reset_dialog_send">Send</string>
+
+    <!-- Dialog fields / labels -->
+    <string name="auth_current_password_label">Current password</string>
+    <string name="auth_new_password_label">New password (min 6 chars)</string>
+    <string name="auth_confirm_password_label">Confirm new password</string>
+    <!-- You can reuse auth_email_label for the reset dialog -->
+
+    <!-- Toasters / inline errors -->
+    <string name="auth_toast_google_no_password">You’re signed in with Google. Password options aren’t available.</string>
+    <string name="auth_toast_google_no_reset">You’re signed in with Google—no password reset available.</string>
+    <string name="auth_change_success">Password updated.</string>
+    <string name="auth_addpw_success">Password added. You can now sign in with email and password.</string>
+    <string name="auth_reset_sent_generic">If an account exists with that email, a reset link was sent.</string>
+    <string name="auth_error_invalid_email">Enter a valid email.</string>
+    <string name="auth_error_password_mismatch">Passwords don’t match.</string>
+    <string name="auth_error_password_short">Password must be at least 6 characters.</string>
+    <string name="auth_error_not_password_account">This account doesn’t use a password (e.g., Google).</string>
+    <string name="auth_error_enter_current_password">Enter your current password.</string>
+
 </resources>

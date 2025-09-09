@@ -6,6 +6,8 @@ import com.example.onlyone.repos.userRepos.UserRepository
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -142,6 +144,83 @@ class SessionViewModel @Inject constructor(
     fun signOut(googleSignInClient: GoogleSignInClient? = null) {
         auth.signOut()
         googleSignInClient?.signOut()
+    }
+
+    fun deleteAccount(
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val user = auth.currentUser ?: return onFailure(IllegalStateException("No user"))
+        user.delete()
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { ex -> onFailure(ex) }
+    }
+
+
+    fun sendPasswordReset(
+        email: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        auth.sendPasswordResetEmail(email)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { onFailure(it) }
+    }
+
+    fun changePasswordWithCurrentPassword(
+        currentPassword: String,
+        newPassword: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val user = auth.currentUser ?: return onFailure(IllegalStateException("Not signed in"))
+        val email = user.email ?: return onFailure(IllegalStateException("No email on account"))
+
+        // 1) Re-authenticate
+        val credential = EmailAuthProvider.getCredential(email, currentPassword)
+        user.reauthenticate(credential)
+            .addOnSuccessListener {
+                // 2) Update password
+                user.updatePassword(newPassword)
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { onFailure(it) }
+            }
+            .addOnFailureListener { onFailure(it) }
+    }
+
+    fun changePasswordAfterReauth(
+        newPassword: String,
+        credential: AuthCredential,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val user = auth.currentUser ?: return onFailure(IllegalStateException("Not signed in"))
+        user.reauthenticate(credential)
+            .addOnSuccessListener {
+                user.updatePassword(newPassword)
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { onFailure(it) }
+            }
+            .addOnFailureListener { onFailure(it) }
+    }
+
+
+    fun reauthAndDeleteWithPassword(
+        password: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val user = auth.currentUser ?: return onFailure(IllegalStateException("No user"))
+        val email = user.email ?: return onFailure(IllegalStateException("No email for user"))
+
+        val credential = EmailAuthProvider.getCredential(email, password)
+        user.reauthenticate(credential)
+            .addOnSuccessListener {
+                user.delete()
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { onFailure(it) }
+            }
+            .addOnFailureListener { onFailure(it) }
     }
 }
 

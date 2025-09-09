@@ -1,50 +1,37 @@
 package com.example.onlyone.views
 
+import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.onlyone.viewModels.SessionViewModel
-import com.example.onlyone.viewModels.userViewModel.UserViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.onlyone.BuildConfig
-import com.example.onlyone.Screen
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.res.stringResource
 import com.example.onlyone.R
+import com.example.onlyone.Screen
 import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.utils.applyAppLocale
+import com.example.onlyone.viewModels.SessionViewModel
+import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.example.onlyone.views.settingsView.LanguageDropdown
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+
+// Top-level: used to track which action is running
+enum class AuthBusy { LOGIN, REGISTER, GOOGLE }
 
 @Composable
 fun LoginView(
@@ -55,19 +42,27 @@ fun LoginView(
 ) {
     val context = LocalContext.current
 
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(BuildConfig.WEB_CLIENT_ID)
-        .requestEmail()
-        .build()
-
+    // --- Google sign-in client ---
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(BuildConfig.WEB_CLIENT_ID)
+            .requestEmail()
+            .build()
+    }
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
+    // Busy gate
+    var busyAction by remember { mutableStateOf<AuthBusy?>(null) }
+    val isBusy = busyAction != null
+
+    // Handle Google result
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         sessionViewModel.handleGoogleSignInResult(
             resultData = result.data,
-            onSuccess = { uid, name, email, isNewUser ->
+            onSuccess = { uid, _, email, isNewUser ->
+                busyAction = null
                 if (isNewUser) {
                     navController.navigate("SetUsername/$uid/$email?google=true")
                 } else {
@@ -78,6 +73,7 @@ fun LoginView(
                 }
             },
             onError = { ex ->
+                busyAction = null
                 val reason = ex.message?.takeIf { it.isNotBlank() }
                     ?: context.getString(R.string.auth_error_unknown)
                 Toast.makeText(
@@ -89,24 +85,17 @@ fun LoginView(
         )
     }
 
-    // --- NEW: App language state + maps (reuse the same ones from LanguageSettingsView) ---
+    // --- App language pick (no change) ---
     var currentAppLang by remember { mutableStateOf("en") }
     val availableLanguages = listOf("English", "Deutsch", "Français", "Español", "Português")
     val languageMap = mapOf(
-        "en" to "English",
-        "de" to "Deutsch",
-        "fr" to "Français",
-        "es" to "Español",
-        "pt" to "Português"
+        "en" to "English", "de" to "Deutsch", "fr" to "Français",
+        "es" to "Español", "pt" to "Português"
     )
-    val reverseMap = languageMap.entries.associate { it.value to it.key }
+    val reverseMap = remember { languageMap.entries.associate { it.value to it.key } }
+    LaunchedEffect(Unit) { userViewModel.getAppLanguage { saved -> currentAppLang = saved } }
 
-    // Load saved app language just to display the current selection (do NOT apply here)
-    LaunchedEffect(Unit) {
-        userViewModel.getAppLanguage { saved -> currentAppLang = saved }
-    }
-    // --- END new ---
-
+    // --- Form state ---
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -119,11 +108,16 @@ fun LoginView(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(stringResource(R.string.auth_title), style = MaterialTheme.typography.h4, color = theme.textColor)
+        Text(
+            stringResource(R.string.auth_title),
+            style = MaterialTheme.typography.h4,
+            color = theme.textColor
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
+
         val tfColors = TextFieldDefaults.outlinedTextFieldColors(
-            textColor = theme.textColor,                 // ← typed text color
+            textColor = theme.textColor,
             cursorColor = theme.borderColor,
             focusedBorderColor = theme.borderColor,
             unfocusedBorderColor = theme.textColor.copy(alpha = 0.75f),
@@ -131,44 +125,42 @@ fun LoginView(
             unfocusedLabelColor = theme.textColor.copy(alpha = 0.8f),
             placeholderColor = theme.cardContentColor.copy(alpha = 0.6f),
             trailingIconColor = theme.textColor,
-            leadingIconColor = theme.textColor
+            leadingIconColor = theme.textColor,
+            disabledTextColor = theme.textColor.copy(alpha = 0.7f),
+            disabledBorderColor = theme.textColor.copy(alpha = 0.4f),
+            disabledLabelColor = theme.textColor.copy(alpha = 0.5f)
         )
+
         OutlinedTextField(
             value = email,
-            onValueChange = {
-                email = it
-                errorMessage = null
-            },
+            onValueChange = { if (!isBusy) { email = it; errorMessage = null } },
+            enabled = !isBusy,
             label = { Text(stringResource(R.string.auth_email_label), color = theme.textColor.copy(0.9f)) },
             colors = tfColors
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = password,
-            onValueChange = {
-                password = it
-                errorMessage = null
-            },
+            onValueChange = { if (!isBusy) { password = it; errorMessage = null } },
+            enabled = !isBusy,
             label = { Text(stringResource(R.string.auth_password_label), color = theme.textColor.copy(0.9f)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 val icon = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
-                val cd   = if (passwordVisible) R.string.auth_toggle_hide else R.string.auth_toggle_show
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                val cd = if (passwordVisible) R.string.auth_toggle_hide else R.string.auth_toggle_show
+                IconButton(onClick = { if (!isBusy) passwordVisible = !passwordVisible }) {
                     Icon(imageVector = icon, contentDescription = stringResource(cd))
                 }
             },
             colors = tfColors
         )
 
-        // --- NEW: App Language section (uses your LanguageDropdown) ---
-        Spacer(modifier = Modifier.height(16.dp))
-
+        // App language picker
+        Spacer(Modifier.height(16.dp))
         Text(stringResource(R.string.settings_app_language_label), color = theme.textColor)
-        Spacer(modifier = Modifier.height(8.dp))
-
+        Spacer(Modifier.height(8.dp))
         LanguageDropdown(
             theme = theme,
             currentCode = currentAppLang,
@@ -176,113 +168,181 @@ fun LoginView(
             languageMap = languageMap,
             reverseMap = reverseMap
         ) { code ->
-            // Persist + apply immediately
             userViewModel.saveAppLanguage(code)
             currentAppLang = code
             applyAppLocale(code)
         }
-        // --- END new ---
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
         errorMessage?.let {
-            Text(
-                text = it,
-                color = Color.Red,
-                style = MaterialTheme.typography.body2
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = it, color = Color.Red, style = MaterialTheme.typography.body2)
+            Spacer(Modifier.height(8.dp))
         }
 
-        Button(onClick = {
-            sessionViewModel.loginWithEmail(
-                email = email,
-                password = password,
-                onSuccess = { uid, name, email, isNewUser ->
-                    if (isNewUser) {
-                        navController.navigate("SetUsername/$uid/$email")
-                    } else {
-                        userViewModel.loadUser()
-                        navController.navigate(Screen.MainScreen.route) {
-                            popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                        }
+        // --- Sign in with Email ---
+        Button(
+            onClick = {
+                if (isBusy) return@Button
+
+                val emailT = email.trim()
+                val passT = password
+
+                // Validate BEFORE calling Firebase
+                when {
+                    emailT.isBlank() -> {
+                        errorMessage = context.getString(R.string.auth_error_bad_email)
+                        return@Button
                     }
-                },
-                onFailure = { ex ->
-                    val msg = ex.message?.lowercase()
-                    errorMessage = when {
-                        msg == null -> context.getString(R.string.auth_login_failed)
-                        "no user record" in msg -> context.getString(R.string.auth_error_no_user)
-                        "password is invalid" in msg -> context.getString(R.string.auth_error_bad_password)
-                        "badly formatted" in msg -> context.getString(R.string.auth_error_bad_email)
-                        else -> ex.message
+                    !Patterns.EMAIL_ADDRESS.matcher(emailT).matches() -> {
+                        errorMessage = context.getString(R.string.auth_error_bad_email)
+                        return@Button
+                    }
+                    passT.isBlank() -> {
+                        errorMessage = context.getString(R.string.auth_error_bad_password)
+                        return@Button
+                    }
+                    passT.length < 6 -> {
+                        errorMessage = context.getString(R.string.auth_error_password_weak)
+                        return@Button
                     }
                 }
-            )
-        },colors = ButtonDefaults.buttonColors(
-            backgroundColor = theme.buttonColor,           // ← button fill
-            contentColor = theme.textColor,         // ← text & icon tint
-            disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
-            disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
-        )) {
-            Text(stringResource(R.string.auth_sign_in_email))
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(onClick = {
-            sessionViewModel.registerWithEmail(
-                email = email,
-                password = password,
-                onSuccess = { uid, name, email, isNewUser ->
-                    if (isNewUser) {
-                        navController.navigate("SetUsername/$uid/$email")
-                    } else {
-                        userViewModel.loadUser()
-                        navController.navigate(Screen.MainScreen.route) {
-                            popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                busyAction = AuthBusy.LOGIN
+                sessionViewModel.loginWithEmail(
+                    email = emailT,
+                    password = passT,
+                    onSuccess = { uid, _, em, isNewUser ->
+                        busyAction = null
+                        if (isNewUser) {
+                            navController.navigate("SetUsername/$uid/$em")
+                        } else {
+                            userViewModel.loadUser()
+                            navController.navigate(Screen.MainScreen.route) {
+                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                            }
+                        }
+                    },
+                    onFailure = { ex ->
+                        busyAction = null
+                        val msg = ex.message?.lowercase()
+                        errorMessage = when {
+                            msg == null -> context.getString(R.string.auth_login_failed)
+                            "no user record" in msg -> context.getString(R.string.auth_error_no_user)
+                            "password is invalid" in msg -> context.getString(R.string.auth_error_bad_password)
+                            "badly formatted" in msg -> context.getString(R.string.auth_error_bad_email)
+                            else -> ex.message
                         }
                     }
-                },
-                onFailure = { ex ->
-                    val msg = ex.message?.lowercase().orEmpty()
-                    errorMessage = when {
-                        msg.isBlank() ->
-                            context.getString(R.string.auth_registration_failed)
-                        "already in use" in msg ->
-                            context.getString(R.string.auth_error_email_in_use)
-                        "badly formatted" in msg ->
-                            context.getString(R.string.auth_error_bad_email)
-                        "password should be at least" in msg ->
-                            context.getString(R.string.auth_error_password_weak)
-                        else -> ex.message
-                    }
-                }
+                )
+            },
+            enabled = !isBusy,
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = theme.buttonColor,
+                contentColor = theme.textColor,
+                disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+                disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
             )
-        },colors = ButtonDefaults.buttonColors(
-            backgroundColor = theme.buttonColor,           // ← button fill
-            contentColor = theme.textColor,         // ← text & icon tint
-            disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
-            disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
-        )) {
-            Text(stringResource(R.string.auth_register), color = theme.textColor)
+        ) {
+            if (busyAction == AuthBusy.LOGIN) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Text(stringResource(R.string.auth_sign_in_email))
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
-        Button(onClick = {
-            val signInIntent = googleSignInClient.signInIntent
-            launcher.launch(signInIntent)
-        },colors = ButtonDefaults.buttonColors(
-            backgroundColor = theme.buttonColor,           // ← button fill
-            contentColor = theme.textColor,         // ← text & icon tint
-            disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
-            disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
-        )) {
-            Text(stringResource(R.string.auth_sign_in_google), color = theme.textColor)
+        // --- Register ---
+        Button(
+            onClick = {
+                if (isBusy) return@Button
+
+                val emailT = email.trim()
+                val passT = password
+
+                when {
+                    emailT.isBlank() -> {
+                        errorMessage = context.getString(R.string.auth_error_bad_email)
+                        return@Button
+                    }
+                    !Patterns.EMAIL_ADDRESS.matcher(emailT).matches() -> {
+                        errorMessage = context.getString(R.string.auth_error_bad_email)
+                        return@Button
+                    }
+                    passT.isBlank() -> {
+                        errorMessage = context.getString(R.string.auth_error_bad_password)
+                        return@Button
+                    }
+                    passT.length < 6 -> {
+                        errorMessage = context.getString(R.string.auth_error_password_weak)
+                        return@Button
+                    }
+                }
+                busyAction = AuthBusy.REGISTER
+                sessionViewModel.registerWithEmail(
+                    email = emailT,
+                    password = passT,
+                    onSuccess = { uid, _, em, isNewUser ->
+                        busyAction = null
+                        if (isNewUser) {
+                            navController.navigate("SetUsername/$uid/$em")
+                        } else {
+                            userViewModel.loadUser()
+                            navController.navigate(Screen.MainScreen.route) {
+                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                            }
+                        }
+                    },
+                    onFailure = { ex ->
+                        busyAction = null
+                        val msg = ex.message?.lowercase().orEmpty()
+                        errorMessage = when {
+                            msg.isBlank() -> context.getString(R.string.auth_registration_failed)
+                            "already in use" in msg -> context.getString(R.string.auth_error_email_in_use)
+                            "badly formatted" in msg -> context.getString(R.string.auth_error_bad_email)
+                            "password should be at least" in msg -> context.getString(R.string.auth_error_password_weak)
+                            else -> ex.message
+                        }
+                    }
+                )
+            },
+            enabled = !isBusy,
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = theme.buttonColor,
+                contentColor = theme.textColor,
+                disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+                disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+            )
+        ) {
+            if (busyAction == AuthBusy.REGISTER) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Text(stringResource(R.string.auth_register), color = theme.textColor)
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // --- Google Sign-In ---
+        Button(
+            onClick = {
+                if (isBusy) return@Button
+                busyAction = AuthBusy.GOOGLE
+                launcher.launch(googleSignInClient.signInIntent)
+            },
+            enabled = !isBusy,
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = theme.buttonColor,
+                contentColor = theme.textColor,
+                disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+                disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+            )
+        ) {
+            if (busyAction == AuthBusy.GOOGLE) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Text(stringResource(R.string.auth_sign_in_google), color = theme.textColor)
+            }
         }
     }
 }
-
-
-

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Privacy (in-app content + actions) -->
+    <string name="settings_privacy_header">Privacy</string>
+    <string name="settings_privacy_subtitle">Manage your privacy and data controls.</string>
+
+    <string name="settings_privacy_intro_title">Short privacy summary</string>
+    <string name="settings_privacy_intro_body">
+        This is a human-readable summary of how Only One handles your data.
+        For any questions or requests, contact us.
+    </string>
+
+    <string name="settings_privacy_collect_title">What we collect</string>
+    <string name="settings_privacy_collect_1">Account email and a display username</string>
+    <string name="settings_privacy_collect_2">Status text you set</string>
+    <string name="settings_privacy_collect_3">Messages and reactions you send/receive</string>
+    <string name="settings_privacy_collect_4">Swipe usage and subscription status</string>
+    <string name="settings_privacy_collect_5">Friends list and basic profile data</string>
+    <string name="settings_privacy_collect_6">Notification token (to deliver notifications)</string>
+
+    <string name="settings_privacy_use_title">How we use it</string>
+    <string name="settings_privacy_use_1">Authenticate your account and keep you signed in</string>
+    <string name="settings_privacy_use_2">Deliver messages, reactions, and notifications</string>
+    <string name="settings_privacy_use_3">Enforce daily limits and swipe quotas</string>
+    <string name="settings_privacy_use_4">Improve reliability and prevent abuse</string>
+
+    <string name="settings_privacy_store_title">Where it’s stored</string>
+    <string name="settings_privacy_store_body">
+        Authentication is handled by Firebase Auth. App data lives in Firebase Firestore.
+        Your device keeps a small local cache of recent data (e.g., recent messages) to speed things up.
+    </string>
+
+    <string name="settings_privacy_retention_title">Retention</string>
+    <string name="settings_privacy_retention_body">
+        Recent messages are cached on your device and may be cleared automatically.
+        Server data is kept while your account is active or as needed to operate the service.
+        You can request deletion of your account and related data at any time.
+    </string>
+
+    <string name="settings_privacy_choices_title">Your choices</string>
+    <string name="settings_privacy_choices_1">Set your app and chat language</string>
+    <string name="settings_privacy_choices_2">Edit your status or profile info</string>
+    <string name="settings_privacy_choices_3">Control notifications and ad consent (where applicable)</string>
+    <string name="settings_privacy_choices_4">Request data export or delete your account</string>
+
+    <string name="settings_privacy_contact_title">Contact</string>
+    <string name="settings_privacy_contact_body">Email support@onlyone.app for privacy questions or requests.</string>
+    <string name="settings_privacy_last_updated">Last updated: September 9, 2025</string>
+
+    <!-- If you keep interactive privacy toggles/buttons -->
+    <string name="settings_privacy_notif_messages">Message notifications</string>
+    <string name="settings_privacy_notif_feedback">Feedback &amp; promo notifications</string>
+    <string name="settings_privacy_review_consent">Review ad consent</string>
+    <string name="settings_privacy_export_data">Export my data</string>
+    <string name="settings_privacy_delete_account">Delete my account</string>
+
+    <!-- Delete dialog -->
+    <string name="settings_delete_title">Delete account?</string>
+    <string name="settings_delete_body">This permanently deletes your account and associated data. This cannot be undone.</string>
+    <string name="settings_delete_confirm">Delete</string>
+    <string name="settings_delete_cancel">Cancel</string>
+    <string name="settings_delete_success">Account deleted.</string>
+
+</resources>

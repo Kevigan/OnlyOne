@@ -39,6 +39,7 @@ import com.example.onlyone.composables.MainBottomBar
 import com.example.onlyone.composables.TopSnackbar
 import com.example.onlyone.connection.ConnectivityListener
 import com.example.onlyone.theme.ThemeViewModel
+import com.example.onlyone.ui.TransparentSystemBars
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
@@ -80,6 +81,7 @@ fun Navigation(
         Screen.AchievementsScreen.route,
         "ChatScreen"
     )
+    TransparentSystemBars(darkIcons = tokens.systemBarDarkIcons)
 
     // 2) Helper to strip arguments
     fun String.baseRoute(): String = this.substringBefore("/")
@@ -213,7 +215,7 @@ fun Navigation(
                     }
 
                     composable(Screen.SettingsScreen.route) {
-                        SettingsView(userViewModel = userViewModel,theme = theme)
+                        SettingsView(userViewModel = userViewModel,sessionViewModel = sessionViewModel,navController = navController, theme = theme)
                     }
 
                     composable(Screen.LoginScreen.route) {
