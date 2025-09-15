@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feedback_title">We’d love your feedback</string>
+    <string name="feedback_subtitle">Answer a few quick questions and help us improve.</string>
+    <string name="feedback_free_text_label">Anything else?</string>
+    <string name="feedback_free_text_placeholder">Tell us what’s on your mind…</string>
+    <string name="feedback_submit">Send feedback</string>
+    <string name="feedback_form_incomplete">Please answer all required questions.</string>
+    <string name="feedback_sent_toast">Thanks! Your feedback was sent.</string>
+    <string name="feedback_already_submitted_toast">You already sent feedback today.</string>
+    <string name="feedback_error_toast">Couldn’t send feedback. Please try again.</string>
+
+    <!-- Q1 -->
+    <string name="feedback_q1_label">What should we improve most?</string>
+    <string name="feedback_q1_opt_a">Chat experience</string>
+    <string name="feedback_q1_opt_b">Swipe &amp; discovery</string>
+    <string name="feedback_q1_opt_c">Avatars &amp; shop</string>
+
+    <!-- Q2 -->
+    <string name="feedback_q2_label">How often do you use the app?</string>
+    <string name="feedback_q2_opt_a">Daily</string>
+    <string name="feedback_q2_opt_b">Weekly</string>
+    <string name="feedback_q2_opt_c">Rarely</string>
+    <string name="feedback_q2_opt_d">Just tried it</string>
+
+    <!-- Q3 -->
+    <string name="feedback_q3_label">Would you recommend us?</string>
+    <string name="feedback_q3_opt_a">Yes</string>
+    <string name="feedback_q3_opt_b">No</string>
+
+</resources>

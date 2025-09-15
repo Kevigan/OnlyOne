@@ -54,6 +54,7 @@
     <string name="dialog_delete_saved_text">Are you sure you want to remove this message from Saved?</string>
     <string name="cd_delete_saved">Delete saved message</string>
 
+    <string name="main_cd_feedback">Open feedback</string>
 </resources>
 
 

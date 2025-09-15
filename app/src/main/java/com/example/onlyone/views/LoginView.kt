@@ -211,16 +211,50 @@ fun LoginView(
                 sessionViewModel.loginWithEmail(
                     email = emailT,
                     password = passT,
-                    onSuccess = { uid, _, em, isNewUser ->
+                    onSuccess = { uid, _, em, _ ->
                         busyAction = null
-                        if (isNewUser) {
-                            navController.navigate("SetUsername/$uid/$em")
-                        } else {
-                            userViewModel.loadUser()
-                            navController.navigate(Screen.MainScreen.route) {
-                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                        sessionViewModel.checkEmailVerified(
+                            onResult = { verified ->
+                                if (!verified) {
+                                    // Gate: unverified → Verify screen
+                                    navController.navigate(Screen.VerifyEmailScreen.createRoute(uid, em)) {
+                                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                    }
+                                    return@checkEmailVerified
+                                }
+
+                                // Verified → do we already have a public profile?
+                                sessionViewModel.checkHasPublicProfile(
+                                    uid = uid,
+                                    onResult = { hasProfile ->
+                                        if (hasProfile) {
+                                            // Profile exists → load + go to Main
+                                            userViewModel.loadUser()
+                                            navController.navigate(Screen.MainScreen.route) {
+                                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                            }
+                                        } else {
+                                            // Verified but no profile → SetUsername
+                                            navController.navigate(
+                                                Screen.SetUsernameScreen.createRoute(uid, em, isGoogleUser = false)
+                                            ) {
+                                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                            }
+                                        }
+                                    },
+                                    onFailure = { err ->
+                                        // If unsure, send to verify gate to be safe (or show a toast)
+                                        navController.navigate(Screen.VerifyEmailScreen.createRoute(uid, em)) {
+                                            popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                        }
+                                    }
+                                )
+                            },
+                            onFailure = { err ->
+                                // Couldn’t reload — handle gracefully (toast/log), keep them on Login
+                                // e.g., Toast.makeText(context, err ?: "Login check failed", Toast.LENGTH_SHORT).show()
                             }
-                        }
+                        )
                     },
                     onFailure = { ex ->
                         busyAction = null
@@ -285,12 +319,24 @@ fun LoginView(
                     onSuccess = { uid, _, em, isNewUser ->
                         busyAction = null
                         if (isNewUser) {
-                            navController.navigate("SetUsername/$uid/$em")
-                        } else {
-                            userViewModel.loadUser()
-                            navController.navigate(Screen.MainScreen.route) {
+                            sessionViewModel.sendEmailVerification(onSuccess = {}, onFailure = {})
+                            navController.navigate(Screen.VerifyEmailScreen.createRoute(uid, em)) {
                                 popUpTo(Screen.LoginScreen.route) { inclusive = true }
                             }
+                        } else {
+                            // optional: gate even on existing
+                            sessionViewModel.checkEmailVerified(
+                                onResult = { verified ->
+                                    if (verified) {
+                                        // proceed to Main or SetUsername
+                                    } else {
+                                        // go to VerifyEmail screen
+                                    }
+                                },
+                                onFailure = { err ->
+                                    // show toast / log error
+                                }
+                            )
                         }
                     },
                     onFailure = { ex ->

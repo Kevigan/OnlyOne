@@ -11,7 +11,7 @@
     <string name="chat_cd_waiting">Warten auf Match</string>
     <string name="chat_searching">Suche nach jemandem…</string>
 
-    <string name="chat_toast_too_long">Deine Nachricht ist zu lang!</string>
+    <string name="chat_toast_too_long">Deine Nachricht ist zu lang! Aktualisieren Sie die Nachrichtenlänge im Shop!</string>
     <string name="chat_reward_text">Erhalten: +%1$d Gold, +%2$d Punkte</string>
     <string name="chat_rune_drop">Gluecksdrop: %1$s Rune!</string>
     <string name="chat_already_sent">Du hast dieser Person heute bereits geschrieben.</string>
@@ -27,4 +27,6 @@
 
     <string name="chat_language_any">Alle</string>
 
+    <string name="chat_toast_empty">Deine Nachricht darf nicht leer sein!</string>
+    <string name="chat_swipes_reached">Du hast dein tägliches Swipe-Limit erreicht. Hol dir Pro für unbegrenzte Swipes.</string>
 </resources>

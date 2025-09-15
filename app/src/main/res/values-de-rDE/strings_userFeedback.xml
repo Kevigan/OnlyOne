@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feedback_title">Wir freuen uns über dein Feedback</string>
+    <string name="feedback_subtitle">Beantworte kurz ein paar Fragen und hilf uns, besser zu werden.</string>
+    <string name="feedback_free_text_label">Sonst noch etwas?</string>
+    <string name="feedback_free_text_placeholder">Sag uns, was du denkst…</string>
+    <string name="feedback_submit">Feedback senden</string>
+    <string name="feedback_form_incomplete">Bitte beantworte alle Pflichtfragen.</string>
+    <string name="feedback_sent_toast">Danke! Dein Feedback wurde gesendet.</string>
+    <string name="feedback_already_submitted_toast">Du hast heute schon Feedback gesendet.</string>
+    <string name="feedback_error_toast">Feedback konnte nicht gesendet werden. Bitte erneut versuchen.</string>
+
+    <!-- Q1 -->
+    <string name="feedback_q1_label">Was sollen wir am meisten verbessern?</string>
+    <string name="feedback_q1_opt_a">Chat-Erlebnis</string>
+    <string name="feedback_q1_opt_b">Swipen &amp; Entdecken</string>
+    <string name="feedback_q1_opt_c">Avatare &amp; Shop</string>
+
+    <!-- Q2 -->
+    <string name="feedback_q2_label">Wie oft nutzt du die App?</string>
+    <string name="feedback_q2_opt_a">Täglich</string>
+    <string name="feedback_q2_opt_b">Wöchentlich</string>
+    <string name="feedback_q2_opt_c">Selten</string>
+    <string name="feedback_q2_opt_d">Nur ausprobiert</string>
+
+    <!-- Q3 -->
+    <string name="feedback_q3_label">Würdest du uns empfehlen?</string>
+    <string name="feedback_q3_opt_a">Ja</string>
+    <string name="feedback_q3_opt_b">Nein</string>
+</resources>

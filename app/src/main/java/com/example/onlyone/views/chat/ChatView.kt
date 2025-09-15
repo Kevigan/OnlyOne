@@ -1,13 +1,11 @@
-package com.example.onlyone.views
+package com.example.onlyone.views.chat
 
 import NativeAdGateCard
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -27,21 +25,28 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.composables.mapAvatarIdToDrawable
-import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.Message
 import com.example.onlyone.data.MessageResult
+import com.example.onlyone.data.PublicUser
 import com.example.onlyone.data.UserComposite
 import com.example.onlyone.theme.ThemeTokens
-import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.utils.buildMessageId
+import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+// Prewritten
+import com.example.onlyone.prewritten.PrewrittenRepository
+import com.example.onlyone.prewritten.PreMsgCategory
+import com.example.onlyone.views.chat.components.PrewrittenPickerSheet
 
 @Composable
 fun ChatView(
@@ -54,11 +59,41 @@ fun ChatView(
     navController: NavController,
     theme: ThemeTokens
 ) {
-    var messageText by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // ---- Suggestions Dialog State ----
+    var showSuggestions by remember { mutableStateOf(false) }
+    var selectedCat: PreMsgCategory? by rememberSaveable { mutableStateOf(null) } // null => All
+
+    val messagesForDialog by remember(selectedCat, targetUser?.username, user.maxMessageLength) {
+        mutableStateOf(
+            if (selectedCat == null) {
+                PrewrittenRepository.categories()
+                    .flatMap {
+                        PrewrittenRepository.messagesFor(
+                            context = context,
+                            category = it,
+                            receiverName = targetUser?.username,
+                            maxLength = Int.MAX_VALUE
+                        )
+                    }
+                    .distinct()
+            } else {
+                PrewrittenRepository.messagesFor(
+                    context = context,
+                    category = selectedCat!!,
+                    receiverName = targetUser?.username,
+                    maxLength = Int.MAX_VALUE
+                )
+            }
+        )
+    }
+
+    // ---- Chat State ----
+    var messageText by rememberSaveable { mutableStateOf("") }
     val isSending by chatViewModel.isSending.collectAsState()
     val maxLength = user.maxMessageLength
-    val coroutineScope = rememberCoroutineScope()
     val engagementStatus by userViewModel.engagementStatus.collectAsState()
 
     val configuration = LocalConfiguration.current
@@ -66,7 +101,6 @@ fun ChatView(
     val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
 
     val anyLabel = stringResource(R.string.chat_language_any)
-
     val displayName: (String) -> String = { code ->
         when (code) {
             "any" -> anyLabel
@@ -82,12 +116,9 @@ fun ChatView(
     val offsetX = remember { Animatable(0f) }
     var isAnimating by remember { mutableStateOf(false) }
 
-    // --- AD STATE (new) ---
-    // Persisted swipe count (today) from AdCounter
+    // --- AD STATE ---
     val swipeCount by userViewModel.adCountToday.collectAsState(initial = 0)
-    // Local "interstitial" state: showing ad instead of a user
     var adMode by rememberSaveable { mutableStateOf(false) }
-    // Prevent showing the same gate repeatedly at the same threshold (10, 20, 30…)
     var lastAdGateCount by rememberSaveable { mutableStateOf(-1) }
 
     var selectedLanguage by remember { mutableStateOf("any") }
@@ -95,6 +126,7 @@ fun ChatView(
         userViewModel.getSearchUserLanguage { savedLang -> selectedLanguage = savedLang }
     }
 
+    // ----------------- Screen -----------------
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -124,20 +156,19 @@ fun ChatView(
                     color = theme.textColor,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-
-                if (isRandom && engagementStatus != null) {
-                    val swipesUsed = engagementStatus!!.swipesUsed
-                    val maxSwipes = user.maxSwipes
-                    Text(
-                        text = stringResource(R.string.chat_swipes, swipesUsed, maxSwipes),
-                        style = MaterialTheme.typography.subtitle1,
-                        color = theme.textColor
-                    )
+                engagementStatus?.let { es ->
+                    if (isRandom) {
+                        Text(
+                            text = stringResource(R.string.chat_swipes, es.swipesUsed, user.maxSwipes),
+                            style = MaterialTheme.typography.subtitle1,
+                            color = theme.textColor
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
 
         // Main card (either USER content or AD-only content)
         CustomColorOverlay(
@@ -155,7 +186,6 @@ fun ChatView(
             onDismiss = {}
         ) {
             if (adMode) {
-                // ---------------- AD-ONLY CONTENT ----------------
                 NativeAdGateCard(
                     theme = theme,
                     onContinue = { adMode = false },
@@ -164,7 +194,6 @@ fun ChatView(
                         .padding(12.dp)
                 )
             } else {
-                // ---------------- NORMAL USER CONTENT ----------------
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -201,9 +230,28 @@ fun ChatView(
                             )
                             val favMsg = targetUser?.favouriteMessage?.text
                                 ?.takeIf { it.isNotBlank() }
-                                ?:stringResource(R.string.chat_msg_no_fav)
+                                ?: stringResource(R.string.chat_msg_no_fav)
                             Text(
                                 text = "${stringResource(R.string.chat_msg_title)}: $favMsg",
+                                style = MaterialTheme.typography.caption,
+                                color = theme.textColor.copy(alpha = 0.8f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            val ageStr = targetUser?.age?.takeIf { it in 1..99 }?.toString() ?: "-"
+                            val genderStr = when (targetUser?.gender?.lowercase()) {
+                                "m", "f", "d" -> targetUser.gender.uppercase()
+                                else -> "-"
+                            }
+                            val cityStr = targetUser?.city?.takeIf { it.isNotBlank() } ?: "-"
+
+                            val ageLabel = stringResource(R.string.onboarding_age_label)
+                            val genderLabel = stringResource(R.string.onboarding_gender_label)
+                            val cityLabel = stringResource(R.string.onboarding_city_label)
+
+                            Text(
+                                text = "$ageLabel: $ageStr   $genderLabel: $genderStr   $cityLabel: $cityStr",
                                 style = MaterialTheme.typography.caption,
                                 color = theme.textColor.copy(alpha = 0.8f),
                                 maxLines = 1,
@@ -223,15 +271,11 @@ fun ChatView(
                         ) {
                             OutlinedTextField(
                                 value = messageText,
-                                onValueChange = { if (it.length <= maxLength) messageText = it },
+                                onValueChange = { messageText = it },
                                 label = null,
                                 placeholder = {
                                     Text(
-                                        text = stringResource(
-                                            R.string.chat_input_label,
-                                            messageText.length,
-                                            maxLength
-                                        ),
+                                        "Write something kind…",
                                         color = theme.textColor.copy(alpha = 0.6f)
                                     )
                                 },
@@ -250,11 +294,7 @@ fun ChatView(
                             )
 
                             Text(
-                                text = stringResource(
-                                    R.string.chat_input_label,
-                                    messageText.length,
-                                    maxLength
-                                ),
+                                text = stringResource(R.string.chat_input_label, messageText.length, maxLength),
                                 style = MaterialTheme.typography.caption,
                                 color = theme.textColor.copy(alpha = 0.75f),
                                 modifier = Modifier
@@ -291,22 +331,25 @@ fun ChatView(
                     // Send button
                     Button(
                         onClick = {
-                            if (messageText.trim().length > user.maxMessageLength) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.chat_toast_too_long),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                            val trimmed = messageText.trim()
+                            if (trimmed.isEmpty()) {
+                                Toast.makeText(context, context.getString(R.string.chat_toast_empty), Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            if (trimmed.length > maxLength) {
+                                Toast.makeText(context, context.getString(R.string.chat_toast_too_long), Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
-                            val messageId = buildMessageId(user.uid, targetUser?.uid ?: "")
+                            val receiverId = targetUser?.uid ?: return@Button
+                            val messageId = buildMessageId(user.uid, receiverId)
+
                             val msg = Message(
                                 id = messageId,
                                 senderUsername = user.username,
                                 senderId = user.uid,
-                                receiverId = targetUser?.uid ?: "",
-                                content = messageText.trim(),
+                                receiverId = receiverId,
+                                content = trimmed,
                                 timestamp = Timestamp.now(),
                                 senderAvatarId = user.avatarId,
                                 senderMood = user.moodStatus,
@@ -317,14 +360,8 @@ fun ChatView(
                                 when (result) {
                                     is MessageResult.Success -> {
                                         messageText = ""
-                                        val rewardText = context.getString(
-                                            R.string.chat_reward_text,
-                                            result.gold,
-                                            result.points
-                                        )
-                                        val runeText = result.rune?.let {
-                                            "\n" + context.getString(R.string.chat_rune_drop, it)
-                                        } ?: ""
+                                        val rewardText = context.getString(R.string.chat_reward_text, result.gold, result.points)
+                                        val runeText = result.rune?.let { "\n" + context.getString(R.string.chat_rune_drop, it) } ?: ""
                                         Toast.makeText(context, rewardText + runeText, Toast.LENGTH_LONG).show()
                                         navController.popBackStack()
                                     }
@@ -357,159 +394,132 @@ fun ChatView(
         }
 
         // Bottom controls
-        if (isRandom) {
-            if (adMode) {
-                // While ad is shown: no language/next; show a single "Continue" action
-                Button(
-                    onClick = { adMode = false },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                        .height(48.dp)
-                ) {
-                    Text(stringResource(R.string.ad_btn_continue), color = theme.textColor, fontSize = 16.sp)
+        if (isRandom && !adMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                var expanded by remember { mutableStateOf(false) }
+                val languageOptions = listOf("any", "en", "de", "fr", "es", "it")
+
+                // Language dropdown
+                Box {
+                    OutlinedButton(onClick = { expanded = true }) {
+                        Text(stringResource(R.string.chat_language_prefix, displayName(selectedLanguage)), color = theme.textColor)
+                    }
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        languageOptions.forEach { lang ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedLanguage = lang
+                                    expanded = false
+                                    userViewModel.saveSearchUserLanguage(lang)
+                                    coroutineScope.launch { userViewModel.loadRandomUserBatch(showToasts = true) }
+                                }
+                            ) { Text(displayName(lang), color = theme.textColor) }
+                        }
+                    }
                 }
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+
+                // Suggestions button -> opens dialog
+                OutlinedButton(onClick = { showSuggestions = true }) {
+                    Text(text = stringResource(R.string.pre_msg_button), color = theme.textColor)
+                }
+
+                // Next user
+                IconButton(
+                    onClick = {
+                        if (isAnimating) return@IconButton
+
+                        val currentSwipes = engagementStatus?.swipesUsed ?: 0
+                        val maxSwipes = user.maxSwipes
+                        if (currentSwipes >= maxSwipes) {
+                            Toast.makeText(context, context.getString(R.string.chat_swipes_reached), Toast.LENGTH_LONG).show()
+                            return@IconButton
+                        }
+
+                        val nextCount = swipeCount + 1
+                        if (nextCount % 10 == 0 && lastAdGateCount != nextCount) {
+                            adMode = true
+                            lastAdGateCount = nextCount
+                            return@IconButton
+                        }
+
+                        coroutineScope.launch {
+                            try {
+                                isAnimating = true
+                                offsetX.animateTo(
+                                    targetValue = screenWidthPx,
+                                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                                )
+
+                                messageText = ""
+
+                                onNextUser()
+                                userViewModel.onRandomCardVisible()
+
+                                offsetX.snapTo(-screenWidthPx)
+                                offsetX.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                                )
+                            } finally {
+                                isAnimating = false
+                            }
+                        }
+                    },
+                    enabled = !isAnimating && targetUser != null,
+                    modifier = Modifier.size(56.dp)
                 ) {
-                    var expanded by remember { mutableStateOf(false) }
-                    val languageOptions = listOf("any", "en", "de", "fr", "es", "it")
-
-                    Box {
-                        OutlinedButton(onClick = { expanded = true }) {
-                            Text(
-                                stringResource(R.string.chat_language_prefix, displayName(selectedLanguage)),
-                                color = theme.textColor
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            languageOptions.forEach { lang ->
-                                DropdownMenuItem(
-                                    onClick = {
-                                        selectedLanguage = lang
-                                        expanded = false
-                                        userViewModel.saveSearchUserLanguage(lang)
-                                        coroutineScope.launch {
-                                            userViewModel.loadRandomUserBatch(showToasts = true)
-                                        }
-                                    }
-                                ) {
-                                    Text(displayName(lang), color = theme.textColor)
-                                }
-                            }
-                        }
-                    }
-
-
-                    IconButton(
-                        onClick = {
-                            if (isAnimating) return@IconButton
-                            // Will the NEXT swipe be an ad slot?
-                            val nextCount = swipeCount + 1
-                            if (nextCount % 10 == 0 && lastAdGateCount != nextCount) {
-                                // Show ad now, do NOT consume a user or increment counter
-                                adMode = true
-                                lastAdGateCount = nextCount
-                                return@IconButton
-                            }
-
-                            // Otherwise proceed to next user and increment swipe counter
-                            coroutineScope.launch {
-                                try {
-                                    isAnimating = true
-                                    offsetX.animateTo(
-                                        targetValue = screenWidthPx,
-                                        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
-                                    )
-
-                                    messageText = ""
-
-                                    onNextUser() // consume exactly one random user
-                                    userViewModel.onRandomCardVisible() // increment persisted swipe count
-
-                                    offsetX.snapTo(-screenWidthPx)
-                                    offsetX.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
-                                    )
-                                } finally {
-                                    isAnimating = false
-                                }
-                            }
-                        },
-                        enabled = !isAnimating && targetUser != null,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = stringResource(R.string.chat_cd_next_user),
-                            tint = theme.textColor,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = stringResource(R.string.chat_cd_next_user),
+                        tint = theme.textColor,
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
             }
         }
     }
-}
 
-/** Full-card ad placeholder (no user shown). */
-@Composable
-fun AdInterstitialCard(
-    theme: ThemeTokens,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier) {
-        Text(
-            text = "Sponsored",
-            style = MaterialTheme.typography.caption,
-            color = theme.textColor.copy(alpha = 0.85f)
-        )
-        Spacer(Modifier.height(8.dp))
-
-        // Big media (16:9) to mirror native ad requirements
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f)
-                .background(Color(0xFF1A1A1A), RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
+    // ---- Dialog with outer overlay ----
+    if (showSuggestions) {
+        Dialog(
+            onDismissRequest = { showSuggestions = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false) // allow custom width
         ) {
-            Text("Ad Image 16:9", color = Color.White.copy(alpha = 0.8f))
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Text(
-            text = "Make your one message legendary.",
-            style = MaterialTheme.typography.h6,
-            color = theme.textColor,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = "Sponsored • example.com",
-            style = MaterialTheme.typography.caption,
-            color = theme.textColor.copy(alpha = 0.75f)
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        Button(
-            onClick = { /* TODO: open link */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) {
-            Text("Learn more", color = theme.textColor)
+            Box(
+                Modifier
+                    .fillMaxWidth(0.98f)   // nearly full width on phones
+                    .widthIn(max = 720.dp) // sensible cap on tablets
+            ) {
+                CustomColorOverlay(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(percent = 4),
+                    overlayColor = Color.Gray,
+                    onDismiss = {},
+                    paddingBox1 = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                    paddingBox2 = PaddingValues(6.dp),
+                    theme = theme
+                ) {
+                    PrewrittenPickerSheet(
+                        theme = theme,
+                        categories = PrewrittenRepository.categories(),
+                        includeAllOption = true,
+                        selected = selectedCat,                  // null => All
+                        onSelectCategory = { selectedCat = it }, // set null for All
+                        messages = messagesForDialog,
+                        onInsert = { msg ->
+                            messageText = msg
+                            Toast.makeText(context, context.getString(R.string.pre_msg_copied), Toast.LENGTH_SHORT).show()
+                            showSuggestions = false
+                        }
+                    )
+                }
+            }
         }
     }
 }

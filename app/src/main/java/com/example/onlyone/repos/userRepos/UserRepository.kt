@@ -1,6 +1,7 @@
 package com.example.onlyone.repos.userRepos
 
 import android.util.Log
+import com.example.onlyone.BuildConfig
 import com.example.onlyone.data.FavouriteMessage
 import com.example.onlyone.data.LocalFavoriteMessage
 import com.example.onlyone.data.LocalFriend
@@ -15,9 +16,11 @@ import com.example.onlyone.repos.UserSettingsRepo
 import com.example.onlyone.theme.ThemeId
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.functions.FirebaseFunctionsException
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -194,7 +197,7 @@ class UserRepository @Inject constructor(
 
                     ownedAvatars = (userMap["ownedAvatars"] as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
                     ownedMoods   = (userMap["ownedMoods"]   as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
-                    ownedThemes  = (userMap["ownedThemes"]  as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(), // ← NEW
+                    ownedThemes  = (userMap["ownedThemes"]  as? List<*>)?.filterIsInstance<Number>()?.map { it.toInt() } ?: emptyList(),
 
                     blockList = (userMap["blockList"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
                     friendList = (userMap["friendList"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
@@ -210,9 +213,16 @@ class UserRepository @Inject constructor(
                     notifications = notifications,
                     reportCount = (userMap["reportCount"] as? Number)?.toInt() ?: 0,
 
-                    // from users_public
                     achievementCount = (userMap["achievementCount"] as? Number)?.toInt() ?: 0,
-                    favouriteMessage = favouriteMessage
+                    favouriteMessage = favouriteMessage,
+
+                    // 🆕 From users_public in the merged payload
+                    gender = (userMap["gender"] as? String) ?: "unspecified",
+                    age = (userMap["age"] as? Number)?.toInt(),
+                    city = (userMap["city"] as? String) ?: "",
+
+                    // 🆕 From users_private in the merged payload
+                    isVerified = userMap["isVerified"] as? Boolean ?: false
                 )
 
                 val engagementMap = data["engagementStatus"] as? Map<*, *> ?: emptyMap<String, Any>()
@@ -281,7 +291,12 @@ class UserRepository @Inject constructor(
             moodId = (map["moodId"] as? Number)?.toInt() ?: 0,
             points = (map["points"] as? Number)?.toInt() ?: 0,
             achievementCount = (map["achievementCount"] as? Number)?.toInt() ?: 0,
-            favouriteMessage = favourite
+            favouriteMessage = favourite,
+
+            // 🆕 New fields from users_public
+            gender = (map["gender"] as? String ?: "unspecified"),
+            age = (map["age"] as? Number)?.toInt(),
+            city = (map["city"] as? String ?: "")
         )
     }
 
@@ -290,30 +305,32 @@ class UserRepository @Inject constructor(
         username: String,
         fcmToken: String?,
         chatLanguage: String = "any",
+        // 🆕 optional new fields
+        gender: String = "unspecified",
+        age: Int? = null,
+        city: String = "",
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        val data = hashMapOf(
+        val data = hashMapOf<String, Any>(
             "email" to email,
             "username" to username,
             "fcmToken" to (fcmToken ?: ""),
-            "chatLanguage" to chatLanguage
-        )
+            "chatLanguage" to chatLanguage,
+            "gender" to gender,
+            "city" to city
+        ).apply {
+            age?.let { put("age", it) }   // now allowed (Int is fine)
+        }
 
         Firebase.functions("europe-west3")
             .getHttpsCallable("createUserProfile")
             .call(data)
             .addOnSuccessListener { result ->
                 val success = (result.data as? Map<*, *>)?.get("success") as? Boolean ?: false
-                if (success) {
-                    onSuccess()
-                } else {
-                    onFailure(Exception("Cloud Function returned success = false"))
-                }
+                if (success) onSuccess() else onFailure(Exception("Cloud Function returned success = false"))
             }
-            .addOnFailureListener { error ->
-                onFailure(error)
-            }
+            .addOnFailureListener(onFailure)
     }
 
     fun seedAchievementDefinitions(
@@ -336,4 +353,42 @@ class UserRepository @Inject constructor(
 
     }
 
+    sealed class FeedbackResult {
+        object Success : FeedbackResult()
+        object AlreadySubmitted : FeedbackResult() // one per day hit
+        data class Error(val message: String) : FeedbackResult()
+    }
+
+    suspend fun sendUserFeedback(
+        answers: Map<String, String>,
+        text: String = "",
+        platform: String = "android",
+        appVersion: String = BuildConfig.VERSION_NAME, // import your app BuildConfig
+        lang: String = "en"
+    ): FeedbackResult {
+        return try {
+            val payload = mapOf(
+                "answers" to answers,
+                "text" to text,
+                "client" to mapOf(
+                    "platform" to platform,
+                    "appVersion" to appVersion,
+                    "lang" to lang
+                )
+            )
+
+            Firebase.functions("europe-west3")
+                .getHttpsCallable("sendUserFeedback")
+                .call(payload)
+                .await()
+
+            FeedbackResult.Success
+        } catch (e: Exception) {
+            val fe = e as? FirebaseFunctionsException
+            when (fe?.code) {
+                FirebaseFunctionsException.Code.ALREADY_EXISTS -> FeedbackResult.AlreadySubmitted
+                else -> FeedbackResult.Error(fe?.message ?: e.message ?: "Failed to send feedback.")
+            }
+        }
+    }
 }

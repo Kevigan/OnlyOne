@@ -50,7 +50,9 @@ import com.example.onlyone.views.SetUsernameView
 import com.example.onlyone.views.settingsView.SettingsView
 import com.example.onlyone.views.shopView.ShopView
 import com.example.onlyone.views.SplashView
+import com.example.onlyone.views.VerifyEmailView
 import com.example.onlyone.views.achievements.AchievementsView
+import com.example.onlyone.views.feedback.UserFeedbackView
 import kotlinx.coroutines.delay
 
 
@@ -247,7 +249,8 @@ fun Navigation(
                             email = email,
                             userViewModel = userViewModel,
                             navController = navController,
-                            isGoogleUser = isGoogleUser // ✅ Pass this
+                            isGoogleUser = isGoogleUser,
+                            theme = theme
                         )
                     }
 
@@ -272,6 +275,31 @@ fun Navigation(
 
                     composable(Screen.AchievementsScreen.route) {
                         AchievementsView(viewModel = userViewModel)
+                    }
+
+                    composable(
+                        route = Screen.VerifyEmailScreen.route,
+                        arguments = listOf(
+                            navArgument("uid") { type = NavType.StringType },
+                            navArgument("email") { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val uid = backStackEntry.arguments?.getString("uid") ?: ""
+                        val email = backStackEntry.arguments?.getString("email") ?: ""
+                        VerifyEmailView(
+                            uid = uid,
+                            email = email,
+                            sessionViewModel = sessionViewModel,
+                            navController = navController
+                        )
+                    }
+
+                    composable(Screen.FeedbackScreen.route) {
+                        UserFeedbackView(
+                            navController = navController,
+                            userViewModel = userViewModel,
+                            theme = theme
+                        )
                     }
                 }
             }

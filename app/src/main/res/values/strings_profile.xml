@@ -8,4 +8,15 @@
 
     <string name="profile_save">Save</string>
     <string name="profile_cancel">Cancel</string>
+
+    <!-- New onboarding strings -->
+    <string name="onboarding_age_label">Age</string>
+    <string name="onboarding_gender_label">Gender (M/F/D)</string>
+    <string name="onboarding_city_label">City</string>
+    <string name="onboarding_city_placeholder">Your city</string>
+    <string name="onboarding_form_invalid">Please complete all fields correctly.</string>
+
+    <string name="friends_dialog_profile_title">Profildetails</string>
+
 </resources>
+

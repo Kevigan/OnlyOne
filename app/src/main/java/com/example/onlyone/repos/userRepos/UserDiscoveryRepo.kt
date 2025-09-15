@@ -93,15 +93,20 @@ class UserDiscoveryRepo @Inject constructor(
     }
 
     suspend fun syncFriendsToLocal(uids: List<String>, publicFriends: List<PublicUser>) {
-        val newLocalFriends = publicFriends.map {
+        val newLocalFriends = publicFriends.map { pu ->
             LocalFriend(
-                uid = it.uid,
-                username = it.username,
-                moodStatus = it.moodStatus,
-                avatarId = it.avatarId,
-                points = it.points,
-                achievementCount = it.achievementCount ?: 0,
-                favouriteMessage = it.favouriteMessage
+                uid = pu.uid,
+                username = pu.username,
+                moodStatus = pu.moodStatus,
+                avatarId = pu.avatarId,
+                points = pu.points,
+                achievementCount = pu.achievementCount,     // no ?: 0 if non-null in model
+                favouriteMessage = pu.favouriteMessage,
+
+                // 🆕 passthroughs
+                gender = pu.gender,
+                age = pu.age,
+                city = pu.city
             )
         }.sortedBy { it.uid }
 

@@ -14,7 +14,10 @@ data class UserPrivate(
     val reportCount: Int = 0,
     val friendList: List<String> = emptyList(),
     val incomingFriendRequests: List<String> = emptyList(),
-    val outgoingFriendRequests: List<String> = emptyList()
+    val outgoingFriendRequests: List<String> = emptyList(),
+
+    // 🆕 New
+    val isVerified: Boolean = false
 )
 
 // ⭐ Favourite message (nested in users_public)
@@ -22,7 +25,7 @@ data class FavouriteMessage(
     val text: String = "",
     val fromUid: String = "",
     val messageId: String = "",
-    val chosenAt: com.google.firebase.Timestamp? = null
+    val chosenAt: Timestamp? = null
 )
 
 // 🌍 Public (users_public/{uid})
@@ -35,7 +38,12 @@ data class PublicUser(
     val moodId: Int = 0,
     val points: Int = 0,
     val achievementCount: Int = 0,
-    val favouriteMessage: FavouriteMessage? = null
+    val favouriteMessage: FavouriteMessage? = null,
+
+    // 🆕 New
+    val gender: String = "unspecified",
+    val age: Int? = null,
+    val city: String = ""
 )
 
 // ✨ Upgrades (users_upgrades/{uid})
@@ -55,7 +63,7 @@ data class UserInventory(
     val runes_mega_rare: Int = 0,
     val ownedAvatars: List<Int> = emptyList(),
     val ownedMoods: List<Int> = emptyList(),
-    val ownedThemes: List<Int> = emptyList() // ⭐ NEW: theme IDs (e.g., 0=LIGHT,1=DARK,2=OCEAN)
+    val ownedThemes: List<Int> = emptyList()
 )
 
 // 🔁 Engagement (engagement_status/{uid})
@@ -64,7 +72,7 @@ data class UserEngagementStatus(
     val swipesUsed: Int = 0,
     val momentsAvailable: Int = 75,
     val adsWatchedToday: Int = 0,
-    val lastRefill: com.google.firebase.Timestamp? = null
+    val lastRefill: Timestamp? = null
 )
 
 // 🧩 Merged user from callable getUserWithFriends
@@ -86,7 +94,7 @@ data class UserComposite(
     val runes_mega_rare: Int,
     val ownedAvatars: List<Int>,
     val ownedMoods: List<Int>,
-    val ownedThemes: List<Int>, // ⭐ NEW
+    val ownedThemes: List<Int>,
 
     // Social
     val blockList: List<String>,
@@ -105,5 +113,12 @@ data class UserComposite(
 
     // Extras from users_public
     val achievementCount: Int,
-    val favouriteMessage: FavouriteMessage?
+    val favouriteMessage: FavouriteMessage?,
+    val gender: String,
+    val age: Int?,
+    val city: String,
+
+    // 🆕 From users_private
+    val isVerified: Boolean
 )
+

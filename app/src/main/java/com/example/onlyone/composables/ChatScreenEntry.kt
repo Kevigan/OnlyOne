@@ -13,7 +13,7 @@ import androidx.navigation.NavController
 import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
-import com.example.onlyone.views.ChatView
+import com.example.onlyone.views.chat.ChatView
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable

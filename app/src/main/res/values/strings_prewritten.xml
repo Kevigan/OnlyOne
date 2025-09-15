@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pre_msg_copied">Added to your message</string>
+
+    <!-- UI labels -->
+    <string name="pre_msg_title">Suggestions</string>
+    <string name="pre_msg_button">Suggestions</string>
+    <string name="pre_msg_insert">Insert</string>
+    <string name="pre_msg_empty">No suggestions yet</string>
+
+    <!-- Category labels -->
+    <string name="pre_msg_all_tab">All</string>
+    <string name="pre_msg_generic_tab">Generic</string>
+    <string name="pre_msg_empathetic_tab">Supportive</string>
+    <string name="pre_msg_encouraging_tab">Encouraging</string>
+    <string name="pre_msg_cheerful_tab">Cheerful</string>
+
+    <!-- Message arrays (use {name} for optional interpolation) -->
+    <string-array name="pre_msg_generic">
+        <item>Hi {name}! Sending a friendly hello. 👋</item>
+        <item>Passing on some good vibes. 💫</item>
+        <item>Wishing you a calm, kind day.</item>
+        <item>Hope something nice finds you today. 🍀</item>
+        <item>Just a small hello to brighten your feed.</item>
+        <item>Here’s a pocket of positivity for you. ✨</item>
+    </string-array>
+
+    <string-array name="pre_msg_empathetic">
+        <item>Hey {name}, if today’s heavy, I’m rooting for you. 💛</item>
+        <item>Rough days pass. You’ve got this, {name}.</item>
+        <item>Sending a gentle check-in—be kind to yourself.</item>
+        <item>One step at a time. You’re not alone. 🌟</item>
+        <item>Deep breath—you’re doing your best, and that’s enough.</item>
+        <item>May today feel a little lighter for you.</item>
+    </string-array>
+
+    <string-array name="pre_msg_encouraging">
+        <item>One small step counts—keep going, {name}!</item>
+        <item>You’re doing better than you think. ✨</item>
+        <item>Fresh start energy—let’s go!</item>
+        <item>Progress is progress, even when it’s tiny.</item>
+        <item>Cheering you on from here. 🙌</item>
+        <item>Little wins add up—proud of you.</item>
+    </string-array>
+
+    <string-array name="pre_msg_cheerful">
+        <item>Wishing you a pocket of joy today! ☀️</item>
+        <item>Mini high-five for you, {name}! 🙌</item>
+        <item>May today surprise you in a good way.</item>
+        <item>Sending a smile your way. 🙂</item>
+        <item>Hope your day sparkles a bit. ✨</item>
+        <item>Good vibes, delivered. 📬</item>
+    </string-array>
+</resources>

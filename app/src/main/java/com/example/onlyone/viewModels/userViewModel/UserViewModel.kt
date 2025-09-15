@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.dao.FriendDao
 import com.example.dao.MessageDao
+import com.example.onlyone.BuildConfig
 import com.example.onlyone.ads.AdCounter
 import com.example.onlyone.cloudMessaging.MessageNotifier
 import com.example.onlyone.data.LocalFavoriteMessage
@@ -311,4 +312,44 @@ class UserViewModel @Inject constructor(
         auth.removeAuthStateListener(authListener)
         super.onCleared()
     }
+
+
+    sealed class FeedbackUiState {
+        object Idle : FeedbackUiState()
+        object Sending : FeedbackUiState()
+        object Success : FeedbackUiState()
+        object AlreadySubmitted : FeedbackUiState()
+        data class Error(val message: String) : FeedbackUiState()
+    }
+
+    private val _feedbackState = MutableStateFlow<FeedbackUiState>(FeedbackUiState.Idle)
+    val feedbackState: StateFlow<FeedbackUiState> = _feedbackState.asStateFlow()
+
+    fun clearFeedbackState() {
+        _feedbackState.value = FeedbackUiState.Idle
+    }
+
+    fun sendFeedback(
+        answers: Map<String, String>,
+        text: String = "",
+        platform: String = "android",
+        appVersion: String = BuildConfig.VERSION_NAME,
+        lang: String = "en"
+    ) {
+        _feedbackState.value = FeedbackUiState.Sending
+        viewModelScope.launch {
+            when (val res = userRepository.sendUserFeedback(
+                answers = answers,
+                text = text,
+                platform = platform,
+                appVersion = appVersion,
+                lang = lang
+            )) {
+                is UserRepository.FeedbackResult.Success -> _feedbackState.value = FeedbackUiState.Success
+                is UserRepository.FeedbackResult.AlreadySubmitted -> _feedbackState.value = FeedbackUiState.AlreadySubmitted
+                is UserRepository.FeedbackResult.Error -> _feedbackState.value = FeedbackUiState.Error(res.message)
+            }
+        }
+    }
+
 }

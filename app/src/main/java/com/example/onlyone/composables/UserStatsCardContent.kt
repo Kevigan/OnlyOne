@@ -11,6 +11,8 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,8 @@ fun UserStatsCardContent(
     onMoodIconSelected: (Int) -> Unit,
     onAvatarSelected: (Int) -> Unit,
     onLogoutClick: () -> Unit,
+    // ✅ NEW: optional, so existing call sites keep working
+    onFeedbackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val avatarResId = remember(user?.avatarId) { mapAvatarIdToDrawable(user?.avatarId) }
@@ -49,7 +53,7 @@ fun UserStatsCardContent(
             .wrapContentHeight()                 // ⬅️ prevent stretching, remove bottom gap
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        // ===== Top bar: Username + Gold (left) | Logout (right) =====
+        // ===== Top bar: Username + Gold (left) | Feedback + Logout (right) =====
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -71,12 +75,27 @@ fun UserStatsCardContent(
                     color = theme.textColor
                 )
             }
-            IconButton(onClick = onLogoutClick) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_logout_24),
-                    contentDescription = stringResource(R.string.main_cd_logout),
-                    tint = theme.textColor
-                )
+
+            // Right-side actions
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // ✅ Feedback icon (shown only if provided)
+                if (onFeedbackClick != null) {
+                    IconButton(onClick = onFeedbackClick) {
+                        Icon(
+                            imageVector = Icons.Filled.Feedback,
+                            contentDescription = stringResource(R.string.main_cd_feedback),
+                            tint = theme.textColor
+                        )
+                    }
+                }
+                // Logout icon
+                IconButton(onClick = onLogoutClick) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_logout_24),
+                        contentDescription = stringResource(R.string.main_cd_logout),
+                        tint = theme.textColor
+                    )
+                }
             }
         }
 

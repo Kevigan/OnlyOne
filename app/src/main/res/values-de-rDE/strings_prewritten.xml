@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pre_msg_copied">Zu deiner Nachricht hinzugefügt</string>
+
+    <!-- UI-Beschriftungen -->
+    <string name="pre_msg_title">Vorschläge</string>
+    <string name="pre_msg_button">Vorschläge</string>
+    <string name="pre_msg_insert">Einfügen</string>
+    <string name="pre_msg_empty">Noch keine Vorschläge</string>
+
+    <!-- Kategorien -->
+    <string name="pre_msg_all_tab">Alle</string>
+    <string name="pre_msg_generic_tab">Allgemein</string>
+    <string name="pre_msg_empathetic_tab">Unterstützend</string>
+    <string name="pre_msg_encouraging_tab">Aufmunternd</string>
+    <string name="pre_msg_cheerful_tab">Fröhlich</string>
+
+    <!-- Nachrichten-Arrays -->
+    <string-array name="pre_msg_generic">
+        <item>Hi {name}! Ein freundlicher Gruß. 👋</item>
+        <item>Schicke dir gute Vibes. 💫</item>
+        <item>Ich wünsche dir einen ruhigen, freundlichen Tag.</item>
+        <item>Hoffe, heute passiert dir etwas Schönes. 🍀</item>
+        <item>Ein kleines Hallo, um deinen Feed aufzuhellen.</item>
+        <item>Eine kleine Portion Positivität für dich. ✨</item>
+    </string-array>
+
+    <string-array name="pre_msg_empathetic">
+        <item>Hey {name}, falls der Tag schwer ist: Ich denke an dich. 💛</item>
+        <item>Schwere Tage gehen vorbei. Du schaffst das, {name}.</item>
+        <item>Sanfter Check-in—sei heute nett zu dir.</item>
+        <item>Schritt für Schritt. Du bist nicht allein. 🌟</item>
+        <item>Tief durchatmen—du gibst dein Bestes, das reicht.</item>
+        <item>Möge sich der Tag ein bisschen leichter anfühlen.</item>
+    </string-array>
+
+    <string-array name="pre_msg_encouraging">
+        <item>Jeder kleine Schritt zählt—weiter so, {name}!</item>
+        <item>Du machst das besser, als du denkst. ✨</item>
+        <item>Neustart-Energie—los geht’s!</item>
+        <item>Fortschritt ist Fortschritt, auch wenn er klein ist.</item>
+        <item>Ich feuere dich von hier aus an. 🙌</item>
+        <item>Kleine Erfolge summieren sich—stark!</item>
+    </string-array>
+
+    <string-array name="pre_msg_cheerful">
+        <item>Ich wünsche dir heute einen Moment Freude! ☀️</item>
+        <item>Mini-High-Five für dich, {name}! 🙌</item>
+        <item>Ich hoffe, der Tag überrascht dich positiv.</item>
+        <item>Schicke dir ein Lächeln. 🙂</item>
+        <item>Möge dein Tag etwas glitzern. ✨</item>
+        <item>Gute Vibes, soeben zugestellt. 📬</item>
+    </string-array>
+</resources>

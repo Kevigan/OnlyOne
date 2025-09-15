@@ -4,36 +4,28 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
-
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.R
 import com.example.onlyone.Screen
 import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @Composable
 fun SplashView(
@@ -53,23 +45,69 @@ fun SplashView(
         )
     }
 
-    // Navigate after delay
+    // Navigation gate: auth -> verify -> profile -> main
     LaunchedEffect(firebaseUser) {
-        delay(2000)
-        if (firebaseUser == null) {
+        // Let the animation breathe a bit
+        delay(1200)
+
+        val auth = Firebase.auth
+        val user = auth.currentUser
+
+        if (user == null) {
             navController.navigate(Screen.LoginScreen.route) {
-                popUpTo(0) { inclusive = true }
+                popUpTo(Screen.SplashScreen.route) { inclusive = true }
             }
-        } else {
-            val uid = firebaseUser!!.uid
-            userViewModel.loadUser()
-            navController.navigate(Screen.MainScreen.route) {
-                popUpTo(0) { inclusive = true }
+            return@LaunchedEffect
+        }
+
+        // Reload to ensure email_verified claim is fresh
+        user.reload().addOnCompleteListener {
+            val isVerified = auth.currentUser?.isEmailVerified == true
+            val uid = auth.currentUser?.uid.orEmpty()
+            val email = auth.currentUser?.email.orEmpty()
+
+            if (!isVerified) {
+                // NOTE: If you haven't added Screen.VerifyEmailScreen yet,
+                // use the raw route string below to avoid compile errors:
+                // navController.navigate("verify_email/$uid/$email") { ... }
+                navController.navigate(
+                    // Replace with Screen.VerifyEmailScreen.createRoute(uid, email) once added
+                    "verify_email/$uid/$email"
+                ) {
+                    popUpTo(Screen.SplashScreen.route) { inclusive = true }
+                }
+                return@addOnCompleteListener
             }
+
+            // Verified — check if profile exists in users_public
+            Firebase.firestore.collection("users_public").document(uid)
+                .get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        // Verified + profile exists → Main
+                        userViewModel.loadUser()
+                        navController.navigate(Screen.MainScreen.route) {
+                            popUpTo(Screen.SplashScreen.route) { inclusive = true }
+                        }
+                    } else {
+                        // Verified but no profile → SetUsername flow
+                        navController.navigate(
+                            Screen.SetUsernameScreen.createRoute(uid, email, isGoogleUser = false)
+                        ) {
+                            popUpTo(Screen.SplashScreen.route) { inclusive = true }
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    // If unsure, err on the safe side: send to verify screen again
+                    navController.navigate("verify_email/$uid/$email") {
+                        popUpTo(Screen.SplashScreen.route) { inclusive = true }
+                    }
+                }
         }
     }
 
-    // Splash screen UI
+    // UI
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -82,9 +120,7 @@ fun SplashView(
                     .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                     .size(160.dp)
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             Text(
                 text = "Only One\nMake it count!",
                 style = MaterialTheme.typography.h6,

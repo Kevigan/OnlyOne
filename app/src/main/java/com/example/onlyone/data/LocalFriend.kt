@@ -13,7 +13,12 @@ data class LocalFriend(
     val avatarId: Int,
     val points: Int,
     val achievementCount: Int = 0,
-    val favouriteMessage: FavouriteMessage? = null
+    val favouriteMessage: FavouriteMessage? = null,
+
+    // 🆕 new fields
+    val gender: String = "unspecified", // "male","female","nonbinary","other","unspecified"
+    val age: Int? = null,               // nullable so we don't force backfill
+    val city: String = ""               // empty as default
 )
 
 // FavouriteMessageConverter.kt

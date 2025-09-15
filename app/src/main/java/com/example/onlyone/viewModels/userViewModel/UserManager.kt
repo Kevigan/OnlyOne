@@ -67,15 +67,17 @@ class UserManager @Inject constructor(
                         moodStatus = updates["moodStatus"] as? String ?: currentUser.moodStatus,
                         chatLanguage = updates["chatLanguage"] as? String ?: currentUser.chatLanguage,
                         avatarId = (updates["avatarId"] as? Number)?.toInt() ?: currentUser.avatarId,
-                        // ⭐ add this:
-                        moodId   = (updates["moodId"]   as? Number)?.toInt() ?: currentUser.moodId
+                        moodId   = (updates["moodId"]   as? Number)?.toInt() ?: currentUser.moodId,
+
+                        // 🆕 public extras
+                        gender = updates["gender"] as? String ?: currentUser.gender,
+                        age = (updates["age"] as? Number)?.toInt() ?: currentUser.age,
+                        city = updates["city"] as? String ?: currentUser.city
                     )
-                    updateUser(updated)   // triggers Compose to recompose → green ring “Selected”
+                    updateUser(updated)   // triggers Compose recomposition
                     onSuccess()
                 },
-                onFailure = { e ->
-                    onFailure(e.message ?: "Update failed")
-                }
+                onFailure = { e -> onFailure(e.message ?: "Update failed") }
             )
         }
     }
@@ -363,4 +365,6 @@ class UserManager @Inject constructor(
         }
     }
     // ... Add more methods here in the same structure ...
+
+
 }

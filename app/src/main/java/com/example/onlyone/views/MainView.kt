@@ -142,6 +142,9 @@ fun MainView(
                             onFailure = {}
                         )
                     },
+                    onFeedbackClick = {
+                        navController.navigate(Screen.FeedbackScreen.route)
+                    },
                     onLogoutClick = { showLogoutDialog = true },
                     modifier = Modifier.fillMaxSize(),
                     theme = theme

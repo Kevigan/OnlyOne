@@ -11,7 +11,9 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -156,7 +158,6 @@ class SessionViewModel @Inject constructor(
             .addOnFailureListener { ex -> onFailure(ex) }
     }
 
-
     fun sendPasswordReset(
         email: String,
         onSuccess: () -> Unit,
@@ -221,6 +222,52 @@ class SessionViewModel @Inject constructor(
                     .addOnFailureListener { onFailure(it) }
             }
             .addOnFailureListener { onFailure(it) }
+    }
+
+    fun sendEmailVerification(onSuccess: () -> Unit, onFailure: (String?) -> Unit) {
+        val u = FirebaseAuth.getInstance().currentUser
+        if (u == null) { onFailure("Not signed in"); return }
+        u.sendEmailVerification()
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onFailure(e.message) }
+    }
+
+    fun reloadAndIsEmailVerified(onResult: (Boolean) -> Unit, onFailure: (String?) -> Unit) {
+        val u = FirebaseAuth.getInstance().currentUser
+        if (u == null) { onFailure("Not signed in"); return }
+        u.reload()
+            .addOnSuccessListener { onResult(u.isEmailVerified) }
+            .addOnFailureListener { e -> onFailure(e.message) }
+    }
+
+    fun checkEmailVerified(
+        onResult: (Boolean) -> Unit,
+        onFailure: (String?) -> Unit
+    ) {
+        val user = Firebase.auth.currentUser
+        if (user == null) {
+            onFailure("Not signed in")
+            return
+        }
+
+        user.reload()
+            .addOnSuccessListener {
+                onResult(user.isEmailVerified)
+            }
+            .addOnFailureListener { e ->
+                onFailure(e.message)
+            }
+    }
+
+    fun checkHasPublicProfile(
+        uid: String,
+        onResult: (Boolean) -> Unit,
+        onFailure: (String?) -> Unit
+    ) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("users_public").document(uid).get()
+            .addOnSuccessListener { snap -> onResult(snap.exists()) }
+            .addOnFailureListener { e -> onFailure(e.message) }
     }
 }
 

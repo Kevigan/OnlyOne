@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Person // <-- profile icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,9 +50,14 @@ fun FriendItem(
     expanded: Boolean = false,
     onCardClick: (() -> Unit)? = null,
 
-    // NEW: full object + count
+    // full object + count
     favouriteMessage: FavouriteMessage? = null,
-    achievementCount: Int = 0
+    achievementCount: Int = 0,
+
+    // details for dialog
+    age: Int? = null,
+    gender: String? = null, // "m" | "f" | "d"
+    city: String? = null
 ) {
     var deleteDialogVisible by remember { mutableStateOf(false) }
     var blockDialogVisible by remember { mutableStateOf(false) }
@@ -60,9 +66,10 @@ fun FriendItem(
     // ⭐ dialog states
     var favDialogVisible by remember { mutableStateOf(false) }
     var achDialogVisible by remember { mutableStateOf(false) }
+    var detailsDialogVisible by remember { mutableStateOf(false) } // <-- profile details
 
     val compactHeight = 72.dp
-    val expandedHeight = 108.dp
+    val expandedHeight = 128.dp
     val targetHeight = if (expanded) expandedHeight else compactHeight
     val animatedHeight by animateDpAsState(targetValue = targetHeight, label = "friendItemHeight")
     val cornerShape = if (expanded) RoundedCornerShape(20.dp) else RoundedCornerShape(percent = 45)
@@ -114,7 +121,7 @@ fun FriendItem(
                         text = status,
                         style = MaterialTheme.typography.caption,
                         color = theme.textColor.copy(alpha = 0.7f),
-                        maxLines = if (expanded) 3 else 1,
+                        maxLines = if (expanded) 2 else 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -207,16 +214,24 @@ fun FriendItem(
                             painter = painterResource(id = R.drawable.favourite_message_icon),
                             contentDescription = "Show favourite message",
                             modifier = Modifier
-                                .size(32.dp)                 // control overall size
-                                .clip(CircleShape),          // ⬅️ makes it round
-                            contentScale = ContentScale.Crop // ensures it fills the circle
+                                .size(32.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
                         )
                     }
                     IconButton(onClick = { achDialogVisible = true }) {
                         Icon(
-                            imageVector = Icons.Filled.EmojiEvents, // 🏆 built-in trophy
+                            imageVector = Icons.Filled.EmojiEvents,
                             contentDescription = "Show achievements",
                             tint = Color.Yellow
+                        )
+                    }
+                    // 👤 Profile details
+                    IconButton(onClick = { detailsDialogVisible = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = "Profile",
+                            tint = Color.Cyan
                         )
                     }
                 }
@@ -224,7 +239,6 @@ fun FriendItem(
 
             // ───── Dialogs ──────────────────────────────────────────────
 
-            // Delete confirmation
             // Delete confirmation (RED)
             if (deleteDialogVisible) {
                 CustomAlertDialog(
@@ -233,9 +247,16 @@ fun FriendItem(
                     onDismiss = { deleteDialogVisible = false }
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.friends_dialog_delete_title), style = MaterialTheme.typography.h6, color = theme.textColor)
+                        Text(
+                            stringResource(R.string.friends_dialog_delete_title),
+                            style = MaterialTheme.typography.h6,
+                            color = theme.textColor
+                        )
                         Spacer(Modifier.height(8.dp))
-                        Text(stringResource(R.string.friends_dialog_delete_text, name), color = theme.textColor)
+                        Text(
+                            stringResource(R.string.friends_dialog_delete_text, name),
+                            color = theme.textColor
+                        )
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = { deleteDialogVisible = false }) {
@@ -253,7 +274,7 @@ fun FriendItem(
                 }
             }
 
-// Block confirmation (YELLOW)
+            // Block confirmation (YELLOW)
             if (blockDialogVisible) {
                 CustomAlertDialog(
                     borderColor = Color.Yellow,
@@ -261,9 +282,16 @@ fun FriendItem(
                     onDismiss = { blockDialogVisible = false }
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.friends_dialog_block_title), style = MaterialTheme.typography.h6, color = theme.textColor)
+                        Text(
+                            stringResource(R.string.friends_dialog_block_title),
+                            style = MaterialTheme.typography.h6,
+                            color = theme.textColor
+                        )
                         Spacer(Modifier.height(8.dp))
-                        Text(stringResource(R.string.friends_dialog_block_text, name), color = theme.textColor)
+                        Text(
+                            stringResource(R.string.friends_dialog_block_text, name),
+                            color = theme.textColor
+                        )
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = { blockDialogVisible = false }) {
@@ -281,13 +309,20 @@ fun FriendItem(
                 }
             }
 
-// Unblock / Unblock & request (DEFAULT color)
+            // Unblock / Unblock & request (DEFAULT color)
             if (unblockDialogVisible) {
                 CustomAlertDialog(theme = theme, onDismiss = { unblockDialogVisible = false }) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.friends_dialog_unblock_title), style = MaterialTheme.typography.h6, color = theme.textColor)
+                        Text(
+                            stringResource(R.string.friends_dialog_unblock_title),
+                            style = MaterialTheme.typography.h6,
+                            color = theme.textColor
+                        )
                         Spacer(Modifier.height(8.dp))
-                        Text(stringResource(R.string.friends_dialog_unblock_text, name), color = theme.textColor)
+                        Text(
+                            stringResource(R.string.friends_dialog_unblock_text, name),
+                            color = theme.textColor
+                        )
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = {
@@ -308,9 +343,9 @@ fun FriendItem(
                 }
             }
 
-// Favourite message (DEFAULT color)
+            // Favourite message (DEFAULT color)
             if (favDialogVisible) {
-                CustomAlertDialog(theme = theme,onDismiss = { favDialogVisible = false }) {
+                CustomAlertDialog(theme = theme, onDismiss = { favDialogVisible = false }) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Favourite message", style = MaterialTheme.typography.h6)
                         Spacer(Modifier.height(8.dp))
@@ -323,9 +358,9 @@ fun FriendItem(
                 }
             }
 
-// Achievement count (DEFAULT color)
+            // Achievement count (DEFAULT color)
             if (achDialogVisible) {
-                CustomAlertDialog(theme = theme,onDismiss = { achDialogVisible = false }) {
+                CustomAlertDialog(theme = theme, onDismiss = { achDialogVisible = false }) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Achievements", style = MaterialTheme.typography.h6)
                         Spacer(Modifier.height(8.dp))
@@ -333,6 +368,40 @@ fun FriendItem(
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = { achDialogVisible = false }) { Text("OK") }
+                        }
+                    }
+                }
+            }
+
+            // Profile details (DEFAULT color)
+            if (detailsDialogVisible) {
+                CustomAlertDialog(theme = theme, onDismiss = { detailsDialogVisible = false }) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.friends_dialog_profile_title), style = MaterialTheme.typography.h6, color = theme.textColor)
+                        Spacer(Modifier.height(8.dp))
+
+                        val ageStr = age?.takeIf { it in 1..99 }?.toString() ?: "-"
+                        val genderStr = when (gender?.lowercase()) {
+                            "m" -> "M"
+                            "f" -> "F"
+                            "d" -> "D"
+                            else -> "-"
+                        }
+                        val cityStr = city?.takeIf { it.isNotBlank() } ?: "-"
+
+                        val ageLabel = stringResource(R.string.onboarding_age_label)
+                        val genderLabel = stringResource(R.string.onboarding_gender_label)
+                        val cityLabel = stringResource(R.string.onboarding_city_label)
+
+                        Text("$ageLabel: $ageStr", color = theme.textColor)
+                        Spacer(Modifier.height(4.dp))
+                        Text("$genderLabel: $genderStr", color = theme.textColor)
+                        Spacer(Modifier.height(4.dp))
+                        Text("$cityLabel: $cityStr", color = theme.textColor)
+
+                        Spacer(Modifier.height(16.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { detailsDialogVisible = false }) { Text("OK") }
                         }
                     }
                 }

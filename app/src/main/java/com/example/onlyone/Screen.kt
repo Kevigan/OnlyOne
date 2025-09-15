@@ -7,6 +7,10 @@ sealed class Screen(val route: String, val title: String){
     object SettingsScreen : Screen("settings_screen", "Settings")
     object LoginScreen : Screen("login_screen", "Login")
     object SplashScreen : Screen("splash_screen", "Splash")
+    object AchievementsScreen : Screen("achievements_screen", "Achievements")
+
+    // ✅ NEW
+    object FeedbackScreen : Screen("feedback_screen", "Feedback")
 
     object SetUsernameScreen : Screen(
         route = "SetUsername/{uid}/{email}?google={google}",
@@ -20,6 +24,11 @@ sealed class Screen(val route: String, val title: String){
     object ChatScreen : Screen("ChatScreen/{uid}/{isFriend}", "Chat") {
         fun createRoute(uid: String, isFriend: Boolean): String = "ChatScreen/$uid/$isFriend"
     }
-    object AchievementsScreen : Screen("achievements_screen", "Achievements")
 
+    object VerifyEmailScreen : Screen(
+        route = "verify_email/{uid}/{email}",
+        title = "Verify Email"
+    ) {
+        fun createRoute(uid: String, email: String) = "verify_email/$uid/$email"
+    }
 }
