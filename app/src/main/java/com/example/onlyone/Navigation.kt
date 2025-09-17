@@ -2,6 +2,7 @@ package com.example.onlyone
 
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,7 @@ import com.example.onlyone.views.SplashView
 import com.example.onlyone.views.VerifyEmailView
 import com.example.onlyone.views.achievements.AchievementsView
 import com.example.onlyone.views.feedback.UserFeedbackView
+import com.yourapp.ui.onboarding.OnboardingView
 import kotlinx.coroutines.delay
 
 
@@ -299,6 +301,25 @@ fun Navigation(
                             navController = navController,
                             userViewModel = userViewModel,
                             theme = theme
+                        )
+                    }
+
+                    composable(Screen.OnboardingScreen.route) {
+
+                        // Block system back entirely while on onboarding
+                        BackHandler(enabled = true) {
+                            // do nothing -> stays on OnboardingView
+                        }
+
+                        OnboardingView(
+                            theme = theme,
+                            onDismiss = {
+                                // Only the Finish button moves on to Main
+                                navController.navigate(Screen.MainScreen.route) {
+                                    popUpTo(0)               // clean stack so onboarding isn’t revisitable
+                                    launchSingleTop = true
+                                }
+                            }
                         )
                     }
                 }

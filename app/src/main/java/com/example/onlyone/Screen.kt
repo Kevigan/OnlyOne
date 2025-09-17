@@ -31,4 +31,13 @@ sealed class Screen(val route: String, val title: String){
     ) {
         fun createRoute(uid: String, email: String) = "verify_email/$uid/$email"
     }
+
+    // in com.example.onlyone.Screen
+    object OnboardingScreen : Screen(
+        route = "onboarding?goHome={goHome}",
+        title = "Onboarding"
+    ) {
+        fun createRoute(goHome: Boolean = false): String = "onboarding?goHome=$goHome"
+    }
+
 }

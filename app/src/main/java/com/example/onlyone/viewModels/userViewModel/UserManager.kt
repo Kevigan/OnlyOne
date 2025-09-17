@@ -72,7 +72,8 @@ class UserManager @Inject constructor(
                         // 🆕 public extras
                         gender = updates["gender"] as? String ?: currentUser.gender,
                         age = (updates["age"] as? Number)?.toInt() ?: currentUser.age,
-                        city = updates["city"] as? String ?: currentUser.city
+                        city = updates["city"] as? String ?: currentUser.city,
+                        username = updates["username"] as? String ?: currentUser.username
                     )
                     updateUser(updated)   // triggers Compose recomposition
                     onSuccess()

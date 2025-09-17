@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.onlyone.R
+import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import kotlinx.coroutines.launch
@@ -68,8 +69,7 @@ fun UserFeedbackView(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val navBars = WindowInsets.navigationBars.asPaddingValues()
-    val bottomInset = navBars.calculateBottomPadding()
+
     // Build questions once
     val questions = remember { feedbackQuestions() }
 
@@ -109,122 +109,143 @@ fun UserFeedbackView(
     val isSending = feedbackState is UserViewModel.FeedbackUiState.Sending
     val scrollState = rememberScrollState()
 
-    // Layout: scrollable content + fixed bottom button
-    Box(
+    // Insets
+    val navBars = WindowInsets.navigationBars.asPaddingValues()
+    val statusBars = WindowInsets.statusBars.asPaddingValues()
+    val bottomInset = navBars.calculateBottomPadding()
+    val topInset = statusBars.calculateTopPadding()
+
+    // Root column so weight() applies to the overlay
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            // give extra space at the top so we don't overlap system status bar
+            .padding(top = topInset + 16.dp, start = 12.dp, end = 12.dp, bottom = 0.dp)
     ) {
-        // SCROLLABLE CONTENT
-        Column(
+        CustomColorOverlay(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                // leave room so the bottom button won't overlap content
-                .padding(bottom = 88.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            // Title (style like LoginView)
-            Text(
-                text = stringResource(R.string.feedback_title),
-                style = MaterialTheme.typography.h4,
-                color = theme.textColor
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.feedback_subtitle),
-                style = MaterialTheme.typography.subtitle1,
-                color = theme.textColor.copy(alpha = 0.85f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Questions
-            questions.forEach { q ->
-                QuestionBlock(
-                    question = q,
-                    selected = selections[q.id],
-                    onSelect = { choice ->
-                        selections = selections.toMutableMap().apply { put(q.id, choice) }
-                    },
-                    theme = theme
-                )
-                Spacer(Modifier.height(12.dp))
-            }
-
-            // Free text
-            Text(
-                text = stringResource(R.string.feedback_free_text_label),
-                style = MaterialTheme.typography.h6,
-                color = theme.textColor
-            )
-            Spacer(Modifier.height(6.dp))
-            OutlinedTextField(
-                value = text,
-                onValueChange = { if (it.length <= maxLen) text = it },
-                label = { Text(stringResource(R.string.feedback_free_text_placeholder)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 160.dp) // bigger min height
-                    .heightIn(min = 160.dp, max = 260.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    textColor = theme.textColor,
-                    cursorColor = theme.textColor,
-                    focusedBorderColor = theme.textColor,
-                    unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f)
-                ),
-                minLines = 5,
-                maxLines = 10
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                Text(
-                    "${text.length}/$maxLen",
-                    style = MaterialTheme.typography.caption,
-                    color = theme.textColor.copy(alpha = 0.7f)
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-        }
-
-        // FIXED BOTTOM SEND BUTTON
-        Button(
-            onClick = {
-                val missing = questions.filter { it.required && selections[it.id].isNullOrBlank() }
-                if (missing.isNotEmpty()) {
-                    Toast.makeText(context, context.getString(R.string.feedback_form_incomplete), Toast.LENGTH_LONG).show()
-                    return@Button
-                }
-
-                scope.launch {
-                    userViewModel.sendFeedback(
-                        answers = selections.toMap(),
-                        text = text
-                    )
-                }
-            },
-            enabled = !isSending,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(bottom = bottomInset + 12.dp)
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp)
+                .weight(2f),
+            theme = theme,
+            onDismiss = {}
         ) {
-            if (isSending) {
-                CircularProgressIndicator(
-                    color = theme.textColor,
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.size(20.dp)
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.feedback_submit),
-                    style = MaterialTheme.typography.button.copy(fontWeight = FontWeight.SemiBold),
-                    color = theme.textColor
-                )
+            // Overlay content box so we can anchor the button to bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding() // keep content above keyboard
+                    .padding(12.dp)
+            ) {
+                // SCROLLABLE CONTENT
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        // leave room so bottom button + system bar won't overlap content
+                        .padding(bottom = 88.dp + bottomInset),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    // Title (same style as LoginView)
+                    Text(
+                        text = stringResource(R.string.feedback_title),
+                        style = MaterialTheme.typography.h4,
+                        color = theme.textColor
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.feedback_subtitle),
+                        style = MaterialTheme.typography.subtitle1,
+                        color = theme.textColor.copy(alpha = 0.85f)
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Questions
+                    questions.forEach { q ->
+                        QuestionBlock(
+                            question = q,
+                            selected = selections[q.id],
+                            onSelect = { choice ->
+                                selections = selections.toMutableMap().apply { put(q.id, choice) }
+                            },
+                            theme = theme
+                        )
+                        Spacer(Modifier.height(12.dp))
+                    }
+
+                    // Free text
+                    Text(
+                        text = stringResource(R.string.feedback_free_text_label),
+                        style = MaterialTheme.typography.h6,
+                        color = theme.textColor
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { if (it.length <= maxLen) text = it },
+                        label = { Text(stringResource(R.string.feedback_free_text_placeholder)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 160.dp)
+                            .heightIn(min = 160.dp, max = 260.dp),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            textColor = theme.textColor,
+                            cursorColor = theme.textColor,
+                            focusedBorderColor = theme.textColor,
+                            unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f)
+                        ),
+                        minLines = 5,
+                        maxLines = 10
+                    )
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Text(
+                            "${text.length}/$maxLen",
+                            style = MaterialTheme.typography.caption,
+                            color = theme.textColor.copy(alpha = 0.7f)
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                // FIXED BOTTOM SEND BUTTON
+                Button(
+                    onClick = {
+                        val missing = questions.filter { it.required && selections[it.id].isNullOrBlank() }
+                        if (missing.isNotEmpty()) {
+                            Toast.makeText(context, context.getString(R.string.feedback_form_incomplete), Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
+                        scope.launch {
+                            userViewModel.sendFeedback(
+                                answers = selections.toMap(),
+                                text = text
+                            )
+                        }
+                    },
+                    enabled = !isSending,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        // space for the nav bar + a little breathing room
+                        .padding(bottom = bottomInset + 12.dp)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isSending) {
+                        CircularProgressIndicator(
+                            color = theme.textColor,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.feedback_submit),
+                            style = MaterialTheme.typography.button.copy(fontWeight = FontWeight.SemiBold),
+                            color = theme.textColor
+                        )
+                    }
+                }
             }
         }
     }

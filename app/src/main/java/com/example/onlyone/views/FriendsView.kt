@@ -385,7 +385,7 @@ fun FriendsView(
                     onValueChange = { email = it },
                     label = { Text(stringResource(R.string.friends_dialog_email_label)) },
                     colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = theme.cardContentColor,
+                        textColor = theme.textColor,
                         cursorColor = theme.borderColor,
                         focusedBorderColor = theme.borderColor,
                         unfocusedBorderColor = theme.cardContentColor.copy(alpha = 0.5f),

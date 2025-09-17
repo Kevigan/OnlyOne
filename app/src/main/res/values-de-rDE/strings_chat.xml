@@ -29,4 +29,17 @@
 
     <string name="chat_toast_empty">Deine Nachricht darf nicht leer sein!</string>
     <string name="chat_swipes_reached">Du hast dein tägliches Swipe-Limit erreicht. Hol dir Pro für unbegrenzte Swipes.</string>
+
+    <!-- Chat text field -->
+    <string name="chat_placeholder">Schreib etwas Nettes…</string>
+
+    <!-- Swipe limit / rewarded ad dialog -->
+    <string name="chat_out_of_swipes_title">Keine Swipes mehr</string>
+    <string name="chat_out_of_swipes_body">Du hast dein tägliches Swipe-Limit erreicht. Schau dir eine kurze Werbung an, um deine Swipes auf 0 zurückzusetzen.</string>
+    <string name="chat_out_of_swipes_confirm">Werbung ansehen, um Swipes zurückzusetzen</string>
+    <string name="chat_out_of_swipes_later">Vielleicht später</string>
+
+    <!-- Rewarded ad flow toasts -->
+    <string name="chat_ad_unavailable">Werbung kann derzeit nicht angezeigt werden.</string>
+    <string name="chat_swipes_reset_success">Swipes zurückgesetzt!</string>
 </resources>

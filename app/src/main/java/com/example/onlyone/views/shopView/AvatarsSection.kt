@@ -38,9 +38,9 @@ fun AvatarsSection(
     var selectedCategory by remember { mutableStateOf(AvatarCategory.ALL) }
 
     val buttonColors =  ButtonDefaults.buttonColors(
-        backgroundColor = theme.buttonColor,           // ← button fill
+        backgroundColor = theme.buttonBackgroundColor,           // ← button fill
         contentColor = theme.textColor,         // ← text & icon tint
-        disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+        disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
         disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
     )
 

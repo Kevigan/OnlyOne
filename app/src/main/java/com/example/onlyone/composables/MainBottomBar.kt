@@ -32,8 +32,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
@@ -68,18 +70,20 @@ fun MainBottomBar(navController: NavController, currentRoute: String?, theme: Th
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    //.graphicsLayer { alpha = 0.6f }   // applies to whole Box background
                     .background(
-                        brush = Brush.horizontalGradient(
+                        Brush.linearGradient(
                             colors = listOf(
-                                theme.gradientColor1.copy(alpha = 0.9f),
-                                theme.gradientColor1.copy(alpha = 0.9f),
-                                //Color(0xFF353535).copy(alpha = 0.9f), // Darker
-                                //Color(0xFF1F1F1F).copy(alpha = 0.9f)  // Lighter
-                            )
+                                theme.gradientColor1,
+                                theme.gradientColor2
+                            ),
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f)
                         ),
                         shape = RoundedCornerShape(32.dp)
                     )
-            ) {
+            )
+            {
                 // Your Column or Row content goes here
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -131,6 +135,7 @@ fun MainBottomBar(navController: NavController, currentRoute: String?, theme: Th
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
+                .background(color = Color.Transparent)
                 .offset(y = (-36).dp)
         ) {
             Button(

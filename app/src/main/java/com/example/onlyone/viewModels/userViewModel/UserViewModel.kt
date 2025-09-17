@@ -352,4 +352,18 @@ class UserViewModel @Inject constructor(
         }
     }
 
+    fun resetSwipesAfterAd(
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        swipeManager.resetSwipesWithAd { ok, msg ->
+            if (ok) {
+                // optional: re-read to be 100% in sync with server
+                refreshEngagementStatus()
+                onSuccess()
+            } else {
+                onError(msg ?: "Reset failed")
+            }
+        }
+    }
 }

@@ -391,4 +391,26 @@ class UserRepository @Inject constructor(
             }
         }
     }
+
+    data class AdResetResult(
+        val swipesUsed: Int,
+        val maxSwipes: Int,
+        val adsUsed: Int
+    )
+
+    suspend fun watchAdResetSwipes(): Result<AdResetResult> = try {
+        val res = Firebase.functions("europe-west3")
+            .getHttpsCallable("watchAdResetSwipes")
+            .call()
+            .await()
+            .data as Map<*, *>
+
+        val swipesUsed = (res["swipesUsed"] as? Number)?.toInt() ?: 0
+        val maxSwipes  = (res["maxSwipes"]  as? Number)?.toInt() ?: 25
+        val adsUsed    = (res["adsUsed"]    as? Number)?.toInt() ?: 0
+
+        Result.success(AdResetResult(swipesUsed, maxSwipes, adsUsed))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 }

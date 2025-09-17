@@ -112,21 +112,29 @@ fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel
         }
 
         // Overlay
+        // Overlay
         selectedSection?.let { section ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.15f))
-                    .pointerInput(Unit) {
-                        detectTapGestures(onTap = { selectedSection = null })
-                    }
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // SCRIM that dismisses when tapped
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Black.copy(alpha = 0.15f))
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = { selectedSection = null })
+                        }
+                )
+
+                // PANEL that CONSUMES taps (so inner fields get focus + scrim doesn't dismiss)
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .fillMaxWidth(0.9f)
-                        .fillMaxHeight(0.66f)
-                        .clickable(enabled = false) {}
+                        .fillMaxHeight(0.76f)
+                        .clickable( // consume clicks; no ripple
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) { /* no-op: just consume */ }
                 ) {
                     CustomColorOverlay(
                         modifier = Modifier.fillMaxSize(),
@@ -141,10 +149,10 @@ fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel
                     ) {
                         when (section) {
                             SettingSection.ACCOUNT -> AccountSettingsView(sessionViewModel = sessionViewModel, navController = navController, theme = theme)
-                            SettingSection.NOTIFICATIONS -> NotificationsSettingsView(userViewModel,theme = theme)
-                            SettingSection.LANGUAGE -> LanguageSettingsView(userViewModel,theme = theme)
+                            SettingSection.NOTIFICATIONS -> NotificationsSettingsView(userViewModel, theme = theme)
+                            SettingSection.LANGUAGE -> LanguageSettingsView(userViewModel, theme = theme)
                             SettingSection.PRIVACY -> PrivacySettingsView(theme = theme)
-                            SettingSection.APPEARANCE -> AppearanceSettingsView(theme = theme)
+                            SettingSection.PROFILE -> ProfileSettingsView(userViewModel = userViewModel, theme = theme)
                             SettingSection.ABOUT -> AboutSettingsView(theme = theme)
                         }
                     }
@@ -154,15 +162,15 @@ fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel
     }
 }
 
-
 enum class SettingSection(@StringRes val titleRes: Int) {
     ACCOUNT(R.string.settings_section_account),
+    PROFILE(R.string.settings_section_profile),   // ⬅️ renamed + moved to 2nd
     NOTIFICATIONS(R.string.settings_section_notifications),
     LANGUAGE(R.string.settings_section_language),
     PRIVACY(R.string.settings_section_privacy),
-    APPEARANCE(R.string.settings_section_appearance),
     ABOUT(R.string.settings_section_about)
 }
+
 
 
 

@@ -6,7 +6,7 @@
     <string name="settings_section_notifications">Notifications</string>
     <string name="settings_section_language">Language</string>
     <string name="settings_section_privacy">Privacy</string>
-    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_profile">Profile</string>
     <string name="settings_section_about">About</string>
 
     <!-- Language -->

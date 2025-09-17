@@ -65,4 +65,16 @@
     <string name="friends_dialog_unblock_text">%1$s entblocken? Du kannst direkt danach eine Freundesanfrage senden.</string>
     <string name="friends_dialog_unblock_confirm">Entblocken</string>
     <string name="friends_dialog_unblock_and_request">Entblocken und anfragen</string>
+
+    <!-- Content descriptions for action icons -->
+    <string name="friends_cd_show_favourite">Lieblingsnachricht anzeigen</string>
+    <string name="friends_cd_show_achievements">Erfolge anzeigen</string>
+    <string name="friends_cd_profile">Profil</string>
+
+    <!-- Achievements dialog -->
+    <string name="friends_dialog_achievements_title">Erfolge</string>
+    <string name="friends_dialog_achievements_total">Gesamte Erfolge: %1$d</string>
+
+    <!-- Common -->
+    <string name="common_ok">OK</string>
 </resources>

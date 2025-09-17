@@ -47,7 +47,7 @@ fun CustomColorOverlay(
                 .fillMaxWidth(),
             shape = shape,
             elevation = 8.dp,
-            color = overlayColor
+            //color = overlayColor
         ) {
             Box(
                 modifier = Modifier

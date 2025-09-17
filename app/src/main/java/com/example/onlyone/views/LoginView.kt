@@ -271,9 +271,9 @@ fun LoginView(
             },
             enabled = !isBusy,
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonColor,
+                backgroundColor = theme.buttonBackgroundColor,
                 contentColor = theme.textColor,
-                disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+                disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
                 disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
             )
         ) {
@@ -354,9 +354,9 @@ fun LoginView(
             },
             enabled = !isBusy,
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonColor,
+                backgroundColor = theme.buttonBackgroundColor,
                 contentColor = theme.textColor,
-                disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+                disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
                 disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
             )
         ) {
@@ -378,9 +378,9 @@ fun LoginView(
             },
             enabled = !isBusy,
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonColor,
+                backgroundColor = theme.buttonBackgroundColor,
                 contentColor = theme.textColor,
-                disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+                disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
                 disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
             )
         ) {

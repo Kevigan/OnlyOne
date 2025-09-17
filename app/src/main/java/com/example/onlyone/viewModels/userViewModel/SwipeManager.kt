@@ -152,10 +152,37 @@ class SwipeManager(
         _targetUser.value = user
     }
 
-
     sealed class RandomUserLoadResult {
         object Success : RandomUserLoadResult()
         object NoUsersFound : RandomUserLoadResult()
         object NoSwipesLeft : RandomUserLoadResult()
     }
+
+    fun resetSwipesWithAd(onComplete: (Boolean, String?) -> Unit = { _, _ -> }) {
+        viewModelScope.launch {
+            val result = userRepository.watchAdResetSwipes()
+            result.fold(
+                onSuccess = { server ->
+                    // Trust server; update local state immediately to avoid a read.
+                    val current = getEngagement()
+                    if (current != null) {
+                        updateEngagement(
+                            current.copy(
+                                swipesUsed = server.swipesUsed,           // should be 0
+                                adsWatchedToday = server.adsUsed          // server authoritative
+                            )
+                        )
+                    } else {
+                        // Fallback: force a refresh if we somehow don't have it cached
+                        refreshEngagementStatus()
+                    }
+                    onComplete(true, null)
+                },
+                onFailure = { e ->
+                    onComplete(false, e.message ?: "Reset failed")
+                }
+            )
+        }
+    }
+
 }

@@ -29,7 +29,7 @@ fun SetUsernameView(
     userViewModel: UserViewModel,
     navController: NavController,
     isGoogleUser: Boolean = false,
-    theme: ThemeTokens, // ⬅️ added so we can style like AvatarsSection
+    theme: ThemeTokens, // style consistently with the app
 ) {
     val context = LocalContext.current
 
@@ -82,6 +82,17 @@ fun SetUsernameView(
         return ageOk && genderOk && cityOk && usernameOk
     }
 
+    // DRY: themed colors for all text fields
+    @Composable
+    fun themedTextFieldColors(theme: ThemeTokens) =
+        TextFieldDefaults.outlinedTextFieldColors(
+            textColor = theme.textColor,
+            cursorColor = theme.textColor,
+            focusedBorderColor = theme.textColor,
+            unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f),
+            disabledTextColor = theme.textColor
+        )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -111,14 +122,15 @@ fun SetUsernameView(
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = themedTextFieldColors(theme)
         )
 
         Spacer(Modifier.height(16.dp))
 
         // Age
         Text(
-            text = stringResource(R.string.onboarding_age_label), // add in strings.xml
+            text = stringResource(R.string.onboarding_age_label),
             style = MaterialTheme.typography.h6,
             color = theme.textColor,
             modifier = Modifier
@@ -136,14 +148,20 @@ fun SetUsernameView(
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("1–99") }
+            placeholder = {
+                Text(
+                    "1–99",
+                    color = theme.textColor.copy(alpha = 0.6f)
+                )
+            },
+            colors = themedTextFieldColors(theme)
         )
 
         Spacer(Modifier.height(16.dp))
 
         // Gender
         Text(
-            text = stringResource(R.string.onboarding_gender_label), // add in strings.xml
+            text = stringResource(R.string.onboarding_gender_label),
             style = MaterialTheme.typography.h6,
             color = theme.textColor,
             modifier = Modifier
@@ -161,7 +179,13 @@ fun SetUsernameView(
                 readOnly = true,
                 enabled = false,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("M / F / D") }
+                placeholder = {
+                    Text(
+                        "M / F / D",
+                        color = theme.textColor.copy(alpha = 0.6f)
+                    )
+                },
+                colors = themedTextFieldColors(theme)
             )
             DropdownMenu(
                 expanded = genderExpanded,
@@ -182,7 +206,7 @@ fun SetUsernameView(
 
         // City
         Text(
-            text = stringResource(R.string.onboarding_city_label), // add in strings.xml
+            text = stringResource(R.string.onboarding_city_label),
             style = MaterialTheme.typography.h6,
             color = theme.textColor,
             modifier = Modifier
@@ -195,7 +219,13 @@ fun SetUsernameView(
                 city = input.take(50) // hard cap to 50 chars
             },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.onboarding_city_placeholder)) } // add in strings.xml
+            placeholder = {
+                Text(
+                    stringResource(R.string.onboarding_city_placeholder),
+                    color = theme.textColor.copy(alpha = 0.6f)
+                )
+            },
+            colors = themedTextFieldColors(theme)
         )
 
         Spacer(Modifier.height(16.dp))
@@ -209,16 +239,18 @@ fun SetUsernameView(
                 .fillMaxWidth()
                 .padding(start = 6.dp, bottom = 4.dp)
         )
-        Box(Modifier
-            .fillMaxWidth()
-            .clickable { chatLangExpanded = true }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clickable { chatLangExpanded = true }
         ) {
             OutlinedTextField(
                 value = langName[selectedChatLanguage] ?: selectedChatLanguage,
                 onValueChange = {},
                 readOnly = true,
                 enabled = false,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = themedTextFieldColors(theme)
             )
             DropdownMenu(
                 expanded = chatLangExpanded,
@@ -240,7 +272,7 @@ fun SetUsernameView(
                 if (!isFormValid()) {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.onboarding_form_invalid), // add in strings.xml
+                        context.getString(R.string.onboarding_form_invalid),
                         Toast.LENGTH_SHORT
                     ).show()
                     return@Button
@@ -268,8 +300,9 @@ fun SetUsernameView(
                                 applyAppLocale(appLang)
 
                                 userViewModel.loadUser()
-                                navController.navigate(Screen.MainScreen.route) {
-                                    popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                                navController.navigate(Screen.OnboardingScreen.route) {
+                                    popUpTo(Screen.SetUsernameScreen.route) { inclusive = true } // prevent back to SetUsername
+                                    launchSingleTop = true
                                 }
                             },
                             onFailure = {

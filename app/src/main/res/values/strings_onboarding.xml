@@ -7,6 +7,25 @@
     <string name="onboarding_app_language_label">Select your app language</string>
     <string name="onboarding_continue">Continue</string>
 
+    <!-- Onboarding UI labels -->
+    <string name="onboarding_getting_started_title">Getting Started</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_finish">Finish</string>
+
+    <!-- Onboarding steps -->
+    <string name="onboarding_step1">
+        You can send only one message per user per day — but you may write to multiple users.
+        Friends can react with 👍 👎 😐.
+        Earn gold for the shop by sending messages and receiving good reactions!
+    </string>
+    <string name="onboarding_step2">
+        Discover new people in Swipe mode — you start with 50 swipes per day.
+    </string>
+    <string name="onboarding_step3">
+        Use your status message to set the tone: write something interesting about yourself
+        or something that’s on your mind.
+    </string>
+
     <!-- Generic -->
     <string name="common_saving">Saving…</string>
 
@@ -14,3 +33,5 @@
     <string name="onboarding_error_create_profile">Failed to create user profile</string>
     <string name="onboarding_error_fcm_token">Failed to get FCM token</string>
 </resources>
+
+

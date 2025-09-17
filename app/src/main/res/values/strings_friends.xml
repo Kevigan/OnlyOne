@@ -65,4 +65,16 @@
     <string name="friends_dialog_unblock_text">Unblock %1$s? You can also send a friend request immediately after unblocking.</string>
     <string name="friends_dialog_unblock_confirm">Unblock</string>
     <string name="friends_dialog_unblock_and_request">Unblock and request</string>
+
+    <!-- Content descriptions for action icons -->
+    <string name="friends_cd_show_favourite">Show favourite message</string>
+    <string name="friends_cd_show_achievements">Show achievements</string>
+    <string name="friends_cd_profile">Profile</string>
+
+    <!-- Achievements dialog -->
+    <string name="friends_dialog_achievements_title">Achievements</string>
+    <string name="friends_dialog_achievements_total">Total achievements: %1$d</string>
+
+    <!-- Common -->
+    <string name="common_ok">OK</string>
 </resources>

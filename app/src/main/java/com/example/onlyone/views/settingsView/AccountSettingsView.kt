@@ -1,7 +1,6 @@
 @file:Suppress("UnusedImport")
 package com.example.onlyone.views.settingsView
 
-import com.example.onlyone.views.settingsView.DeleteAccountDialog
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -64,7 +63,7 @@ fun AccountSettingsView(
                 }
             },
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonColor,
+                backgroundColor = theme.buttonBackgroundColor,
                 contentColor = theme.textColor
             )
         ) {
@@ -87,7 +86,7 @@ fun AccountSettingsView(
                 }
             },
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonColor,
+                backgroundColor = theme.buttonBackgroundColor,
                 contentColor = theme.textColor
             )
         ) {

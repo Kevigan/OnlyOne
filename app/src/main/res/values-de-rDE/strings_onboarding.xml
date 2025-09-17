@@ -7,6 +7,25 @@
     <string name="onboarding_app_language_label">App-Sprache auswählen</string>
     <string name="onboarding_continue">Weiter</string>
 
+    <!-- Onboarding UI labels -->
+    <string name="onboarding_getting_started_title">Los geht’s</string>
+    <string name="onboarding_next">Weiter</string>
+    <string name="onboarding_finish">Fertig</string>
+
+    <!-- Onboarding steps -->
+    <string name="onboarding_step1">
+        Du kannst nur eine Nachricht pro Benutzer und Tag senden — aber mehrere verschiedene Nutzer anschreiben.
+        Freunde können mit 👍 👎 😐 reagieren.
+        Verdiene Gold für den Shop, indem du Nachrichten sendest und gute Reaktionen erhältst!
+    </string>
+    <string name="onboarding_step2">
+        Entdecke neue Leute im Swipe-Modus — du startest mit 50 Swipes pro Tag.
+    </string>
+    <string name="onboarding_step3">
+        Nutze deine Statusnachricht, um den Ton anzugeben: schreibe etwas Interessantes über dich
+        oder etwas, das dich gerade beschäftigt.
+    </string>
+
     <!-- Allgemein -->
     <string name="common_saving">Wird gespeichert …</string>
 
@@ -14,3 +33,5 @@
     <string name="onboarding_error_create_profile">Profil konnte nicht erstellt werden</string>
     <string name="onboarding_error_fcm_token">FCM-Token konnte nicht abgerufen werden</string>
 </resources>
+
+

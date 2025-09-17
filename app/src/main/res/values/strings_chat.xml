@@ -29,4 +29,17 @@
 
     <string name="chat_toast_empty">Your message cannot be empty!</string>
     <string name="chat_swipes_reached">You’ve reached your daily swipes. Go Pro for unlimited swipes.</string>
+
+    <!-- Chat text field -->
+    <string name="chat_placeholder">Write something kind…</string>
+
+    <!-- Swipe limit / rewarded ad dialog -->
+    <string name="chat_out_of_swipes_title">Out of swipes</string>
+    <string name="chat_out_of_swipes_body">You’ve reached today’s swipe limit. Watch a short ad to reset your swipes to 0.</string>
+    <string name="chat_out_of_swipes_confirm">Watch ad to reset swipes</string>
+    <string name="chat_out_of_swipes_later">Maybe later</string>
+
+    <!-- Rewarded ad flow toasts -->
+    <string name="chat_ad_unavailable">Unable to show ad right now.</string>
+    <string name="chat_swipes_reset_success">Swipes reset!</string>
 </resources>

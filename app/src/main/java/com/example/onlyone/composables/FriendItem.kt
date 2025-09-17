@@ -212,25 +212,22 @@ fun FriendItem(
                     IconButton(onClick = { favDialogVisible = true }) {
                         Image(
                             painter = painterResource(id = R.drawable.favourite_message_icon),
-                            contentDescription = "Show favourite message",
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape),
+                            contentDescription = stringResource(R.string.friends_cd_show_favourite),
+                            modifier = Modifier.size(32.dp).clip(CircleShape),
                             contentScale = ContentScale.Crop
                         )
                     }
                     IconButton(onClick = { achDialogVisible = true }) {
                         Icon(
                             imageVector = Icons.Filled.EmojiEvents,
-                            contentDescription = "Show achievements",
+                            contentDescription = stringResource(R.string.friends_cd_show_achievements),
                             tint = Color.Yellow
                         )
                     }
-                    // 👤 Profile details
                     IconButton(onClick = { detailsDialogVisible = true }) {
                         Icon(
                             imageVector = Icons.Filled.Person,
-                            contentDescription = "Profile",
+                            contentDescription = stringResource(R.string.friends_cd_profile),
                             tint = Color.Cyan
                         )
                     }
@@ -344,30 +341,35 @@ fun FriendItem(
             }
 
             // Favourite message (DEFAULT color)
+            // --- Favourite message dialog
             if (favDialogVisible) {
                 CustomAlertDialog(theme = theme, onDismiss = { favDialogVisible = false }) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Favourite message", style = MaterialTheme.typography.h6)
+                        Text(stringResource(R.string.chat_msg_title), style = MaterialTheme.typography.h6, color = theme.textColor)
                         Spacer(Modifier.height(8.dp))
-                        Text(favouriteMessage?.text?.takeIf { it.isNotBlank() } ?: "No favourite message yet.")
+                        Text(favouriteMessage?.text?.takeIf { it.isNotBlank() } ?: stringResource(R.string.chat_msg_no_fav), color = theme.textColor)
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            TextButton(onClick = { favDialogVisible = false }) { Text("OK") }
+                            TextButton(onClick = { favDialogVisible = false }) {
+                                Text(stringResource(R.string.common_ok), color = theme.textColor)
+                            }
                         }
                     }
                 }
             }
 
-            // Achievement count (DEFAULT color)
+            // --- Achievements dialog
             if (achDialogVisible) {
                 CustomAlertDialog(theme = theme, onDismiss = { achDialogVisible = false }) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Achievements", style = MaterialTheme.typography.h6)
+                        Text(stringResource(R.string.friends_dialog_achievements_title), style = MaterialTheme.typography.h6, color = theme.textColor)
                         Spacer(Modifier.height(8.dp))
-                        Text("Total achievements: $achievementCount")
+                        Text(stringResource(R.string.friends_dialog_achievements_total, achievementCount), color = theme.textColor)
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            TextButton(onClick = { achDialogVisible = false }) { Text("OK") }
+                            TextButton(onClick = { achDialogVisible = false }) {
+                                Text(stringResource(R.string.common_ok), color = theme.textColor)
+                            }
                         }
                     }
                 }

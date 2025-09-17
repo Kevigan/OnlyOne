@@ -29,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.example.onlyone.R
+import com.example.onlyone.RewardedAds
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.composables.mapAvatarIdToDrawable
 import com.example.onlyone.data.Message
@@ -124,6 +125,17 @@ fun ChatView(
     var selectedLanguage by remember { mutableStateOf("any") }
     LaunchedEffect(user.uid) {
         userViewModel.getSearchUserLanguage { savedLang -> selectedLanguage = savedLang }
+    }
+
+    // --- Watch Ad to Reset Swipes Dialog ---
+    var showResetDialog by rememberSaveable { mutableStateOf(false) }
+
+    // If opening ChatView for random users and already at/over limit, show dialog.
+    LaunchedEffect(isRandom, engagementStatus?.swipesUsed, user.maxSwipes) {
+        val used = engagementStatus?.swipesUsed ?: 0
+        if (isRandom && used >= user.maxSwipes) {
+            showResetDialog = true
+        }
     }
 
     // ----------------- Screen -----------------
@@ -273,12 +285,7 @@ fun ChatView(
                                 value = messageText,
                                 onValueChange = { messageText = it },
                                 label = null,
-                                placeholder = {
-                                    Text(
-                                        "Write something kind…",
-                                        color = theme.textColor.copy(alpha = 0.6f)
-                                    )
-                                },
+                                placeholder = { Text(stringResource(R.string.chat_placeholder), color = theme.textColor.copy(alpha = 0.6f)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
@@ -371,6 +378,8 @@ fun ChatView(
                                     is MessageResult.Error -> {
                                         Toast.makeText(context, context.getString(R.string.chat_send_error), Toast.LENGTH_LONG).show()
                                     }
+
+                                    else -> {}
                                 }
                             }
                         },
@@ -437,7 +446,8 @@ fun ChatView(
                         val currentSwipes = engagementStatus?.swipesUsed ?: 0
                         val maxSwipes = user.maxSwipes
                         if (currentSwipes >= maxSwipes) {
-                            Toast.makeText(context, context.getString(R.string.chat_swipes_reached), Toast.LENGTH_LONG).show()
+                            // Show the reset dialog instead of just a toast
+                            showResetDialog = true
                             return@IconButton
                         }
 
@@ -485,7 +495,69 @@ fun ChatView(
         }
     }
 
-    // ---- Dialog with outer overlay ----
+    // ---- Watch-ad-to-reset dialog ----
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.chat_out_of_swipes_title),
+                    color = theme.textColor,
+                    style = MaterialTheme.typography.h6
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.chat_out_of_swipes_body),
+                    color = theme.textColor.copy(alpha = 0.9f)
+                )
+            },
+            confirmButton = {
+                // capture activity in a composable scope, but DON'T call LocalContext in onClick
+                val activity = context as? android.app.Activity
+                Button(
+                    onClick = {
+                        if (activity == null) {
+                            Toast.makeText(context, context.getString(R.string.chat_ad_unavailable), Toast.LENGTH_SHORT).show()
+                            showResetDialog = false
+                            return@Button
+                        }
+                        RewardedAds.show(
+                            activity,
+                            onReward = {
+                                coroutineScope.launch {
+                                    userViewModel.resetSwipesAfterAd(
+                                        onSuccess = {
+                                            Toast.makeText(context, context.getString(R.string.chat_swipes_reset_success), Toast.LENGTH_SHORT).show()
+                                            showResetDialog = false
+                                            // optional: auto-fetch new users if user had none
+                                            coroutineScope.launch { userViewModel.loadRandomUserBatch(showToasts = true) }
+                                        },
+                                        onError = { msg ->
+                                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }
+                            },
+                            onClosed = { showResetDialog = false }
+                        )
+                    }
+                ) {
+                    Text(stringResource(R.string.chat_out_of_swipes_confirm), color = theme.textColor)
+                }
+            }
+            ,
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text(stringResource(R.string.chat_out_of_swipes_later), color = theme.textColor)
+                }
+            },
+            backgroundColor = Color(0xCC1C1C1C),
+            contentColor = theme.textColor
+        )
+    }
+
+    // ---- Prewritten suggestions dialog ----
     if (showSuggestions) {
         Dialog(
             onDismissRequest = { showSuggestions = false },

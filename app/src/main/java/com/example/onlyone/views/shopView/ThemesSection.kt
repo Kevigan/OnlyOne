@@ -1,7 +1,6 @@
 // ThemesSection.kt
 package com.example.onlyone.views.shopView
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
@@ -38,9 +36,9 @@ fun ThemesSection(
     theme: ThemeTokens
 ) {
     val buttonColors =  ButtonDefaults.buttonColors(
-        backgroundColor = theme.buttonColor,           // ← button fill
+        backgroundColor = theme.buttonBackgroundColor,           // ← button fill
         contentColor = theme.textColor,         // ← text & icon tint
-        disabledBackgroundColor = theme.cardBackground.copy(alpha = 0.4f),
+        disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
         disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
     )
     CustomColorOverlay(
@@ -99,7 +97,7 @@ fun ThemesSection(
                                 Box(
                                     modifier = Modifier
                                         .matchParentSize()
-                                        .background(tokens.overlayColor)
+                                        //.background(tokens.overlayColor)
                                 )
                             } ?: run {
                                 Box(

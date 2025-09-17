@@ -93,7 +93,7 @@ fun MoodStatusCardContent(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = theme.cardContentColor,
+                        textColor = theme.textColor,
                         cursorColor = theme.borderColor,
                         focusedBorderColor = theme.borderColor,
                         unfocusedBorderColor = theme.cardContentColor.copy(alpha = 0.5f),
