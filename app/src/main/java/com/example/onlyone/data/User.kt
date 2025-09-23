@@ -43,6 +43,7 @@ data class PublicUser(
     // 🆕 New
     val gender: String = "unspecified",
     val age: Int? = null,
+    val isAdult: Boolean = false,
     val city: String = ""
 )
 
@@ -119,6 +120,7 @@ data class UserComposite(
     val city: String,
 
     // 🆕 From users_private
-    val isVerified: Boolean
+    val isVerified: Boolean,
+    val isAdult: Boolean
 )
 

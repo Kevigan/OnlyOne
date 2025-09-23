@@ -28,19 +28,23 @@ import com.example.onlyone.theme.ThemeTokens
 @Composable
 fun ThemesSection(
     currentThemeId: ThemeId,
-    ownedThemeIds: List<Int>,
+    ownedThemeIds: List<Int>,              // 1-based ids from DB (e.g., [1,2])
     loadingThemeId: ThemeId?,
     onSelectTheme: (ThemeId) -> Unit,
     onBuyTheme: (ThemeId) -> Unit,
     ids: List<ThemeId> = ThemeId.values().toList(),
     theme: ThemeTokens
 ) {
-    val buttonColors =  ButtonDefaults.buttonColors(
-        backgroundColor = theme.buttonBackgroundColor,           // ← button fill
-        contentColor = theme.textColor,         // ← text & icon tint
+    // Cache membership for O(1) lookups
+    val ownedSet = remember(ownedThemeIds) { ownedThemeIds.toSet() }
+
+    val buttonColors = ButtonDefaults.buttonColors(
+        backgroundColor = theme.buttonBackgroundColor,
+        contentColor = theme.textColor,
         disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
         disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
     )
+
     CustomColorOverlay(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(percent = 12),
@@ -66,11 +70,12 @@ fun ThemesSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(ids) { id ->
+                // key by stable 1-based id to avoid recomposition artifacts
+                items(ids, key = { it.id }) { id ->
                     val tokens: ThemeTokens = ThemeRegistry.tokens(id)
                     val isSelected = id == currentThemeId
                     val isLoading = loadingThemeId == id
-                    val isOwned = ownedThemeIds.contains(id.ordinal)
+                    val isOwned = ownedSet.contains(id.id)   // ← FIX: use 1-based id
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -94,11 +99,7 @@ fun ThemesSection(
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .matchParentSize()
-                                        //.background(tokens.overlayColor)
-                                )
+                                Box(modifier = Modifier.matchParentSize())
                             } ?: run {
                                 Box(
                                     modifier = Modifier
@@ -120,12 +121,12 @@ fun ThemesSection(
 
                         when {
                             isSelected -> {
-                                Button(onClick = {},colors = buttonColors, enabled = false) {
+                                Button(onClick = {}, colors = buttonColors, enabled = false) {
                                     Text(stringResource(R.string.common_selected), color = theme.textColor)
                                 }
                             }
                             isOwned -> {
-                                Button(onClick = { onSelectTheme(id) },colors = buttonColors, enabled = !isLoading) {
+                                Button(onClick = { onSelectTheme(id) }, colors = buttonColors, enabled = !isLoading) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
@@ -138,7 +139,7 @@ fun ThemesSection(
                                 }
                             }
                             else -> {
-                                Button(onClick = { onBuyTheme(id) },colors = buttonColors, enabled = !isLoading) {
+                                Button(onClick = { onBuyTheme(id) }, colors = buttonColors, enabled = !isLoading) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),

@@ -5,10 +5,9 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material.*
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +20,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.data.LocalMessage
+import com.example.onlyone.data.ReportReason
+import com.example.onlyone.data.ReportResult
 import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
@@ -36,17 +37,33 @@ fun ReceivedMessageItemBig(
     theme: ThemeTokens
 ) {
     val context = LocalContext.current
-    var showBlockDialog by remember { mutableStateOf(false) }
 
-    // Observe real local favourites (Room) to reflect bookmark state
+    var showBlockDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var reasonExpanded by remember { mutableStateOf(false) }
+    var selectedReason by remember { mutableStateOf<ReportReason?>(null) }
+    var isReporting by remember { mutableStateOf(false) }
+
+    // Observe local favourites (Room) to reflect bookmark state
     val favorites by chatViewModel.observeFavoriteMessages().collectAsState(initial = emptyList())
     val isSaved by remember(favorites, message.id) {
         derivedStateOf { favorites.any { it.id == message.id } }
     }
 
+    // Mark read on enter
     LaunchedEffect(message.id) {
         chatViewModel.markMessageAsRead(message)
     }
+
+    // Localized reason items (label -> enum)
+    val reasonItems = listOf(
+        stringResource(R.string.report_reason_racism) to ReportReason.RACISM,
+        stringResource(R.string.report_reason_harassment) to ReportReason.HARASSMENT,
+        stringResource(R.string.report_reason_sexual) to ReportReason.SEXUAL,
+        stringResource(R.string.report_reason_spam) to ReportReason.SPAM,
+        stringResource(R.string.report_reason_self_harm) to ReportReason.SELF_HARM,
+        stringResource(R.string.report_reason_other) to ReportReason.OTHER
+    )
 
     CustomColorOverlay(
         modifier = modifier,
@@ -74,6 +91,15 @@ fun ReceivedMessageItemBig(
                     .fillMaxWidth()
                     .padding(bottom = 12.dp)
                     .align(Alignment.CenterHorizontally)
+            )
+
+            // Separator between message and feedback header
+            Divider(
+                color = theme.textColor.copy(alpha = 0.2f),
+                thickness = 1.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
             )
 
             if (message.feedback == -10) {
@@ -155,12 +181,21 @@ fun ReceivedMessageItemBig(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Save/Unsave + Block row
+            // Separator between feedback area and action row
+            Divider(
+                color = theme.textColor.copy(alpha = 0.2f),
+                thickness = 1.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            )
+
+            // Save / Block / Report row
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 📑 Local save/unsave toggle (reactive)
+                // Save / Unsave
                 Icon(
                     painter = painterResource(
                         id = if (isSaved) R.drawable.baseline_bookmark_24
@@ -197,6 +232,7 @@ fun ReceivedMessageItemBig(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
+                // Block
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_block_24),
                     contentDescription = stringResource(R.string.cd_block_user),
@@ -205,9 +241,25 @@ fun ReceivedMessageItemBig(
                         .size(28.dp)
                         .clickable { showBlockDialog = true }
                 )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Report
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_report_24),
+                    contentDescription = stringResource(R.string.cd_report_message),
+                    tint = Color(0xFFFF9800),
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable {
+                            selectedReason = null
+                            showReportDialog = true
+                        }
+                )
             }
         }
 
+        // Block dialog
         if (showBlockDialog) {
             CustomAlertDialog(
                 borderColor = Color.Yellow,
@@ -250,5 +302,137 @@ fun ReceivedMessageItemBig(
             }
         }
 
+        // Report dialog
+        if (showReportDialog) {
+            CustomAlertDialog(
+                borderColor = Color(0xFFFF9800),
+                theme = theme,
+                onDismiss = { showReportDialog = false }
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.report_dialog_title),
+                        style = MaterialTheme.typography.h6,
+                        color = theme.textColor
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.report_dialog_body),
+                        style = MaterialTheme.typography.body2,
+                        textAlign = TextAlign.Center,
+                        color = theme.textColor
+                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    // Dropdown selector
+                    Box {
+                        val label = selectedReason?.let { sel ->
+                            reasonItems.firstOrNull { it.second == sel }?.first
+                        } ?: stringResource(R.string.report_select_reason)
+
+                        OutlinedButton(
+                            onClick = { reasonExpanded = true },
+                            enabled = !isReporting
+                        ) {
+                            Text(label, color = theme.textColor)
+                        }
+                        DropdownMenu(
+                            expanded = reasonExpanded,
+                            onDismissRequest = { reasonExpanded = false }
+                        ) {
+                            reasonItems.forEach { (title, value) ->
+                                DropdownMenuItem(
+                                    onClick = {
+                                        selectedReason = value
+                                        reasonExpanded = false
+                                    }
+                                ) {
+                                    Text(title)
+                                }
+                            }
+                        }
+                    }
+
+                    // Optional loader
+                    if (isReporting) {
+                        Spacer(Modifier.height(8.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFFFF9800)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = { showReportDialog = false }) {
+                            Text(stringResource(R.string.common_cancel), color = theme.textColor)
+                        }
+                        TextButton(
+                            onClick = {
+                                val reason = selectedReason
+                                if (reason != null && !isReporting) {
+                                    isReporting = true
+                                    chatViewModel.reportMessageAndReturn(message, reason, null) { res ->
+                                        isReporting = false
+                                        when (res) {
+                                            ReportResult.Success -> {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.report_toast_sent),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                showReportDialog = false
+                                            }
+                                            ReportResult.Duplicate -> {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.report_toast_duplicate),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                showReportDialog = false
+                                            }
+                                            ReportResult.Invalid -> {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.report_toast_invalid),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                            is ReportResult.Error -> {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.report_toast_error),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+
+                                            else -> {}
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = selectedReason != null && !isReporting
+                        ) {
+                            Text(
+                                stringResource(R.string.report_send_button),
+                                color = if (selectedReason != null && !isReporting)
+                                    Color(0xFFFF9800)
+                                else
+                                    theme.textColor.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

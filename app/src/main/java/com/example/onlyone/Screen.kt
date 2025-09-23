@@ -40,4 +40,8 @@ sealed class Screen(val route: String, val title: String){
         fun createRoute(goHome: Boolean = false): String = "onboarding?goHome=$goHome"
     }
 
+    object AgeGateScreen : Screen("age_gate/{uid}/{email}/{google}", title = "Age Gate") {
+        fun createRoute(uid: String, email: String, google: Boolean) =
+            "age_gate/$uid/$email/$google"
+    }
 }

@@ -7,7 +7,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,18 +30,57 @@ fun ProfileSettingsView(
     var username by remember { mutableStateOf("") }
     var ageInput by remember { mutableStateOf("") }     // keep as string for input control
     var city by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("") }
+
+    // ⚠️ Use API values internally, display pretty labels in the dropdown
+    val genderOptions: List<Pair<String, String>> = listOf(
+        "Male" to "male",
+        "Female" to "female",
+        "Non-binary" to "nonbinary",
+        "Other" to "other",
+        "Unspecified" to "unspecified"
+    )
+    var genderValue by remember { mutableStateOf("unspecified") } // store API value
+
+    var genderMenuExpanded by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
 
     // Prefill when user content changes
     LaunchedEffect(user) {
         if (!isSaving) {
             username = user?.username.orEmpty()
-            ageInput = user?.age?.takeIf { it in 1..99 }?.toString() ?: ""
+            // Show only valid (18..100), otherwise blank
+            ageInput = user?.age?.takeIf { it in 18..100 }?.toString() ?: ""
             city = user?.city.orEmpty()
-            gender = user?.gender.orEmpty()
+
+            // Normalize to API value; fallback to "unspecified"
+            val current = (user?.gender ?: "unspecified").lowercase()
+            genderValue = genderOptions.map { it.second }.firstOrNull { it == current } ?: "unspecified"
         }
     }
+
+    // --- Validation helpers ---
+    fun sanitizeAgeInput(raw: String): String {
+        val digits = raw.filter { it.isDigit() }.take(3)  // allow up to 3 digits
+        if (digits.isEmpty()) return ""
+        // Clamp upper bound only if user types > 100
+        val n = digits.toInt()
+        return if (n > 100) "100" else digits
+    }
+    val ageValid = ageInput.toIntOrNull()?.let { it in 18..100 } == true
+    val formValid = username.isNotBlank() && city.isNotBlank() && ageValid
+
+    // Reusable colors with error overrides (so border truly turns red)
+    @Composable
+    fun tfColors() = TextFieldDefaults.outlinedTextFieldColors(
+        textColor = theme.textColor,
+        cursorColor = theme.textColor,
+        focusedBorderColor = theme.textColor,
+        unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f),
+        disabledTextColor = theme.textColor,
+        errorBorderColor = MaterialTheme.colors.error,
+        errorCursorColor = MaterialTheme.colors.error,
+        errorLabelColor = MaterialTheme.colors.error
+    )
 
     Column(
         modifier = Modifier
@@ -65,39 +106,48 @@ fun ProfileSettingsView(
             value = username,
             onValueChange = { username = it.take(32) }, // soft cap
             modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = theme.textColor,
-                cursorColor = theme.textColor,
-                focusedBorderColor = theme.textColor,
-                unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f)
-            )
+            colors = tfColors()
         )
 
         Spacer(Modifier.height(12.dp))
 
-        // Age (1..99)
-        Text(
-            text = stringResource(R.string.onboarding_age_label),
-            style = MaterialTheme.typography.subtitle1,
-            color = theme.textColor
-        )
+        // Age label + "min. 18"
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = stringResource(R.string.onboarding_age_label),
+                style = MaterialTheme.typography.subtitle1,
+                color = theme.textColor
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "min. 18",
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.error
+            )
+        }
         Spacer(Modifier.height(6.dp))
         OutlinedTextField(
             value = ageInput,
             onValueChange = { raw ->
-                val digits = raw.filter { it.isDigit() }.take(2)
-                ageInput = digits
+                ageInput = if (raw.isBlank()) "" else sanitizeAgeInput(raw)
             },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = theme.textColor,
-                cursorColor = theme.textColor,
-                focusedBorderColor = theme.textColor,
-                unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f)
-            ),
-            placeholder = { Text("1–99", color = theme.textColor.copy(alpha = 0.6f)) }
+            isError = ageInput.isNotBlank() && !ageValid,
+            colors = tfColors(),
+            placeholder = { Text("18–100", color = theme.textColor.copy(alpha = 0.6f)) }
         )
+        if (ageInput.isNotBlank() && !ageValid) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.onboarding_form_invalid), // or a dedicated "Age must be 18–100"
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.error
+            )
+        }
 
         Spacer(Modifier.height(12.dp))
 
@@ -112,12 +162,7 @@ fun ProfileSettingsView(
             value = city,
             onValueChange = { city = it.take(50) },
             modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = theme.textColor,
-                cursorColor = theme.textColor,
-                focusedBorderColor = theme.textColor,
-                unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f)
-            ),
+            colors = tfColors(),
             placeholder = {
                 Text(
                     text = stringResource(R.string.onboarding_city_placeholder),
@@ -128,7 +173,7 @@ fun ProfileSettingsView(
 
         Spacer(Modifier.height(12.dp))
 
-        // Gender (Dropdown)
+        // Gender (Dropdown) — stores API value, shows label
         Text(
             text = stringResource(R.string.onboarding_gender_label),
             style = MaterialTheme.typography.subtitle1,
@@ -136,24 +181,16 @@ fun ProfileSettingsView(
         )
         Spacer(Modifier.height(6.dp))
 
-        var genderMenuExpanded by remember { mutableStateOf(false) }
-        val genderOptions = listOf("Male", "Female", "Other")
-
         Box {
+            val currentLabel = genderOptions.firstOrNull { it.second == genderValue }?.first ?: "Unspecified"
             OutlinedTextField(
-                value = gender,
+                value = currentLabel,
                 onValueChange = { /* read-only via dropdown */ },
                 readOnly = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { genderMenuExpanded = true },
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    textColor = theme.textColor,
-                    cursorColor = theme.textColor,
-                    focusedBorderColor = theme.textColor,
-                    unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f),
-                    disabledTextColor = theme.textColor
-                ),
+                colors = tfColors(),
                 placeholder = {
                     Text(
                         text = stringResource(R.string.onboarding_gender_placeholder),
@@ -165,12 +202,12 @@ fun ProfileSettingsView(
                 expanded = genderMenuExpanded,
                 onDismissRequest = { genderMenuExpanded = false }
             ) {
-                genderOptions.forEach { option ->
+                genderOptions.forEach { (label, value) ->
                     DropdownMenuItem(onClick = {
-                        gender = option
+                        genderValue = value  // store API value
                         genderMenuExpanded = false
                     }) {
-                        Text(option)
+                        Text(label)
                     }
                 }
             }
@@ -181,13 +218,21 @@ fun ProfileSettingsView(
         // Save button
         Button(
             onClick = {
-                val ageOrNull = ageInput.toIntOrNull()?.coerceIn(1, 99)
+                if (!formValid) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.onboarding_form_invalid),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@Button
+                }
+
                 val updates = mutableMapOf<String, Any>(
                     "username" to username,
-                    "city" to city
+                    "city" to city,
+                    "gender" to genderValue // send API value (lowercase)
                 )
-                if (ageOrNull != null) updates["age"] = ageOrNull
-                if (gender.isNotBlank()) updates["gender"] = gender
+                ageInput.toIntOrNull()?.let { updates["age"] = it }
 
                 isSaving = true
                 userViewModel.updatePublicProfile(
@@ -210,7 +255,7 @@ fun ProfileSettingsView(
                     }
                 )
             },
-            enabled = !isSaving,
+            enabled = !isSaving && formValid,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)

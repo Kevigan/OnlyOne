@@ -14,7 +14,7 @@
     <string name="settings_privacy_collect_1">Account email and a display username</string>
     <string name="settings_privacy_collect_2">Status text you set</string>
     <string name="settings_privacy_collect_3">Messages and reactions you send/receive</string>
-    <string name="settings_privacy_collect_4">Swipe usage and subscription status</string>
+    <string name="settings_privacy_collect_4">Swipe usage</string>
     <string name="settings_privacy_collect_5">Friends list and basic profile data</string>
     <string name="settings_privacy_collect_6">Notification token (to deliver notifications)</string>
 
@@ -27,12 +27,14 @@
     <string name="settings_privacy_store_title">Where it’s stored</string>
     <string name="settings_privacy_store_body">
         Authentication is handled by Firebase Auth. App data lives in Firebase Firestore.
-        Your device keeps a small local cache of recent data (e.g., recent messages) to speed things up.
+        Your device keeps a small local cache of recent data (e.g., recent messages and profile info) to speed things up.
     </string>
 
     <string name="settings_privacy_retention_title">Retention</string>
     <string name="settings_privacy_retention_body">
-        Recent messages are cached on your device and may be cleared automatically.
+        Messages are automatically deleted from the server after 24 hours.
+        You may save copies locally on your device if you wish.
+        Recent messages and user profiles are cached on your device and may be cleared automatically.
         Server data is kept while your account is active or as needed to operate the service.
         You can request deletion of your account and related data at any time.
     </string>
@@ -45,11 +47,11 @@
 
     <string name="settings_privacy_contact_title">Contact</string>
     <string name="settings_privacy_contact_body">Email support@onlyone.app for privacy questions or requests.</string>
-    <string name="settings_privacy_last_updated">Last updated: September 9, 2025</string>
+    <string name="settings_privacy_last_updated">Last updated: September 17, 2025</string>
 
     <!-- If you keep interactive privacy toggles/buttons -->
     <string name="settings_privacy_notif_messages">Message notifications</string>
-    <string name="settings_privacy_notif_feedback">Feedback &amp; promo notifications</string>
+    <string name="settings_privacy_notif_feedback">Feedback &amp; app updates</string>
     <string name="settings_privacy_review_consent">Review ad consent</string>
     <string name="settings_privacy_export_data">Export my data</string>
     <string name="settings_privacy_delete_account">Delete my account</string>
@@ -60,5 +62,5 @@
     <string name="settings_delete_confirm">Delete</string>
     <string name="settings_delete_cancel">Cancel</string>
     <string name="settings_delete_success">Account deleted.</string>
-
 </resources>
+

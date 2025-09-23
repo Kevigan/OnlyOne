@@ -1,64 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Datenschutz (In-App + Aktionen) -->
+    <!-- Datenschutz (Inhalt + Aktionen) -->
     <string name="settings_privacy_header">Datenschutz</string>
     <string name="settings_privacy_subtitle">Verwalte deine Datenschutz- und Datenoptionen.</string>
 
-    <string name="settings_privacy_intro_title">Kurze Datenschutz-Zusammenfassung</string>
+    <string name="settings_privacy_intro_title">Kurze Datenschutzerklärung</string>
     <string name="settings_privacy_intro_body">
-        Dies ist eine leicht verständliche Zusammenfassung, wie Only One mit Daten umgeht.
-        Für Fragen oder Anfragen kontaktiere uns bitte.
+        Dies ist eine leicht verständliche Übersicht darüber, wie Only One mit deinen Daten umgeht.
+        Bei Fragen oder Anfragen kontaktiere uns bitte.
     </string>
 
-    <string name="settings_privacy_collect_title">Welche Daten wir erheben</string>
-    <string name="settings_privacy_collect_1">Konto-E-Mail und Anzeigename</string>
-    <string name="settings_privacy_collect_2">Dein gesetzter Status-Text</string>
-    <string name="settings_privacy_collect_3">Nachrichten und Reaktionen, die du sendest/empfängst</string>
-    <string name="settings_privacy_collect_4">Swipe-Nutzung und Abo-Status</string>
-    <string name="settings_privacy_collect_5">Freundesliste und Basis-Profilangaben</string>
-    <string name="settings_privacy_collect_6">Benachrichtigungs-Token (für Push-Nachrichten)</string>
+    <string name="settings_privacy_collect_title">Welche Daten wir erfassen</string>
+    <string name="settings_privacy_collect_1">Deine Konto-E-Mail und deinen Anzeigenamen</string>
+    <string name="settings_privacy_collect_2">Statusnachrichten, die du einträgst</string>
+    <string name="settings_privacy_collect_3">Nachrichten und Reaktionen, die du sendest oder empfängst</string>
+    <string name="settings_privacy_collect_4">Deine Swipe-Nutzung</string>
+    <string name="settings_privacy_collect_5">Freundesliste und grundlegende Profildaten</string>
+    <string name="settings_privacy_collect_6">Benachrichtigungstoken (für Push-Mitteilungen)</string>
 
-    <string name="settings_privacy_use_title">Wofür wir sie nutzen</string>
-    <string name="settings_privacy_use_1">Anmeldung und Sitzungsverwaltung</string>
-    <string name="settings_privacy_use_2">Zustellung von Nachrichten, Reaktionen und Benachrichtigungen</string>
-    <string name="settings_privacy_use_3">Durchsetzung von Tageslimits und Swipe-Kontingenten</string>
-    <string name="settings_privacy_use_4">Verbesserung der Zuverlässigkeit und Missbrauchsvermeidung</string>
+    <string name="settings_privacy_use_title">Wie wir die Daten nutzen</string>
+    <string name="settings_privacy_use_1">Um dein Konto zu authentifizieren und dich angemeldet zu halten</string>
+    <string name="settings_privacy_use_2">Um Nachrichten, Reaktionen und Benachrichtigungen zuzustellen</string>
+    <string name="settings_privacy_use_3">Um tägliche Limits und Swipe-Kontingente durchzusetzen</string>
+    <string name="settings_privacy_use_4">Um Zuverlässigkeit zu verbessern und Missbrauch zu verhindern</string>
 
     <string name="settings_privacy_store_title">Wo die Daten gespeichert werden</string>
     <string name="settings_privacy_store_body">
-        Die Anmeldung erfolgt über Firebase Auth. App-Daten liegen in Firebase Firestore.
-        Dein Gerät hält einen kleinen lokalen Cache (z. B. jüngste Nachrichten), um die App zu beschleunigen.
+        Die Authentifizierung erfolgt über Firebase Auth. App-Daten liegen in Firebase Firestore.
+        Auf deinem Gerät wird ein kleiner Zwischenspeicher angelegt (z. B. letzte Nachrichten und Profildaten), um die App schneller zu machen.
     </string>
 
     <string name="settings_privacy_retention_title">Speicherdauer</string>
     <string name="settings_privacy_retention_body">
-        Jüngste Nachrichten können lokal zwischengespeichert und automatisch bereinigt werden.
-        Server-Daten werden gespeichert, solange dein Konto aktiv ist oder soweit für den Betrieb erforderlich.
-        Du kannst jederzeit die Löschung deines Kontos und zugehöriger Daten anfordern.
+        Nachrichten werden nach 24 Stunden automatisch vom Server gelöscht.
+        Du kannst sie bei Bedarf lokal auf deinem Gerät speichern.
+        Letzte Nachrichten und Profildaten werden lokal zwischengespeichert und können automatisch gelöscht werden.
+        Serverdaten bleiben gespeichert, solange dein Konto aktiv ist oder solange sie für den Betrieb notwendig sind.
+        Du kannst jederzeit die Löschung deines Kontos und der zugehörigen Daten anfordern.
     </string>
 
-    <string name="settings_privacy_choices_title">Deine Optionen</string>
-    <string name="settings_privacy_choices_1">App- und Chat-Sprache festlegen</string>
-    <string name="settings_privacy_choices_2">Status oder Profilangaben bearbeiten</string>
-    <string name="settings_privacy_choices_3">Benachrichtigungen und Werbe-Einwilligung steuern (falls zutreffend)</string>
+    <string name="settings_privacy_choices_title">Deine Möglichkeiten</string>
+    <string name="settings_privacy_choices_1">App- und Chatsprache einstellen</string>
+    <string name="settings_privacy_choices_2">Status oder Profilinformationen bearbeiten</string>
+    <string name="settings_privacy_choices_3">Benachrichtigungen und Werbeeinwilligungen steuern (falls zutreffend)</string>
     <string name="settings_privacy_choices_4">Datenexport anfordern oder Konto löschen</string>
 
     <string name="settings_privacy_contact_title">Kontakt</string>
-    <string name="settings_privacy_contact_body">Für Datenschutz-Anfragen: support@onlyone.app</string>
-    <string name="settings_privacy_last_updated">Zuletzt aktualisiert: 9. September 2025</string>
+    <string name="settings_privacy_contact_body">Schreibe an support@onlyone.app für Datenschutzfragen oder -anfragen.</string>
+    <string name="settings_privacy_last_updated">Zuletzt aktualisiert: 17. September 2025</string>
 
-    <!-- Interaktive Datenschutz-Aktionen -->
+    <!-- Falls interaktive Optionen vorhanden -->
     <string name="settings_privacy_notif_messages">Nachrichten-Benachrichtigungen</string>
-    <string name="settings_privacy_notif_feedback">Feedback- &amp; Promo-Benachrichtigungen</string>
-    <string name="settings_privacy_review_consent">Werbe-Einwilligung prüfen</string>
+    <string name="settings_privacy_notif_feedback">Feedback &amp; App-Updates</string>
+    <string name="settings_privacy_review_consent">Werbeeinwilligung überprüfen</string>
     <string name="settings_privacy_export_data">Meine Daten exportieren</string>
-    <string name="settings_privacy_delete_account">Konto löschen</string>
+    <string name="settings_privacy_delete_account">Mein Konto löschen</string>
 
-    <!-- Löschdialog -->
+    <!-- Lösch-Dialog -->
     <string name="settings_delete_title">Konto löschen?</string>
-    <string name="settings_delete_body">Dies löscht dein Konto und alle zugehörigen Daten dauerhaft. Dieser Vorgang kann nicht rückgängig gemacht werden.</string>
+    <string name="settings_delete_body">Dies löscht dein Konto und alle zugehörigen Daten dauerhaft. Dies kann nicht rückgängig gemacht werden.</string>
     <string name="settings_delete_confirm">Löschen</string>
     <string name="settings_delete_cancel">Abbrechen</string>
     <string name="settings_delete_success">Konto gelöscht.</string>
-
 </resources>
+

@@ -112,7 +112,6 @@ fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel
         }
 
         // Overlay
-        // Overlay
         selectedSection?.let { section ->
             Box(modifier = Modifier.fillMaxSize()) {
                 // SCRIM that dismisses when tapped

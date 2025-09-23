@@ -2,13 +2,11 @@ package com.example.onlyone.views
 
 import CustomAlertDialog
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -16,9 +14,6 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,16 +23,12 @@ import com.example.onlyone.Screen
 import com.example.onlyone.ads.TestVideoAdButton
 import com.example.onlyone.composables.*
 import com.example.onlyone.data.LocalMessage
-import com.example.onlyone.theme.ThemeRegistry
 import com.example.onlyone.theme.ThemeTokens
-import com.example.onlyone.theme.ThemeViewModel
-import com.example.onlyone.utils.DailyResetTimer
 import com.example.onlyone.utils.formatTimeLeft
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-
 
 @Composable
 fun MainView(
@@ -47,52 +38,67 @@ fun MainView(
     sessionViewModel: SessionViewModel,
     theme: ThemeTokens
 ) {
+    // ─────────────────────────────────────────────────────────────────────────────
+    // System UI colors (run on theme change, not every recomposition)
+    // ─────────────────────────────────────────────────────────────────────────────
     val systemUiController = rememberSystemUiController()
-    val user by userViewModel.user.observeAsState()
-
-    // 24h (received) messages
-    val localMessages by chatViewModel.observeLocalMessages(user?.uid.orEmpty())
-        .collectAsState(initial = emptyList())
-
-    // Saved favorites (VM exposes no-arg observer)
-    val favoriteMessages by chatViewModel.observeFavoriteMessages()
-        .collectAsState(initial = emptyList())
-
-    val millisUntilReset by DailyResetTimer.timeUntilReset.collectAsState()
-
-    var selectedMessage by remember { mutableStateOf<LocalMessage?>(null) }
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var isSyncing by remember { mutableStateOf(false) }
-    var syncFailed by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-    val currentFavId = user?.favouriteMessage?.messageId
-    // Local UI state to prevent double taps and show immediate selection
-    var busyFavId by remember { mutableStateOf<String?>(null) }
-    var pendingFavId by remember { mutableStateOf<String?>(null) }
-
-    // When the backend/userViewModel pushes the new favourite to `user`,
-    // clear the pending state so the real value drives the UI.
-    LaunchedEffect(currentFavId) { pendingFavId = null }
-
-    // Use either the pending value (optimistic) or the current one from user
-    val effectiveFavId = pendingFavId ?: currentFavId
-
-    // Sync on app start / user change
-    LaunchedEffect(user?.uid) {
-        val uid = user?.uid
-        if (uid != null && userViewModel.shouldLoadMessagesFor(uid)) {
-            isSyncing = true
-            syncFailed = !chatViewModel.syncMessagesFromServer(uid)
-            isSyncing = false
-        }
-    }
-
-    SideEffect {
+    LaunchedEffect(theme) {
         systemUiController.setStatusBarColor(color = Color.Transparent, darkIcons = true)
         systemUiController.setNavigationBarColor(color = Color.Transparent, darkIcons = false)
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Observed user & stable flows (avoid re-creating listeners on recomposition)
+    // ─────────────────────────────────────────────────────────────────────────────
+    val user by userViewModel.user.observeAsState()
+
+    val uid = user?.uid.orEmpty()
+
+    // Stabilize VM-provided flows so we don't rebuild them on recompositions
+    val localMsgsFlow = remember(uid) { chatViewModel.observeLocalMessages(uid) }
+    val localMessages by localMsgsFlow.collectAsState(initial = emptyList())
+
+    val favoriteFlow = remember { chatViewModel.observeFavoriteMessages() }
+    val favoriteMessages by favoriteFlow.collectAsState(initial = emptyList())
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Local UI state
+    // ─────────────────────────────────────────────────────────────────────────────
+    var selectedMessage by remember { mutableStateOf<LocalMessage?>(null) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var isSyncing by remember { mutableStateOf(false) }
+    var syncFailed by remember { mutableStateOf(false) }
+    var showReportsDialog by remember { mutableStateOf(false) }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Favourite optimistic UI state
+    val currentFavId = user?.favouriteMessage?.messageId
+    var busyFavId by remember { mutableStateOf<String?>(null) }
+    var pendingFavId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(currentFavId) { pendingFavId = null }
+    val effectiveFavId = pendingFavId ?: currentFavId
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // One-off effects
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Check admin access once per composable instance
+    LaunchedEffect(Unit) { chatViewModel.checkAdminAccess() }
+    val isAdmin by chatViewModel.isAdmin.collectAsState()
+
+    // Initial sync when user becomes available (guarded in VM)
+    LaunchedEffect(user?.uid) {
+        val id = user?.uid ?: return@LaunchedEffect
+        if (userViewModel.shouldLoadMessagesFor(id)) {
+            isSyncing = true
+            syncFailed = !chatViewModel.syncMessagesFromServer(id)
+            isSyncing = false
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // UI
+    // ─────────────────────────────────────────────────────────────────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -102,16 +108,29 @@ fun MainView(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val moodResId = user?.moodId?.let {
-                if (it != 0) mapMoodIdToDrawable(it) else R.drawable.baseline_tag_faces_24
-            } ?: R.drawable.baseline_tag_faces_24
+            // Top Row: quick actions
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 SmallResetButton("WM") { chatViewModel.hardResetWritten() }
                 TestVideoAdButton()
+
+                if (isAdmin) {
+                    OutlinedButton(
+                        onClick = {
+                            showReportsDialog = true
+                            chatViewModel.loadReports("open", 50)
+                        },
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("Moderation", fontSize = 12.sp)
+                    }
+                }
             }
+
+            // Stats / Profile section (inside overlay for theme look)
             CustomColorOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -135,7 +154,7 @@ fun MainView(
                             onFailure = {}
                         )
                     },
-                    onAvatarSelected = { newAvatarId ->          // NEW
+                    onAvatarSelected = { newAvatarId ->
                         userViewModel.updatePublicProfile(
                             updates = mapOf("avatarId" to newAvatarId),
                             onSuccess = {},
@@ -151,16 +170,14 @@ fun MainView(
                 )
             }
 
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ===== Tabs (NO overlay here) =====
+            // Tabs: Received / Saved
             var selectedTab by remember { mutableStateOf(0) }
             val tabs = listOf(
                 stringResource(R.string.main_tab_received),
                 stringResource(R.string.main_tab_saved)
             )
-
 
             Column(
                 modifier = Modifier
@@ -191,7 +208,7 @@ fun MainView(
                 Spacer(Modifier.height(8.dp))
 
                 when (selectedTab) {
-                    // --- RECEIVED tab ---
+                    // ── RECEIVED ────────────────────────────────────────────────
                     0 -> {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -257,7 +274,7 @@ fun MainView(
                         }
                     }
 
-                    // --- SAVED tab ---
+                    // ── SAVED ───────────────────────────────────────────────────
                     1 -> {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -265,12 +282,18 @@ fun MainView(
                         ) {
                             if (favoriteMessages.isEmpty()) {
                                 item {
-                                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                        Text(text = "No saved messages yet.", color = theme.textColor, fontSize = 14.sp)
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.main_no_messages),
+                                            color = theme.textColor,
+                                            fontSize = 14.sp
+                                        )
                                     }
                                 }
                             } else {
-                                // Saved tab content
                                 items(favoriteMessages) { fav ->
                                     val isThisSelected = (effectiveFavId == fav.id)
                                     val isProcessing = (busyFavId == fav.id)
@@ -330,7 +353,11 @@ fun MainView(
         }
     }
 
-    // Logout dialog (with CustomAlertDialog)
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Dialogs / Overlays
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    // Logout dialog
     if (showLogoutDialog) {
         CustomAlertDialog(
             theme = theme,
@@ -343,17 +370,13 @@ fun MainView(
                     style = MaterialTheme.typography.h6,
                     color = theme.textColor
                 )
-
                 Spacer(Modifier.height(12.dp))
-
                 Text(
                     text = stringResource(R.string.main_logout_text),
                     style = MaterialTheme.typography.body1,
                     color = theme.textColor
                 )
-
                 Spacer(Modifier.height(16.dp))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -376,7 +399,16 @@ fun MainView(
         }
     }
 
-    // Fullscreen message preview (only for Received)
+    // Admin moderation dialog
+    if (showReportsDialog) {
+        AdminReportsDialog(
+            chatViewModel = chatViewModel,
+            onDismiss = { showReportsDialog = false },
+            theme = theme
+        )
+    }
+
+    // Fullscreen message preview (Received)
     if (selectedMessage != null) {
         Box(
             modifier = Modifier

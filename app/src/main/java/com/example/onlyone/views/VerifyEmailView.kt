@@ -62,7 +62,7 @@ fun VerifyEmailView(
                     busy = false
                     if (verified) {
                         navController.navigate(
-                            Screen.SetUsernameScreen.createRoute(uid, email)
+                            Screen.AgeGateScreen.createRoute(uid, email, false)
                         ) {
                             popUpTo(Screen.VerifyEmailScreen.route) { inclusive = true }
                             popUpTo(Screen.LoginScreen.route) { inclusive = true }

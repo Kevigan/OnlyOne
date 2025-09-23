@@ -65,17 +65,18 @@ fun SetUsernameView(
         if (code in appLanguageCodes) code else "en"
 
     // Helpers
-    fun clampAgeInput(input: String): String {
-        // digits only
-        val digits = input.filter { it.isDigit() }.take(2) // 2 digits is enough for 1..99
-        if (digits.isEmpty()) return ""
-        val num = digits.toInt()
-        val clamped = min(99, max(1, num))
-        return clamped.toString()
+    // 1) replace your clampAgeInput with a non-clamping sanitizer
+    fun sanitizeAgeInput(input: String): String {
+        val digits = input.filter { it.isDigit() }.take(3)
+        // optionally cap max to 100 only when 3 digits
+        return if (digits.length == 3) {
+            val n = digits.toInt()
+            if (n > 100) "100" else digits
+        } else digits
     }
 
     fun isFormValid(): Boolean {
-        val ageOk = ageText.toIntOrNull()?.let { it in 1..99 } == true
+        val ageOk = ageText.toIntOrNull()?.let { it in 18..100 } == true
         val genderOk = gender in genderOptions
         val cityOk = city.isNotBlank() && city.length <= 50
         val usernameOk = username.isNotBlank()
@@ -128,34 +129,48 @@ fun SetUsernameView(
 
         Spacer(Modifier.height(16.dp))
 
-        // Age
-        Text(
-            text = stringResource(R.string.onboarding_age_label),
-            style = MaterialTheme.typography.h6,
-            color = theme.textColor,
+        // ===== Age =====
+        val ageInt = ageText.toIntOrNull()
+        val ageError = ageText.isNotEmpty() && (ageInt == null || ageInt !in 18..100)
+
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 6.dp, bottom = 4.dp)
-        )
+                .padding(start = 6.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.onboarding_age_label),
+                style = MaterialTheme.typography.h6,
+                color = theme.textColor
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = "min. 18",
+                style = MaterialTheme.typography.caption,       // small
+                color = MaterialTheme.colors.error              // red
+            )
+        }
+
         OutlinedTextField(
             value = ageText,
-            onValueChange = { new ->
-                // live clamp to 1..99 while typing
-                ageText = when {
-                    new.isBlank() -> ""
-                    else -> clampAgeInput(new)
-                }
-            },
+            onValueChange = { new -> ageText = if (new.isBlank()) "" else sanitizeAgeInput(new) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    "1–99",
-                    color = theme.textColor.copy(alpha = 0.6f)
-                )
-            },
+            placeholder = { Text("18–100", color = theme.textColor.copy(alpha = 0.6f)) },
+            isError = ageError,                                 // 🔴 turns border red
             colors = themedTextFieldColors(theme)
         )
+
+        if (ageError) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Please enter an age between 18 and 100.",
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.error
+            )
+        }
+
 
         Spacer(Modifier.height(16.dp))
 
@@ -266,7 +281,7 @@ fun SetUsernameView(
         }
 
         Spacer(Modifier.height(24.dp))
-
+        val ageValid = ageText.toIntOrNull()?.let { it in 18..100 } == true
         Button(
             onClick = {
                 if (!isFormValid()) {
@@ -292,6 +307,7 @@ fun SetUsernameView(
                             age = age,
                             gender = gender, // "m" | "f" | "d"
                             city = city,
+                            ageAffirmation = true,
                             onSuccess = {
                                 val appLang = clampAppLanguage(selectedAppLanguage)
 
@@ -301,7 +317,7 @@ fun SetUsernameView(
 
                                 userViewModel.loadUser()
                                 navController.navigate(Screen.OnboardingScreen.route) {
-                                    popUpTo(Screen.SetUsernameScreen.route) { inclusive = true } // prevent back to SetUsername
+                                    popUpTo(0) { inclusive = true } // prevent back to SetUsername
                                     launchSingleTop = true
                                 }
                             },
@@ -324,7 +340,7 @@ fun SetUsernameView(
                         isSaving = false
                     }
             },
-            enabled = !isSaving,
+            enabled = !isSaving&& ageValid,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(

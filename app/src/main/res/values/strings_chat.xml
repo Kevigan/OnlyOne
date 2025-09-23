@@ -42,4 +42,27 @@
     <!-- Rewarded ad flow toasts -->
     <string name="chat_ad_unavailable">Unable to show ad right now.</string>
     <string name="chat_swipes_reset_success">Swipes reset!</string>
+
+    <!-- Reporting -->
+    <string name="cd_report_message">Report message</string>
+    <string name="report_dialog_title">Report message</string>
+    <string name="report_dialog_body">Select a reason below. A moderator will review your report.</string>
+    <string name="report_select_reason">Select reason</string>
+    <string name="report_send_button">Send report</string>
+
+    <!-- Report reasons -->
+    <string name="report_reason_racism">Racism / Hate</string>
+    <string name="report_reason_harassment">Harassment</string>
+    <string name="report_reason_sexual">Sexual content</string>
+    <string name="report_reason_spam">Spam / Scams</string>
+    <string name="report_reason_self_harm">Self-harm encouragement</string>
+    <string name="report_reason_other">Other</string>
+
+    <!-- Report toasts -->
+    <string name="report_toast_sent">Report sent</string>
+    <string name="report_toast_duplicate">You already reported this message</string>
+    <string name="report_toast_invalid">Couldn´t send report (invalid)</string>
+    <string name="report_toast_error">Report failed. Try again</string>
+
+
 </resources>

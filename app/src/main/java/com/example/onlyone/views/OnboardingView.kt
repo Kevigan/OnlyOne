@@ -3,6 +3,7 @@
 package com.yourapp.ui.onboarding
 
 import CustomAlertDialog
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.spring
@@ -31,6 +32,9 @@ fun OnboardingView(
     theme: ThemeTokens,
     onDismiss: () -> Unit
 ) {
+    // 🚫 Block system back (gesture / nav bar)
+    BackHandler(enabled = true) { /* consume back */ }
+
     // strings from resources (composable-safe)
     val step1 = stringResource(R.string.onboarding_step1)
     val step2 = stringResource(R.string.onboarding_step2)
@@ -39,7 +43,6 @@ fun OnboardingView(
     val nextLabel = stringResource(R.string.onboarding_next)
     val finishLabel = stringResource(R.string.onboarding_finish)
 
-    // plain list (no composable calls inside)
     val steps = listOf(step1, step2, step3)
 
     var stepIndex by rememberSaveable { mutableStateOf(0) }
@@ -50,7 +53,9 @@ fun OnboardingView(
     CustomAlertDialog(
         theme = theme,
         borderColor = theme.borderColor,
-        onDismiss = onDismiss
+        // 🚫 Prevent dialog from dismissing via back press / outside tap
+        // (Assumes your CustomAlertDialog uses Dialog(onDismissRequest = …))
+        onDismiss = { /* no-op: only our button may finish */ }
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(20.dp),
@@ -98,7 +103,9 @@ fun OnboardingView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                Button(onClick = { if (isLast) onDismiss() else stepIndex++ }) {
+                Button(onClick = {
+                    if (isLast) onDismiss() else stepIndex++
+                }) {
                     Text(text = if (isLast) finishLabel else nextLabel, color = theme.textColor)
                 }
             }

@@ -3,12 +3,15 @@ package com.example.onlyone.repos
 import android.util.Log
 import com.example.dao.FavoriteMessageDao
 import com.example.dao.MessageDao
+import com.example.onlyone.data.AdminReportItem
 import com.example.onlyone.data.LocalFavoriteMessage
 import com.example.onlyone.data.LocalMessage
 import com.example.onlyone.utils.toFirestoreMap
 import com.example.onlyone.data.Message
 import com.example.onlyone.data.MessageResult
 import com.example.onlyone.data.PublicUser
+import com.example.onlyone.data.ReportReason
+import com.example.onlyone.data.ReportResult
 import com.example.onlyone.data.WrittenTodayEntity
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
@@ -151,7 +154,7 @@ class ChatRepository @Inject constructor(
         val now = System.currentTimeMillis()
         val cutoffMillis = now - 24 * 60 * 60 * 1000
         val cutoff = Timestamp(Date(cutoffMillis))
-
+        Log.d("Dumb_stuff", "Bla test")
         return try {
             messageDao.deleteExpiredMessages(cutoffMillis)
 
@@ -267,5 +270,177 @@ class ChatRepository @Inject constructor(
 
     suspend fun isFavorite(messageId: String): Boolean =
         favoriteMessageDao.countById(messageId) > 0
+
+
+    // ---------- REPORTS -------------
+
+    suspend fun reportMessage(messageId: String, reason: ReportReason, notes: String? = null): ReportResult {
+        return try {
+            if (messageId.isBlank()) return ReportResult.Invalid
+
+            val payload = hashMapOf(
+                "messageId" to messageId,
+                "reason" to reason.code,
+                "notes" to (notes?.take(300) ?: "") // backend trims to 300 as well
+            )
+
+            val result = Firebase.functions("europe-west3")
+                .getHttpsCallable("reportMessage")
+                .call(payload)
+                .await()
+
+            @Suppress("UNCHECKED_CAST")
+            val data = result.data as? Map<String, Any?> ?: return ReportResult.Error("No data")
+
+            val success = (data["success"] as? Boolean) == true
+            val duplicate = (data["duplicate"] as? Boolean) == true
+
+            trackWrite("cf:reportMessage(${reason.code}) → $messageId", "reportMessage")
+
+            when {
+                duplicate -> ReportResult.Duplicate
+                success -> ReportResult.Success
+                else -> ReportResult.Error("Unknown response")
+            }
+        } catch (e: FirebaseFunctionsException) {
+            Log.e("ReportMessage", "❌ reportMessage failed: ${e.code}", e)
+            when (e.code) {
+                FirebaseFunctionsException.Code.UNAUTHENTICATED -> ReportResult.Error("Unauthenticated")
+                FirebaseFunctionsException.Code.INVALID_ARGUMENT -> ReportResult.Invalid
+                FirebaseFunctionsException.Code.NOT_FOUND -> ReportResult.Invalid
+                FirebaseFunctionsException.Code.ALREADY_EXISTS -> ReportResult.Duplicate
+                else -> ReportResult.Error(e.message)
+            }
+        } catch (e: Exception) {
+            Log.e("ReportMessage", "❌ reportMessage unexpected failure", e)
+            ReportResult.Error(e.message)
+        }
+    }
+
+    // Convenience overload if you report from a LocalMessage
+    suspend fun reportMessage(message: LocalMessage, reason: ReportReason, notes: String? = null): ReportResult {
+        return reportMessage(message.id, reason, notes)
+    }
+
+    // ====== ADMIN / MODERATION ======
+
+    suspend fun hasAdminAccess(): Boolean {
+        return try {
+            val res = Firebase.functions("europe-west3")
+                .getHttpsCallable("isAdminSelf")
+                .call(emptyMap<String, Any>())
+                .await()
+            val data = res.data as? Map<*, *> ?: return false
+            (data["isAdmin"] as? Boolean) == true
+        } catch (e: Exception) {
+            Log.e("Admin123", "isAdminSelf failed", e)
+            false
+        }
+    }
+
+    /** Fetch a page of reports. status = "open" | "closed" */
+    suspend fun fetchReports(status: String = "open", limit: Int = 50): List<AdminReportItem> {
+        return try {
+            val res = Firebase.functions("europe-west3")
+                .getHttpsCallable("listReports")
+                .call(mapOf("status" to status, "limit" to limit))
+                .await()
+
+            val payload = res.data as? Map<*, *> ?: return emptyList()
+            val items = payload["reports"] as? List<Map<*, *>> ?: emptyList()
+
+            items.map { m ->
+                AdminReportItem(
+                    id = m["id"] as? String ?: "",
+                    status = m["status"] as? String ?: "open",
+                    createdAt = parseTs(m["createdAt"]),
+                    reason = m["reason"] as? String,
+                    reporterId = m["reporterId"] as? String,
+                    reporterUsername = m["reporterUsername"] as? String,
+                    offenderId = m["offenderId"] as? String,
+                    offenderUsername = m["offenderUsername"] as? String,
+                    messageId = m["messageId"] as? String,
+                    messagePreview = m["messagePreview"] as? String,
+                    messageTimestamp = parseTs(m["messageTimestamp"]),
+                    actionTaken = m["actionTaken"] as? String,
+
+                    offenderWarnCount = (m["offenderWarnCount"] as? Number)?.toInt(),
+                    offenderBanCount = (m["offenderBanCount"] as? Number)?.toInt(),
+                    offenderLastWarnedAt = parseTs(m["offenderLastWarnedAt"]),
+                    offenderLastBannedAt = parseTs(m["offenderLastBannedAt"]),
+                )
+            }.also {
+                trackRead("cf:listReports($status) -> ${it.size}", "fetchReports")
+            }
+        } catch (e: Exception) {
+            Log.e("Admin123", "fetchReports failed", e)
+            emptyList()
+        }
+    }
+
+    private fun parseTs(v: Any?): com.google.firebase.Timestamp? = when (v) {
+        is com.google.firebase.Timestamp -> v
+        is Map<*, *> -> {
+            val s = (v["_seconds"] as? Number)?.toLong()
+            val ns = (v["_nanoseconds"] as? Number)?.toInt() ?: 0
+            if (s != null) com.google.firebase.Timestamp(s, ns) else null
+        }
+        is Number -> {
+            // treat as millis
+            val ms = v.toLong()
+            com.google.firebase.Timestamp(ms / 1000, ((ms % 1000) * 1_000_000).toInt())
+        }
+        else -> null
+    }
+
+
+    /** Close/warn/ban in one shot via takeModerationAction. action = "none" | "warn" | "ban" */
+    suspend fun takeModerationAction(
+        reportId: String,
+        action: String,
+        banHours: Int? = null,
+        note: String? = null
+    ): Boolean {
+        return try {
+            val payload = mutableMapOf<String, Any>(
+                "reportId" to reportId,
+                "action" to action
+            )
+            if (banHours != null) payload["banHours"] = banHours
+            if (!note.isNullOrBlank()) payload["note"] = note.take(500)
+
+            val res = Firebase.functions("europe-west3")
+                .getHttpsCallable("takeModerationAction")
+                .call(payload)
+                .await()
+
+            val ok = ((res.data as? Map<*, *>)?.get("success") as? Boolean) == true
+            if (ok) trackWrite("cf:takeModerationAction($action,$banHours) → $reportId", "takeModerationAction")
+            ok
+        } catch (e: FirebaseFunctionsException) {
+            Log.e("Admin", "takeModerationAction failed: ${e.code}", e)
+            false
+        } catch (e: Exception) {
+            Log.e("Admin", "takeModerationAction failed", e)
+            false
+        }
+    }
+
+    /** Optional: direct ban/unban by user id (unban = hours=0) */
+    suspend fun setBanStatus(userId: String, hours: Int): Boolean {
+        return try {
+            val res = Firebase.functions("europe-west3")
+                .getHttpsCallable("setBanStatus")
+                .call(mapOf("uid" to userId, "hours" to hours))
+                .await()
+            val ok = ((res.data as? Map<*, *>)?.get("success") as? Boolean) == true
+            if (ok) trackWrite("cf:setBanStatus($userId,$hours)", "setBanStatus")
+            ok
+        } catch (e: Exception) {
+            Log.e("Admin", "setBanStatus failed", e)
+            false
+        }
+    }
+
 }
 

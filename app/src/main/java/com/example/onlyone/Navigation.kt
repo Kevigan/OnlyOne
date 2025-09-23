@@ -44,6 +44,7 @@ import com.example.onlyone.ui.TransparentSystemBars
 import com.example.onlyone.viewModels.ChatViewModel
 import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
+import com.example.onlyone.views.AgeGateView
 import com.example.onlyone.views.FriendsView
 import com.example.onlyone.views.LoginView
 import com.example.onlyone.views.MainView
@@ -322,6 +323,28 @@ fun Navigation(
                             }
                         )
                     }
+
+                    composable(
+                        route = Screen.AgeGateScreen.route,
+                        arguments = listOf(
+                            navArgument("uid") { type = NavType.StringType },
+                            navArgument("email") { type = NavType.StringType },
+                            navArgument("google") { type = NavType.BoolType; defaultValue = false }
+                        )
+                    ) { backStackEntry ->
+                        val uid = backStackEntry.arguments?.getString("uid").orEmpty()
+                        val email = backStackEntry.arguments?.getString("email").orEmpty()
+                        val isGoogleUser = backStackEntry.arguments?.getBoolean("google") ?: false
+
+                        AgeGateView(
+                            uid = uid,
+                            email = email,
+                            isGoogleUser = isGoogleUser,
+                            theme = theme,
+                            navController = navController
+                        )
+                    }
+
                 }
             }
         }

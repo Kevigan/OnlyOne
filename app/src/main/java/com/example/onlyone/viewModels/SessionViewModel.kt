@@ -50,40 +50,11 @@ class SessionViewModel @Inject constructor(
                 val displayName = email.substringBefore("@")
                 val isNewUser = true
 
-                FirebaseMessaging.getInstance().token
-                    .addOnSuccessListener { token ->
-                        userRepository.createUserProfile(
-                            email = email,
-                            username = displayName,
-                            fcmToken = token,
-                            chatLanguage = "any",
-                            onSuccess = {
-                                onSuccess(uid, displayName, email, isNewUser)
-                            },
-                            onFailure = { exception ->
-                                onFailure(exception)
-                            }
-                        )
-                    }
-                    .addOnFailureListener { tokenError ->
-                        // fallback: continue without token
-                        userRepository.createUserProfile(
-                            email = email,
-                            username = displayName,
-                            fcmToken = null,
-                            chatLanguage = "any",
-                            onSuccess = {
-                                onSuccess(uid, displayName, email, isNewUser)
-                            },
-                            onFailure = { exception ->
-                                onFailure(exception)
-                            }
-                        )
-                    }
+                // 🔸 Don’t create Firestore profile here.
+                // Move that to SetUsernameView after the 18+ checkbox.
+                onSuccess(uid, displayName, email, isNewUser)
             }
-            .addOnFailureListener { exception ->
-                onFailure(exception)
-            }
+            .addOnFailureListener(onFailure)
     }
 
     fun loginWithEmail(

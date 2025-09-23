@@ -30,7 +30,7 @@ import com.example.onlyone.views.settingsView.LanguageDropdown
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
-// Top-level: used to track which action is running
+// Tracks which action is currently busy (to disable UI and show spinners)
 enum class AuthBusy { LOGIN, REGISTER, GOOGLE }
 
 @Composable
@@ -42,7 +42,9 @@ fun LoginView(
 ) {
     val context = LocalContext.current
 
-    // --- Google sign-in client ---
+    // ────────────────────────────────────────────────────────────────────────────
+    // Google Sign-In setup
+    // ────────────────────────────────────────────────────────────────────────────
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(BuildConfig.WEB_CLIENT_ID)
@@ -51,11 +53,34 @@ fun LoginView(
     }
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
-    // Busy gate
+    // Busy flag for buttons/spinners
     var busyAction by remember { mutableStateOf<AuthBusy?>(null) }
     val isBusy = busyAction != null
 
+    // Navigation helpers (keeps code paths tidy)
+    fun goToAgeGate(uid: String, email: String, isGoogle: Boolean) {
+        navController.navigate(Screen.AgeGateScreen.createRoute(uid, email, isGoogle)) {
+            popUpTo(Screen.LoginScreen.route) { inclusive = true }
+        }
+    }
+    fun goToSetUsername(uid: String, email: String, isGoogle: Boolean) {
+        navController.navigate(Screen.SetUsernameScreen.createRoute(uid, email, isGoogleUser = isGoogle)) {
+            popUpTo(Screen.LoginScreen.route) { inclusive = true }
+        }
+    }
+    fun goToMain() {
+        navController.navigate(Screen.MainScreen.route) {
+            popUpTo(Screen.LoginScreen.route) { inclusive = true }
+        }
+    }
+    fun goToVerify(uid: String, email: String) {
+        navController.navigate(Screen.VerifyEmailScreen.createRoute(uid, email)) {
+            popUpTo(Screen.LoginScreen.route) { inclusive = true }
+        }
+    }
+
     // Handle Google result
+    // NEW: Only NEW Google users → AgeGate; EXISTING → Main or SetUsername
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -64,12 +89,25 @@ fun LoginView(
             onSuccess = { uid, _, email, isNewUser ->
                 busyAction = null
                 if (isNewUser) {
-                    navController.navigate("SetUsername/$uid/$email?google=true")
+                    // First-time Google sign-in → AgeGate flow
+                    goToAgeGate(uid, email, isGoogle = true)
                 } else {
-                    userViewModel.loadUser()
-                    navController.navigate(Screen.MainScreen.route) {
-                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                    }
+                    // Existing Google account → skip AgeGate
+                    sessionViewModel.checkHasPublicProfile(
+                        uid = uid,
+                        onResult = { hasProfile ->
+                            if (hasProfile) {
+                                userViewModel.loadUser()
+                                goToMain()
+                            } else {
+                                goToSetUsername(uid, email, isGoogle = true)
+                            }
+                        },
+                        onFailure = {
+                            // If the check fails, prefer sending to SetUsername
+                            goToSetUsername(uid, email, isGoogle = true)
+                        }
+                    )
                 }
             },
             onError = { ex ->
@@ -85,7 +123,9 @@ fun LoginView(
         )
     }
 
-    // --- App language pick (no change) ---
+    // ────────────────────────────────────────────────────────────────────────────
+    // App language picker state (unchanged logic)
+    // ────────────────────────────────────────────────────────────────────────────
     var currentAppLang by remember { mutableStateOf("en") }
     val availableLanguages = listOf("English", "Deutsch", "Français", "Español", "Português")
     val languageMap = mapOf(
@@ -95,12 +135,38 @@ fun LoginView(
     val reverseMap = remember { languageMap.entries.associate { it.value to it.key } }
     LaunchedEffect(Unit) { userViewModel.getAppLanguage { saved -> currentAppLang = saved } }
 
-    // --- Form state ---
+    // ────────────────────────────────────────────────────────────────────────────
+    // Form state & colors
+    // ────────────────────────────────────────────────────────────────────────────
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val tfColors = TextFieldDefaults.outlinedTextFieldColors(
+        textColor = theme.textColor,
+        cursorColor = theme.borderColor,
+        focusedBorderColor = theme.borderColor,
+        unfocusedBorderColor = theme.textColor.copy(alpha = 0.75f),
+        focusedLabelColor = theme.textColor,
+        unfocusedLabelColor = theme.textColor.copy(alpha = 0.8f),
+        placeholderColor = theme.cardContentColor.copy(alpha = 0.6f),
+        trailingIconColor = theme.textColor,
+        leadingIconColor = theme.textColor,
+        disabledTextColor = theme.textColor.copy(alpha = 0.7f),
+        disabledBorderColor = theme.textColor.copy(alpha = 0.4f),
+        disabledLabelColor = theme.textColor.copy(alpha = 0.5f)
+    )
+    val buttonColors = ButtonDefaults.buttonColors(
+        backgroundColor = theme.buttonBackgroundColor,
+        contentColor = theme.textColor,
+        disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
+        disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+    )
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // UI
+    // ────────────────────────────────────────────────────────────────────────────
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -109,27 +175,12 @@ fun LoginView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            stringResource(R.string.auth_title),
+            text = stringResource(R.string.auth_title),
             style = MaterialTheme.typography.h4,
             color = theme.textColor
         )
 
         Spacer(Modifier.height(16.dp))
-
-        val tfColors = TextFieldDefaults.outlinedTextFieldColors(
-            textColor = theme.textColor,
-            cursorColor = theme.borderColor,
-            focusedBorderColor = theme.borderColor,
-            unfocusedBorderColor = theme.textColor.copy(alpha = 0.75f),
-            focusedLabelColor = theme.textColor,
-            unfocusedLabelColor = theme.textColor.copy(alpha = 0.8f),
-            placeholderColor = theme.cardContentColor.copy(alpha = 0.6f),
-            trailingIconColor = theme.textColor,
-            leadingIconColor = theme.textColor,
-            disabledTextColor = theme.textColor.copy(alpha = 0.7f),
-            disabledBorderColor = theme.textColor.copy(alpha = 0.4f),
-            disabledLabelColor = theme.textColor.copy(alpha = 0.5f)
-        )
 
         OutlinedTextField(
             value = email,
@@ -157,7 +208,7 @@ fun LoginView(
             colors = tfColors
         )
 
-        // App language picker
+        // Language picker
         Spacer(Modifier.height(16.dp))
         Text(stringResource(R.string.settings_app_language_label), color = theme.textColor)
         Spacer(Modifier.height(8.dp))
@@ -180,79 +231,57 @@ fun LoginView(
             Spacer(Modifier.height(8.dp))
         }
 
-        // --- Sign in with Email ---
+        // ────────────────────────────────────────────────────────────────────────
+        // Email: Sign In
+        // ────────────────────────────────────────────────────────────────────────
         Button(
             onClick = {
                 if (isBusy) return@Button
-
                 val emailT = email.trim()
                 val passT = password
 
                 // Validate BEFORE calling Firebase
                 when {
-                    emailT.isBlank() -> {
-                        errorMessage = context.getString(R.string.auth_error_bad_email)
-                        return@Button
-                    }
-                    !Patterns.EMAIL_ADDRESS.matcher(emailT).matches() -> {
-                        errorMessage = context.getString(R.string.auth_error_bad_email)
-                        return@Button
-                    }
-                    passT.isBlank() -> {
-                        errorMessage = context.getString(R.string.auth_error_bad_password)
-                        return@Button
-                    }
-                    passT.length < 6 -> {
-                        errorMessage = context.getString(R.string.auth_error_password_weak)
-                        return@Button
-                    }
+                    emailT.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(emailT).matches() ->
+                        context.getString(R.string.auth_error_bad_email).also { errorMessage = it; return@Button }
+                    passT.isBlank() ->
+                        context.getString(R.string.auth_error_bad_password).also { errorMessage = it; return@Button }
+                    passT.length < 6 ->
+                        context.getString(R.string.auth_error_password_weak).also { errorMessage = it; return@Button }
                 }
+
                 busyAction = AuthBusy.LOGIN
                 sessionViewModel.loginWithEmail(
                     email = emailT,
                     password = passT,
                     onSuccess = { uid, _, em, _ ->
                         busyAction = null
+                        // Email sign-in requires verification → Verify gate first
                         sessionViewModel.checkEmailVerified(
                             onResult = { verified ->
                                 if (!verified) {
-                                    // Gate: unverified → Verify screen
-                                    navController.navigate(Screen.VerifyEmailScreen.createRoute(uid, em)) {
-                                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                                    }
+                                    goToVerify(uid, em)
                                     return@checkEmailVerified
                                 }
-
-                                // Verified → do we already have a public profile?
+                                // Verified → profile gate
                                 sessionViewModel.checkHasPublicProfile(
                                     uid = uid,
                                     onResult = { hasProfile ->
                                         if (hasProfile) {
-                                            // Profile exists → load + go to Main
                                             userViewModel.loadUser()
-                                            navController.navigate(Screen.MainScreen.route) {
-                                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                                            }
+                                            goToMain()
                                         } else {
-                                            // Verified but no profile → SetUsername
-                                            navController.navigate(
-                                                Screen.SetUsernameScreen.createRoute(uid, em, isGoogleUser = false)
-                                            ) {
-                                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                                            }
+                                            goToSetUsername(uid, em, isGoogle = false)
                                         }
                                     },
-                                    onFailure = { err ->
-                                        // If unsure, send to verify gate to be safe (or show a toast)
-                                        navController.navigate(Screen.VerifyEmailScreen.createRoute(uid, em)) {
-                                            popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                                        }
+                                    onFailure = {
+                                        // If unsure, send to Verify gate (conservative)
+                                        goToVerify(uid, em)
                                     }
                                 )
                             },
-                            onFailure = { err ->
-                                // Couldn’t reload — handle gracefully (toast/log), keep them on Login
-                                // e.g., Toast.makeText(context, err ?: "Login check failed", Toast.LENGTH_SHORT).show()
+                            onFailure = {
+                                // Couldn’t reload — keep them on Login (optional toast/log)
                             }
                         )
                     },
@@ -270,12 +299,7 @@ fun LoginView(
                 )
             },
             enabled = !isBusy,
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonBackgroundColor,
-                contentColor = theme.textColor,
-                disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
-                disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
-            )
+            colors = buttonColors
         ) {
             if (busyAction == AuthBusy.LOGIN) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -286,32 +310,24 @@ fun LoginView(
 
         Spacer(Modifier.height(8.dp))
 
-        // --- Register ---
+        // ────────────────────────────────────────────────────────────────────────
+        // Email: Register
+        // ────────────────────────────────────────────────────────────────────────
         Button(
             onClick = {
                 if (isBusy) return@Button
-
                 val emailT = email.trim()
                 val passT = password
 
                 when {
-                    emailT.isBlank() -> {
-                        errorMessage = context.getString(R.string.auth_error_bad_email)
-                        return@Button
-                    }
-                    !Patterns.EMAIL_ADDRESS.matcher(emailT).matches() -> {
-                        errorMessage = context.getString(R.string.auth_error_bad_email)
-                        return@Button
-                    }
-                    passT.isBlank() -> {
-                        errorMessage = context.getString(R.string.auth_error_bad_password)
-                        return@Button
-                    }
-                    passT.length < 6 -> {
-                        errorMessage = context.getString(R.string.auth_error_password_weak)
-                        return@Button
-                    }
+                    emailT.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(emailT).matches() ->
+                        context.getString(R.string.auth_error_bad_email).also { errorMessage = it; return@Button }
+                    passT.isBlank() ->
+                        context.getString(R.string.auth_error_bad_password).also { errorMessage = it; return@Button }
+                    passT.length < 6 ->
+                        context.getString(R.string.auth_error_password_weak).also { errorMessage = it; return@Button }
                 }
+
                 busyAction = AuthBusy.REGISTER
                 sessionViewModel.registerWithEmail(
                     email = emailT,
@@ -319,23 +335,32 @@ fun LoginView(
                     onSuccess = { uid, _, em, isNewUser ->
                         busyAction = null
                         if (isNewUser) {
+                            // New email account → send verify and go to Verify gate
                             sessionViewModel.sendEmailVerification(onSuccess = {}, onFailure = {})
-                            navController.navigate(Screen.VerifyEmailScreen.createRoute(uid, em)) {
-                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                            }
+                            goToVerify(uid, em)
                         } else {
-                            // optional: gate even on existing
+                            // Rare path (register called on existing email):
+                            // Optionally enforce verify and profile gate
                             sessionViewModel.checkEmailVerified(
                                 onResult = { verified ->
                                     if (verified) {
-                                        // proceed to Main or SetUsername
+                                        sessionViewModel.checkHasPublicProfile(
+                                            uid = uid,
+                                            onResult = { hasProfile ->
+                                                if (hasProfile) {
+                                                    userViewModel.loadUser()
+                                                    goToMain()
+                                                } else {
+                                                    goToSetUsername(uid, em, isGoogle = false)
+                                                }
+                                            },
+                                            onFailure = { goToVerify(uid, em) }
+                                        )
                                     } else {
-                                        // go to VerifyEmail screen
+                                        goToVerify(uid, em)
                                     }
                                 },
-                                onFailure = { err ->
-                                    // show toast / log error
-                                }
+                                onFailure = { /* stay here; toast/log if desired */ }
                             )
                         }
                     },
@@ -353,12 +378,7 @@ fun LoginView(
                 )
             },
             enabled = !isBusy,
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonBackgroundColor,
-                contentColor = theme.textColor,
-                disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
-                disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
-            )
+            colors = buttonColors
         ) {
             if (busyAction == AuthBusy.REGISTER) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -369,7 +389,9 @@ fun LoginView(
 
         Spacer(Modifier.height(16.dp))
 
-        // --- Google Sign-In ---
+        // ────────────────────────────────────────────────────────────────────────
+        // Google Sign-In
+        // ────────────────────────────────────────────────────────────────────────
         Button(
             onClick = {
                 if (isBusy) return@Button
@@ -377,12 +399,7 @@ fun LoginView(
                 launcher.launch(googleSignInClient.signInIntent)
             },
             enabled = !isBusy,
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = theme.buttonBackgroundColor,
-                contentColor = theme.textColor,
-                disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
-                disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
-            )
+            colors = buttonColors
         ) {
             if (busyAction == AuthBusy.GOOGLE) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)

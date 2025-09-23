@@ -10,11 +10,10 @@ plugins {
 
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
-    if (file.exists()) {
-        file.inputStream().use { load(it) }
-    }
+    if (file.exists()) { file.inputStream().use { load(it) } }
 }
 val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
+val privacyUrl = localProperties.getProperty("PRIVACY_URL") ?: "https://onlyone-a3285.web.app" // fallback
 
 android {
     namespace = "com.example.onlyone"
@@ -27,12 +26,13 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
+        buildConfigField("String", "PRIVACY_URL", "\"$privacyUrl\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
-        buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
-
     }
 
     buildTypes {
@@ -53,7 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
+        buildConfig = true // 👈 required so BuildConfig.PRIVACY_URL is generated
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"

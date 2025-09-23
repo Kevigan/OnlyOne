@@ -1,5 +1,7 @@
 package com.example.onlyone.views
 
+import android.app.Activity
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -12,13 +14,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.onlyone.BuildConfig
 import com.example.onlyone.R
 import com.example.onlyone.Screen
+import com.example.onlyone.ads.LocalConsentManager
 import com.example.onlyone.viewModels.SessionViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 import com.google.firebase.auth.ktx.auth
@@ -33,11 +38,15 @@ fun SplashView(
     navController: NavController,
     userViewModel: UserViewModel
 ) {
+    val consentManager = LocalConsentManager.current           // ✅ get manager
+    val context = LocalContext.current
+    val activity = context as Activity
+
+    // existing state/animation code...
     val firebaseUser by sessionViewModel.currentUser.collectAsState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val offsetX = remember { Animatable(-screenWidth.value) }
 
-    // Animate logo from left to center
     LaunchedEffect(Unit) {
         offsetX.animateTo(
             targetValue = 0f,
@@ -45,10 +54,19 @@ fun SplashView(
         )
     }
 
-    // Navigation gate: auth -> verify -> profile -> main
+    // ✅ Ask for consent on cold start. Safe to call each launch.
+    LaunchedEffect(Unit) {
+        //if (BuildConfig.DEBUG) consentManager.resetForTesting()
+
+        consentManager.requestAndShowIfRequired(activity) { canRequestAds, err ->
+            Log.d("UMP", "Finished consent flow. canRequestAds=$canRequestAds, err=$err")
+            // If you initialize ads, do it here when canRequestAds==true.
+        }
+    }
+
+    // 🧭 Your existing navigation gate can remain as-is
     LaunchedEffect(firebaseUser) {
-        // Let the animation breathe a bit
-        delay(1200)
+        delay(1200) // let the logo animate
 
         val auth = Firebase.auth
         val user = auth.currentUser
@@ -60,53 +78,39 @@ fun SplashView(
             return@LaunchedEffect
         }
 
-        // Reload to ensure email_verified claim is fresh
         user.reload().addOnCompleteListener {
             val isVerified = auth.currentUser?.isEmailVerified == true
             val uid = auth.currentUser?.uid.orEmpty()
             val email = auth.currentUser?.email.orEmpty()
 
             if (!isVerified) {
-                // NOTE: If you haven't added Screen.VerifyEmailScreen yet,
-                // use the raw route string below to avoid compile errors:
-                // navController.navigate("verify_email/$uid/$email") { ... }
-                navController.navigate(
-                    // Replace with Screen.VerifyEmailScreen.createRoute(uid, email) once added
-                    "verify_email/$uid/$email"
-                ) {
+                navController.navigate("verify_email/$uid/$email") {
                     popUpTo(Screen.SplashScreen.route) { inclusive = true }
                 }
                 return@addOnCompleteListener
             }
 
-            // Verified — check if profile exists in users_public
             Firebase.firestore.collection("users_public").document(uid)
                 .get()
                 .addOnSuccessListener { doc ->
                     if (doc.exists()) {
-                        // Verified + profile exists → Main
                         userViewModel.loadUser()
                         navController.navigate(Screen.MainScreen.route) {
                             popUpTo(Screen.SplashScreen.route) { inclusive = true }
                         }
                     } else {
-                        // Verified but no profile → SetUsername flow
                         navController.navigate(
-                            Screen.SetUsernameScreen.createRoute(uid, email, isGoogleUser = false)
-                        ) {
-                            popUpTo(Screen.SplashScreen.route) { inclusive = true }
-                        }
+                            Screen.AgeGateScreen.createRoute(uid, email, google = false)
+                        ) { popUpTo(Screen.SplashScreen.route) { inclusive = true } }
                     }
                 }
                 .addOnFailureListener {
-                    // If unsure, err on the safe side: send to verify screen again
                     navController.navigate("verify_email/$uid/$email") {
                         popUpTo(Screen.SplashScreen.route) { inclusive = true }
                     }
                 }
         }
     }
-
     // UI
     Box(
         modifier = Modifier.fillMaxSize(),

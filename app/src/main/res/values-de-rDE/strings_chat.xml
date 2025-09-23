@@ -42,4 +42,27 @@
     <!-- Rewarded ad flow toasts -->
     <string name="chat_ad_unavailable">Werbung kann derzeit nicht angezeigt werden.</string>
     <string name="chat_swipes_reset_success">Swipes zurückgesetzt!</string>
+
+    <!-- Melden -->
+    <string name="cd_report_message">Nachricht melden</string>
+    <string name="report_dialog_title">Nachricht melden</string>
+    <string name="report_dialog_body">Wähle unten einen Grund aus. Ein Moderator prüft deine Meldung.</string>
+    <string name="report_select_reason">Grund auswählen</string>
+    <string name="report_send_button">Meldung senden</string>
+
+    <!-- Meldegründe -->
+    <string name="report_reason_racism">Rassismus / Hass</string>
+    <string name="report_reason_harassment">Belästigung</string>
+    <string name="report_reason_sexual">Sexuelle Inhalte</string>
+    <string name="report_reason_spam">Spam / Betrug</string>
+    <string name="report_reason_self_harm">Anstiftung zu Selbstverletzung</string>
+    <string name="report_reason_other">Sonstiges</string>
+
+    <!-- Report Toasts -->
+    <string name="report_toast_sent">Meldung gesendet</string>
+    <string name="report_toast_duplicate">Du hast diese Nachricht bereits gemeldet</string>
+    <string name="report_toast_invalid">Meldung konnte nicht gesendet werden (ungültig)</string>
+    <string name="report_toast_error">Meldung fehlgeschlagen. Bitte erneut versuchen</string>
+
+
 </resources>

@@ -13,9 +13,7 @@ import com.example.onlyone.data.WrittenTodayEntity
 import com.example.onlyone.repos.UserEngagementRepo
 import com.example.onlyone.repos.UserInventoryRepo
 import com.example.onlyone.repos.UserSettingsRepo
-import com.example.onlyone.theme.ThemeId
 import com.google.firebase.Timestamp
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.functions.FirebaseFunctionsException
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
@@ -24,6 +22,13 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Aggregating repository that exposes a stable API to the ViewModel layer,
+ * delegating to feature-specific repos and Cloud Functions.
+ *
+ * Keep this layer thin and synchronous in shape (suspend/Result/callbacks)
+ * so UI code stays simple.
+ */
 @Singleton
 class UserRepository @Inject constructor(
     private val publicRepo: UserPublicRepo,
@@ -36,18 +41,25 @@ class UserRepository @Inject constructor(
     private val discoveryRepo: UserDiscoveryRepo,
     private val achievementRepo: UserAchievementRepo
 ) {
-    //////////UserPublicRepo//////////
-    suspend fun updatePublicProfileSecure(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.updateUserPublicProfileSecure(updates, onSuccess, onFailure)
+
+    // -------- UserPublicRepo --------
+
+    suspend fun updatePublicProfileSecure(
+        updates: Map<String, Any>,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) = publicRepo.updateUserPublicProfileSecure(updates, onSuccess, onFailure)
+
     fun getPublicUser(uid: String) = publicRepo.getPublicUser(uid)
-    // UserRepository.kt
-    // ADD this overload (keep your existing messageId variants if needed)
+
+    /** Overload that sends a fully materialized favourite (no extra read by messageId). */
     suspend fun setFavouriteMessage(
         fav: LocalFavoriteMessage,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) = publicRepo.setFavouriteMessage(
         messageId = fav.id,
-        text = fav.content,                 // Non-null in your entity
+        text = fav.content,
         fromUid = fav.senderId,
         senderUsername = fav.senderUsername,
         senderMood = fav.senderMood,
@@ -55,80 +67,108 @@ class UserRepository @Inject constructor(
         onFailure = onFailure
     )
 
+    suspend fun clearFavouriteMessage(
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) = publicRepo.clearFavouriteMessage(onSuccess, onFailure)
 
-    suspend fun clearFavouriteMessage(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = publicRepo.clearFavouriteMessage(onSuccess, onFailure)
-    //////////UserPublicRepo End//////////
+    // -------- UserPrivateRepo --------
 
-
-    //////////UserPrivateRepo//////////
     fun syncFcmToken() = private.syncFcmToken()
-    fun updateNotificationSetting(uid: String, key: String, enabled: Boolean, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) = private.updateNotificationSetting(uid, key, enabled, onSuccess, onFailure)
-    //////////UserPrivateRepo End//////////
 
+    fun updateNotificationSetting(
+        uid: String,
+        key: String,
+        enabled: Boolean,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) = private.updateNotificationSetting(uid, key, enabled, onSuccess, onFailure)
 
-    //////////UserEngagementRepo//////////
-    fun fetchEngagementStatus(uid: String, onComplete: (UserEngagementStatus?) -> Unit) = engagement.fetchEngagementStatus(uid, onComplete)
+    // -------- UserEngagementRepo --------
+
+    fun fetchEngagementStatus(uid: String, onComplete: (UserEngagementStatus?) -> Unit) =
+        engagement.fetchEngagementStatus(uid, onComplete)
+
     suspend fun incrementSwipeCount(): Boolean = engagement.incrementSwipeCount()
-    //////////UserEngagementRepo End//////////
 
+    // -------- UserUpgradeRepo --------
 
-    //////////UserUpgradeRepo//////////
-    fun upgradeFeature(feature: String, levels: Int, onSuccess: (Int, Int) -> Unit, onFailure: (Exception) -> Unit) = upgrade.upgradeFeature(feature, levels, onSuccess, onFailure)
-    //////////UserUpgradeRepo End//////////
+    fun upgradeFeature(
+        feature: String,
+        levels: Int,
+        onSuccess: (Int, Int) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) = upgrade.upgradeFeature(feature, levels, onSuccess, onFailure)
 
+    // -------- UserInventoryRepo --------
 
-    //////////UserInventoryRepo//////////
     suspend fun fetchInventory(uid: String): UserInventory? = inventory.fetchInventory(uid)
-    suspend fun buyAvatar(avatarId: Int): UserInventory?= inventory.buyAvatar(avatarId)
+    suspend fun buyAvatar(avatarId: Int): UserInventory? = inventory.buyAvatar(avatarId)
     suspend fun buyMood(moodId: Int): UserInventory? = inventory.buyMood(moodId)
     suspend fun buyTheme(themeId: Int): UserInventory? = inventory.buyTheme(themeId)
-    //////////UserInventoryRepo End//////////
 
+    // -------- UserSettingsRepo --------
 
-    //////////UserSettingsRepo//////////
     suspend fun saveAppLanguage(uid: String, language: String) = settings.saveAppLanguage(uid, language)
     suspend fun getAppLanguage(uid: String): String = settings.getAppLanguage(uid)
     suspend fun saveSearchUserLanguage(uid: String, lang: String) = settings.saveSearchUserLanguage(uid, lang)
     suspend fun getSearchUserLanguage(uid: String): String = settings.getSearchUserLanguage(uid)
     suspend fun getLocalNotificationSettings(uid: String): Pair<Boolean, Boolean> = settings.getLocalNotificationSettings(uid)
-    suspend fun saveLocalNotificationSettings(uid: String, msg: Boolean, feedback: Boolean) = settings.saveLocalNotificationSettings(uid, msg, feedback)
-    //////////UserSettingsRepo End//////////
+    suspend fun saveLocalNotificationSettings(uid: String, msg: Boolean, feedback: Boolean) =
+        settings.saveLocalNotificationSettings(uid, msg, feedback)
 
+    // -------- UserFriendRepo --------
 
-    //////////UserFriendRepo//////////
-    fun sendFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) { friendRepo.sendFriendRequest(fromUid, toUid, onComplete) }
-    fun cancelOutgoingFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) { friendRepo.cancelOutgoingFriendRequest(fromUid, toUid, onComplete) }
-    fun acceptFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) { friendRepo.acceptFriendRequest(currentUid, requesterUid, onComplete) }
-    fun declineFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) { friendRepo.declineFriendRequest(currentUid, requesterUid, onComplete) }
-    fun deleteFriend(currentUid: String, targetUid: String, onComplete: (Boolean, String?) -> Unit) { friendRepo.deleteFriend(currentUid, targetUid, onComplete) }
-    fun blockAndUnfriendUser(currentUid: String, blockedUid: String, onComplete: (Boolean, String?) -> Unit) { friendRepo.blockAndUnfriendUser(currentUid, blockedUid, onComplete) }
-    fun unblockUser(targetUid: String, onComplete: (Boolean) -> Unit) { friendRepo.unblockUser(targetUid, onComplete) }
-    fun findUserByEmail(email: String, onResult: (String?) -> Unit) { friendRepo.findUserByEmail(email, onResult) }
-    //////////UserFriendRepo End//////////
+    fun sendFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) =
+        friendRepo.sendFriendRequest(fromUid, toUid, onComplete)
 
+    fun cancelOutgoingFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) =
+        friendRepo.cancelOutgoingFriendRequest(fromUid, toUid, onComplete)
 
-    //////////UserDiscoveryRepo//////////
-    fun observeWrittenToday(): Flow<List<WrittenTodayEntity>> { return discoveryRepo.observeWrittenToday() }
-    suspend fun loadRandomUserBatchSuspend(excludedIds: List<String>, chatLanguage: String): List<PublicUser> { return discoveryRepo.loadRandomUserBatchSuspend(excludedIds, chatLanguage) }
-    suspend fun getLocalFriend(uid: String): LocalFriend? { return discoveryRepo.getLocalFriend(uid) }
-    suspend fun removeLocalFriend(uid: String){return discoveryRepo.removeLocalFriend(uid)}
-    suspend fun syncFriendsToLocal(uids: List<String>, publicFriends: List<PublicUser>) { discoveryRepo.syncFriendsToLocal(uids, publicFriends) }
-    suspend fun hardResetFriends() { discoveryRepo.hardResetFriends() }
-    suspend fun hardResetLocalMessages() { discoveryRepo.hardResetLocalMessages() }
-    //////////UserDiscoveryRepo End//////////
+    fun acceptFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) =
+        friendRepo.acceptFriendRequest(currentUid, requesterUid, onComplete)
 
+    fun declineFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) =
+        friendRepo.declineFriendRequest(currentUid, requesterUid, onComplete)
 
-    //////////UserAchievemtRepo//////////
-    suspend fun getUserAchievements(): Map<String, Any>? { return achievementRepo.getUserAchievements() }
-    suspend fun fetchAchievementDefinitions(): List<Map<String, Any>> { return achievementRepo.fetchAchievementDefinitions() }
-    suspend fun fetchUserStats(): Map<String, Any>? { return achievementRepo.fetchUserStats() }
+    fun deleteFriend(currentUid: String, targetUid: String, onComplete: (Boolean, String?) -> Unit) =
+        friendRepo.deleteFriend(currentUid, targetUid, onComplete)
 
-    //////////UserAchievemtRepo End//////////
+    fun blockAndUnfriendUser(currentUid: String, blockedUid: String, onComplete: (Boolean, String?) -> Unit) =
+        friendRepo.blockAndUnfriendUser(currentUid, blockedUid, onComplete)
 
+    fun unblockUser(targetUid: String, onComplete: (Boolean) -> Unit) =
+        friendRepo.unblockUser(targetUid, onComplete)
 
+    fun findUserByEmail(email: String, onResult: (String?) -> Unit) =
+        friendRepo.findUserByEmail(email, onResult)
 
+    // -------- UserDiscoveryRepo --------
 
+    fun observeWrittenToday(): Flow<List<WrittenTodayEntity>> = discoveryRepo.observeWrittenToday()
+    suspend fun loadRandomUserBatchSuspend(excludedIds: List<String>, chatLanguage: String): List<PublicUser> =
+        discoveryRepo.loadRandomUserBatchSuspend(excludedIds, chatLanguage)
 
+    suspend fun getLocalFriend(uid: String): LocalFriend? = discoveryRepo.getLocalFriend(uid)
+    suspend fun removeLocalFriend(uid: String) = discoveryRepo.removeLocalFriend(uid)
+    suspend fun syncFriendsToLocal(uids: List<String>, publicFriends: List<PublicUser>) =
+        discoveryRepo.syncFriendsToLocal(uids, publicFriends)
+
+    suspend fun hardResetFriends() = discoveryRepo.hardResetFriends()
+    suspend fun hardResetLocalMessages() = discoveryRepo.hardResetLocalMessages()
+
+    // -------- UserAchievementRepo --------
+
+    suspend fun getUserAchievements(): Map<String, Any>? = achievementRepo.getUserAchievements()
+    suspend fun fetchAchievementDefinitions(): List<Map<String, Any>> = achievementRepo.fetchAchievementDefinitions()
+    suspend fun fetchUserStats(): Map<String, Any>? = achievementRepo.fetchUserStats()
+
+    // -------- Session bootstrap (CF: getUserWithFriends) --------
+
+    /**
+     * Fetch user + social lists + engagement in one call.
+     * Uses Cloud Function `getUserWithFriends` (region: europe-west3).
+     */
     fun fetchFullUserSession(
         onComplete: (
             UserComposite,
@@ -140,8 +180,6 @@ class UserRepository @Inject constructor(
         ) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        //trackRead("functions/getUserWithFriends", "getUserWithFriends")
-
         Firebase.functions("europe-west3")
             .getHttpsCallable("getUserWithFriends")
             .call()
@@ -150,32 +188,38 @@ class UserRepository @Inject constructor(
 
                 val userMap = data["user"] as? Map<*, *> ?: throw Exception("Missing user")
 
+                // notifications map (String -> Boolean)
                 val notificationsRaw = userMap["notifications"] as? Map<*, *> ?: emptyMap<Any, Any>()
                 val notifications = notificationsRaw.mapNotNull { (k, v) ->
                     (k as? String)?.let { key -> key to (v as? Boolean ?: true) }
                 }.toMap()
 
-                // Build FavouriteMessage from the mergedUser map (robust Timestamp handling)
+                // FavouriteMessage (robust Timestamp handling)
                 val favouriteMessage = (userMap["favouriteMessage"] as? Map<*, *>)?.let { fm ->
                     val chosenAtAny = fm["chosenAt"]
                     val chosenAtTs = when (chosenAtAny) {
-                        is com.google.firebase.Timestamp -> chosenAtAny
+                        is Timestamp -> chosenAtAny
                         is Map<*, *> -> {
                             val seconds = (chosenAtAny["seconds"] ?: chosenAtAny["_seconds"]) as? Number
-                            val nanos   = (chosenAtAny["nanoseconds"] ?: chosenAtAny["_nanoseconds"]) as? Number
+                            val nanos = (chosenAtAny["nanoseconds"] ?: chosenAtAny["_nanoseconds"]) as? Number
                             if (seconds != null && nanos != null)
-                                com.google.firebase.Timestamp(seconds.toLong(), nanos.toInt())
+                                Timestamp(seconds.toLong(), nanos.toInt())
                             else null
                         }
                         else -> null
                     }
-
                     FavouriteMessage(
                         text = fm["text"] as? String ?: "",
                         fromUid = fm["fromUid"] as? String ?: "",
                         messageId = fm["messageId"] as? String ?: "",
                         chosenAt = chosenAtTs
                     )
+                }
+
+                // Adult flag (back-compat with older payloads)
+                val isAdultFlag: Boolean = when (val v = userMap["isAdult"]) {
+                    is Boolean -> v
+                    else -> ((userMap["age"] as? Number)?.toInt() ?: 18) >= 18
                 }
 
                 val user = UserComposite(
@@ -216,17 +260,17 @@ class UserRepository @Inject constructor(
                     achievementCount = (userMap["achievementCount"] as? Number)?.toInt() ?: 0,
                     favouriteMessage = favouriteMessage,
 
-                    // 🆕 From users_public in the merged payload
+                    // public extras
                     gender = (userMap["gender"] as? String) ?: "unspecified",
                     age = (userMap["age"] as? Number)?.toInt(),
                     city = (userMap["city"] as? String) ?: "",
 
-                    // 🆕 From users_private in the merged payload
-                    isVerified = userMap["isVerified"] as? Boolean ?: false
+                    // private extras
+                    isVerified = userMap["isVerified"] as? Boolean ?: false,
+                    isAdult = isAdultFlag
                 )
 
                 val engagementMap = data["engagementStatus"] as? Map<*, *> ?: emptyMap<String, Any>()
-
                 val engagementStatus = UserEngagementStatus(
                     uid = engagementMap["uid"] as? String ?: "",
                     swipesUsed = (engagementMap["swipesUsed"] as? Number)?.toInt() ?: 0,
@@ -235,15 +279,10 @@ class UserRepository @Inject constructor(
                     lastRefill = engagementMap["lastRefill"] as? Timestamp
                 )
 
-                val friendsList = data["friends"] as? List<*> ?: emptyList<Any>()
-                val incomingList = data["incomingRequests"] as? List<*> ?: emptyList<Any>()
-                val outgoingList = data["outgoingRequests"] as? List<*> ?: emptyList<Any>()
-                val blockedList = data["blockedUsers"] as? List<*> ?: emptyList<Any>()
-
-                val friends = friendsList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
-                val incoming = incomingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
-                val outgoing = outgoingList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
-                val blocked = blockedList.mapNotNull { parsePublicUser(it as? Map<*, *>) }
+                val friends = (data["friends"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
+                val incoming = (data["incomingRequests"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
+                val outgoing = (data["outgoingRequests"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
+                val blocked = (data["blockedUsers"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
 
                 Log.d("userStuff", "🔥 user name: ${user.username}")
                 Log.d("ownedAvatars", "🔥 user ownedAvatars: ${user.ownedAvatars}")
@@ -255,6 +294,8 @@ class UserRepository @Inject constructor(
             }
             .addOnFailureListener(onFailure)
     }
+
+    // -------- Parsing helpers --------
 
     private fun parseTimestamp(any: Any?): Timestamp? = when (any) {
         is Timestamp -> any
@@ -279,9 +320,7 @@ class UserRepository @Inject constructor(
     private fun parsePublicUser(map: Map<*, *>?): PublicUser? {
         if (map == null) return null
         val uid = map["uid"] as? String ?: return null
-
         val favourite = parseFavourite(map["favouriteMessage"] as? Map<*, *>)
-
         return PublicUser(
             uid = uid,
             username = map["username"] as? String ?: "",
@@ -292,36 +331,57 @@ class UserRepository @Inject constructor(
             points = (map["points"] as? Number)?.toInt() ?: 0,
             achievementCount = (map["achievementCount"] as? Number)?.toInt() ?: 0,
             favouriteMessage = favourite,
-
-            // 🆕 New fields from users_public
             gender = (map["gender"] as? String ?: "unspecified"),
             age = (map["age"] as? Number)?.toInt(),
             city = (map["city"] as? String ?: "")
         )
     }
 
+    // -------- Account creation --------
+
+    /**
+     * Creates profile via CF `createUserProfile`.
+     * Applies lightweight client-side validation to mirror server rules.
+     */
     fun createUserProfile(
         email: String,
         username: String,
         fcmToken: String?,
         chatLanguage: String = "any",
-        // 🆕 optional new fields
-        gender: String = "unspecified",
-        age: Int? = null,
+        gender: String = "unspecified",   // accepts "m"|"f"|"d" too (mapped below)
+        age: Int,                         // required 18..100
         city: String = "",
+        ageAffirmation: Boolean,          // must be true
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        val data = hashMapOf<String, Any>(
+        val normalizedGender = when (gender.lowercase()) {
+            "m", "male" -> "male"
+            "f", "female" -> "female"
+            "d", "nb", "nonbinary", "diverse" -> "nonbinary"
+            "other" -> "other"
+            else -> "unspecified"
+        }
+
+        if (age < 18 || age > 100) {
+            onFailure(IllegalArgumentException("Age must be between 18 and 100."))
+            return
+        }
+        if (!ageAffirmation) {
+            onFailure(IllegalStateException("You must confirm you are 18+."))
+            return
+        }
+
+        val data = hashMapOf(
             "email" to email,
             "username" to username,
             "fcmToken" to (fcmToken ?: ""),
-            "chatLanguage" to chatLanguage,
-            "gender" to gender,
-            "city" to city
-        ).apply {
-            age?.let { put("age", it) }   // now allowed (Int is fine)
-        }
+            "chatLanguage" to chatLanguage.lowercase(),
+            "gender" to normalizedGender,
+            "city" to city.trim(),
+            "age" to age,
+            "ageAffirmation" to true
+        )
 
         Firebase.functions("europe-west3")
             .getHttpsCallable("createUserProfile")
@@ -333,25 +393,32 @@ class UserRepository @Inject constructor(
             .addOnFailureListener(onFailure)
     }
 
+    // -------- Achievements seeding (admin/dev) --------
+
+    /**
+     * Seeds definitions using CF `seedAchievementDefinitions`.
+     * Properly invokes the provided callbacks with the created/updated count.
+     */
     fun seedAchievementDefinitions(
         definitions: List<Map<String, Any>>,
         onSuccess: (Int) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        val data = mapOf("definitions" to definitions)
-
         Firebase.functions("europe-west3")
             .getHttpsCallable("seedAchievementDefinitions")
             .call(mapOf("definitions" to definitions))
-            .addOnSuccessListener {
-                val count = (it.data as? Map<*, *>)?.get("count") as? Int ?: 0
+            .addOnSuccessListener { res ->
+                val count = (res.data as? Map<*, *>)?.get("count") as? Int ?: 0
                 Log.d("Seeder", "✅ Seeded $count definitions.")
+                onSuccess(count)
             }
-            .addOnFailureListener {
-                Log.e("Seeder", "❌ Failed to seed: ${it.message}", it)
+            .addOnFailureListener { e ->
+                Log.e("Seeder", "❌ Failed to seed: ${e.message}", e)
+                onFailure(e)
             }
-
     }
+
+    // -------- Feedback --------
 
     sealed class FeedbackResult {
         object Success : FeedbackResult()
@@ -359,38 +426,40 @@ class UserRepository @Inject constructor(
         data class Error(val message: String) : FeedbackResult()
     }
 
+    /**
+     * Sends daily user feedback via CF `sendUserFeedback`.
+     * Returns AlreadySubmitted if the daily limit is hit.
+     */
     suspend fun sendUserFeedback(
         answers: Map<String, String>,
         text: String = "",
         platform: String = "android",
-        appVersion: String = BuildConfig.VERSION_NAME, // import your app BuildConfig
+        appVersion: String = BuildConfig.VERSION_NAME,
         lang: String = "en"
-    ): FeedbackResult {
-        return try {
-            val payload = mapOf(
-                "answers" to answers,
-                "text" to text,
-                "client" to mapOf(
-                    "platform" to platform,
-                    "appVersion" to appVersion,
-                    "lang" to lang
-                )
+    ): FeedbackResult = try {
+        val payload = mapOf(
+            "answers" to answers,
+            "text" to text,
+            "client" to mapOf(
+                "platform" to platform,
+                "appVersion" to appVersion,
+                "lang" to lang
             )
-
-            Firebase.functions("europe-west3")
-                .getHttpsCallable("sendUserFeedback")
-                .call(payload)
-                .await()
-
-            FeedbackResult.Success
-        } catch (e: Exception) {
-            val fe = e as? FirebaseFunctionsException
-            when (fe?.code) {
-                FirebaseFunctionsException.Code.ALREADY_EXISTS -> FeedbackResult.AlreadySubmitted
-                else -> FeedbackResult.Error(fe?.message ?: e.message ?: "Failed to send feedback.")
-            }
+        )
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("sendUserFeedback")
+            .call(payload)
+            .await()
+        FeedbackResult.Success
+    } catch (e: Exception) {
+        val fe = e as? FirebaseFunctionsException
+        when (fe?.code) {
+            FirebaseFunctionsException.Code.ALREADY_EXISTS -> FeedbackResult.AlreadySubmitted
+            else -> FeedbackResult.Error(fe?.message ?: e.message ?: "Failed to send feedback.")
         }
     }
+
+    // -------- Ads / swipe reset --------
 
     data class AdResetResult(
         val swipesUsed: Int,
@@ -398,6 +467,9 @@ class UserRepository @Inject constructor(
         val adsUsed: Int
     )
 
+    /**
+     * Marks an ad watched and returns updated swipe/ads counters.
+     */
     suspend fun watchAdResetSwipes(): Result<AdResetResult> = try {
         val res = Firebase.functions("europe-west3")
             .getHttpsCallable("watchAdResetSwipes")
