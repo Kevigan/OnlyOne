@@ -9,6 +9,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,15 +33,17 @@ private data class FbQuestion(
 
 // Plain (non-composable) function: returns IDs only.
 private fun feedbackQuestions(): List<FbQuestion> = listOf(
+    // Q1 — updated option for Shop & upgrade system
     FbQuestion(
         id = "q1",
         labelRes = R.string.feedback_q1_label,
         options = listOf(
-            FbOption("a", R.string.feedback_q1_opt_a),
-            FbOption("b", R.string.feedback_q1_opt_b),
-            FbOption("c", R.string.feedback_q1_opt_c),
+            FbOption("a", R.string.feedback_q1_opt_a), // Chat experience
+            FbOption("b", R.string.feedback_q1_opt_b), // Swipe & discovery
+            FbOption("c", R.string.feedback_q1_opt_c), // Shop & upgrade system
         )
     ),
+    // Q2
     FbQuestion(
         id = "q2",
         labelRes = R.string.feedback_q2_label,
@@ -51,12 +54,53 @@ private fun feedbackQuestions(): List<FbQuestion> = listOf(
             FbOption("d", R.string.feedback_q2_opt_d),
         )
     ),
+    // Q3
     FbQuestion(
         id = "q3",
         labelRes = R.string.feedback_q3_label,
         options = listOf(
             FbOption("a", R.string.feedback_q3_opt_a), // Yes
             FbOption("b", R.string.feedback_q3_opt_b), // No
+        )
+    ),
+    // Q4 — 1 message/day limit sentiment
+    FbQuestion(
+        id = "q4",
+        labelRes = R.string.feedback_q4_label,
+        options = listOf(
+            FbOption("a", R.string.feedback_q4_opt_a),
+            FbOption("b", R.string.feedback_q4_opt_b),
+            FbOption("c", R.string.feedback_q4_opt_c),
+        )
+    ),
+    // Q5 — Swipe system usefulness
+    FbQuestion(
+        id = "q5",
+        labelRes = R.string.feedback_q5_label,
+        options = listOf(
+            FbOption("a", R.string.feedback_q5_opt_a),
+            FbOption("b", R.string.feedback_q5_opt_b),
+            FbOption("c", R.string.feedback_q5_opt_c),
+        )
+    ),
+    // Q6 — Ad frequency sentiment
+    FbQuestion(
+        id = "q6",
+        labelRes = R.string.feedback_q6_label,
+        options = listOf(
+            FbOption("a", R.string.feedback_q6_opt_a),
+            FbOption("b", R.string.feedback_q6_opt_b),
+            FbOption("c", R.string.feedback_q6_opt_c),
+        )
+    ),
+    // Q7 — Moods/status usefulness
+    FbQuestion(
+        id = "q7",
+        labelRes = R.string.feedback_q7_label,
+        options = listOf(
+            FbOption("a", R.string.feedback_q7_opt_a),
+            FbOption("b", R.string.feedback_q7_opt_b),
+            FbOption("c", R.string.feedback_q7_opt_c),
         )
     )
 )
@@ -242,7 +286,7 @@ fun UserFeedbackView(
                         Text(
                             text = stringResource(R.string.feedback_submit),
                             style = MaterialTheme.typography.button.copy(fontWeight = FontWeight.SemiBold),
-                            color = theme.textColor
+                            color = Color.Black
                         )
                     }
                 }
@@ -285,7 +329,9 @@ private fun QuestionBlock(
                 Text(
                     text = stringResource(opt.labelRes),
                     style = MaterialTheme.typography.body1,
-                    color = theme.textColor
+                    color = theme.textColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

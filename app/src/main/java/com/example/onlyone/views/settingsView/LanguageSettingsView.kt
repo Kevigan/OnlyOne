@@ -1,29 +1,12 @@
 package com.example.onlyone.views.settingsView
 
-import android.util.Log
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -31,77 +14,133 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.onlyone.R
 import com.example.onlyone.theme.ThemeTokens
+import com.example.onlyone.utils.LanguageCatalog
 import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
+import com.example.onlyone.views.chat.ChatLanguageHelpDialog
 
 @Composable
-fun LanguageSettingsView(userViewModel: UserViewModel, theme: ThemeTokens,) {
+fun LanguageSettingsView(
+    userViewModel: UserViewModel,
+    theme: ThemeTokens,
+) {
     var currentAppLang by remember { mutableStateOf("en") }
     var currentChatLang by remember { mutableStateOf("en") }
+    var showChatLangInfo by remember { mutableStateOf(false) }
 
-    // Localized display names (from string resources below)
-    val langNames = mapOf(
-        "en" to stringResource(R.string.lang_english),
-        "de" to stringResource(R.string.lang_german),
-        "fr" to stringResource(R.string.lang_french),
-        "es" to stringResource(R.string.lang_spanish),
-        "pt" to stringResource(R.string.lang_portuguese)
-    )
-    val availableLanguages = langNames.values.toList()
-    val languageMap = langNames                    // code -> display name
-    val reverseMap = langNames.entries.associate { it.value to it.key } // display -> code
+    // App language (en/de)
+    val appLangs = LanguageCatalog.appOptions()
+    // Chat language (full EU set)
+    val chatLangs = LanguageCatalog.chatOptions()
 
     LaunchedEffect(Unit) {
         userViewModel.getAppLanguage { saved ->
-            currentAppLang = saved
-            // remove this now that you apply at startup to prevent flicker:
-            // applyAppLocale(saved)
+            currentAppLang = if (saved in LanguageCatalog.APP) saved else "en"
         }
-        currentChatLang = userViewModel.user.value?.chatLanguage ?: "en"
+        currentChatLang = userViewModel.user.value?.chatLanguage
+            ?.takeIf { it in LanguageCatalog.CHAT } ?: "en"
     }
 
-    Box(Modifier.fillMaxSize()) {
-        Column {
-            Text(
-                text = stringResource(R.string.settings_app_language_header),
-                color = theme.textColor,
-                fontSize = 18.sp
-            )
-            Spacer(Modifier.height(12.dp))
-
-            LanguageDropdown(
-                theme = theme,
-                currentCode = currentAppLang,
-                availableLanguages = availableLanguages,
-                languageMap = languageMap,
-                reverseMap = reverseMap
-            ) { code ->
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        // --- App language header
+        Text(
+            text = stringResource(R.string.settings_app_language_header),
+            color = theme.textColor,
+            fontSize = 18.sp
+        )
+        Spacer(Modifier.height(12.dp))
+        LanguageDropdown(
+            theme = theme,
+            currentCode = currentAppLang,
+            options = appLangs,
+            onSelected = { code ->
                 userViewModel.saveAppLanguage(code)
                 currentAppLang = code
-                applyAppLocale(code) // apply instantly on user change
+                applyAppLocale(code)
             }
+        )
 
-            Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
 
+        // --- Chat language header + help icon
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = stringResource(R.string.settings_chat_language_header),
+                text = stringResource(R.string.settings_select_chat_language_label),
                 color = theme.textColor,
                 fontSize = 18.sp
             )
-            Spacer(Modifier.height(12.dp))
-
-            LanguageDropdown(
-                theme = theme,
-                currentCode = currentChatLang,
-                availableLanguages = availableLanguages,
-                languageMap = languageMap,
-                reverseMap = reverseMap
-            ) { code ->
+            IconButton(onClick = { showChatLangInfo = true }) {
+                Icon(
+                    imageVector = Icons.Outlined.HelpOutline,
+                    contentDescription = "Chat language info",
+                    tint = Color.Yellow
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        LanguageDropdown(
+            theme = theme,
+            currentCode = currentChatLang,
+            options = chatLangs,
+            onSelected = { code ->
                 userViewModel.updatePublicProfile(
                     updates = mapOf("chatLanguage" to code),
                     onSuccess = { currentChatLang = code },
-                    onFailure = { /* show error */ }
+                    onFailure = { /* optionally show a toast/snackbar */ }
                 )
+            }
+        )
+    }
+
+    if (showChatLangInfo) {
+        ChatLanguageHelpDialog(
+            theme = theme,
+            onDismiss = { showChatLangInfo = false }
+        )
+    }
+}
+
+@Composable
+private fun LanguageDropdown(
+    theme: ThemeTokens,
+    currentCode: String,
+    options: Map<String, String>, // code -> displayName
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val display = options[currentCode] ?: currentCode.uppercase()
+
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clickable { expanded = true }
+    ) {
+        OutlinedTextField(
+            value = display,
+            onValueChange = {},
+            readOnly = true,
+            enabled = false,
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                textColor = theme.textColor,
+                cursorColor = theme.textColor,
+                focusedBorderColor = theme.textColor,
+                unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f),
+                disabledTextColor = theme.textColor
+            )
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (code, label) ->
+                DropdownMenuItem(onClick = {
+                    expanded = false
+                    onSelected(code)
+                }) {
+                    Text(label)
+                }
             }
         }
     }

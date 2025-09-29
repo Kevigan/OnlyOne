@@ -6,23 +6,58 @@ import com.google.firebase.ktx.Firebase
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class FriendRequestResult(
+    val toUid: String,
+    val toUsername: String? // may be null if CF didn't return
+)
+
+data class AcceptFriendResult(
+    val requesterUid: String,
+    val requesterUsername: String?
+)
+
 @Singleton
 class UserFriendRepo @Inject constructor() {
-    fun sendFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) {
+    fun sendFriendRequest(
+        fromUid: String,
+        toUid: String,
+        onComplete: (Result<FriendRequestResult>) -> Unit
+    ) {
         val data = mapOf("toUid" to toUid)
 
         Firebase.functions("europe-west3")
             .getHttpsCallable("sendFriendRequest")
             .call(data)
-            .addOnSuccessListener {
-                Log.d("FriendRequest", "✅ Friend request sent via cloud")
-                onComplete(true, null)
+            .addOnSuccessListener { res ->
+                val m = res.data as? Map<*, *>
+                val uname = m?.get("toUsername") as? String
+                onComplete(Result.success(FriendRequestResult(toUid, uname)))
             }
             .addOnFailureListener { e ->
-                Log.e("FriendRequest", "❌ Failed: ${e.message}", e)
-                onComplete(false, e.message)
+                onComplete(Result.failure(e))
             }
     }
+
+    fun acceptFriendRequest(
+        currentUid: String,
+        requesterUid: String,
+        onComplete: (Result<AcceptFriendResult>) -> Unit
+    ) {
+        val data = mapOf("requesterUid" to requesterUid)
+
+        Firebase.functions("europe-west3")
+            .getHttpsCallable("acceptFriendRequest")
+            .call(data)
+            .addOnSuccessListener { res ->
+                val m = res.data as? Map<*, *>
+                val uname = m?.get("requesterUsername") as? String
+                onComplete(Result.success(AcceptFriendResult(requesterUid, uname)))
+            }
+            .addOnFailureListener { e ->
+                onComplete(Result.failure(e))
+            }
+    }
+
     fun cancelOutgoingFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) {
         val data = mapOf("toUid" to toUid)
 
@@ -38,21 +73,7 @@ class UserFriendRepo @Inject constructor() {
                 onComplete(false, e.message)
             }
     }
-    fun acceptFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) {
-        val data = mapOf("requesterUid" to requesterUid)
 
-        Firebase.functions("europe-west3")
-            .getHttpsCallable("acceptFriendRequest")
-            .call(data)
-            .addOnSuccessListener {
-                Log.d("FriendAccept", "✅ Friend accepted via cloud")
-                onComplete(true, null)
-            }
-            .addOnFailureListener { e ->
-                Log.e("FriendAccept", "❌ Failed to accept friend: ${e.message}", e)
-                onComplete(false, e.message)
-            }
-    }
     fun declineFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) {
         val data = mapOf("requesterUid" to requesterUid)
 

@@ -5,9 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -18,9 +21,8 @@ import com.example.onlyone.Screen
 import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.utils.applyAppLocale
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
+import com.example.onlyone.views.chat.ChatLanguageHelpDialog
 import com.google.firebase.messaging.FirebaseMessaging
-import kotlin.math.max
-import kotlin.math.min
 
 @Composable
 fun SetUsernameView(
@@ -43,12 +45,14 @@ fun SetUsernameView(
     val genderOptions = listOf("m", "f", "d")
     var city by remember { mutableStateOf("") }
 
-    // Chat language — can be broader
-    val chatLanguageCodes = listOf("en", "de", "fr", "es", "pt")
+    // Chat language — broader Europe set
+    val chatLanguageCodes = listOf(
+        "en","de","fr","es","pt","it","nl","pl","ru","tr","uk","cs","ro","hu","sv"
+    )
     var selectedChatLanguage by remember { mutableStateOf("en") }
     var chatLangExpanded by remember { mutableStateOf(false) }
 
-    // App language — ONLY en/de for now
+    // App language — ONLY en/de
     val appLanguageCodes = listOf("en", "de")
     var selectedAppLanguage by remember { mutableStateOf("en") }
 
@@ -58,17 +62,27 @@ fun SetUsernameView(
         "de" to stringResource(R.string.lang_german),
         "fr" to stringResource(R.string.lang_french),
         "es" to stringResource(R.string.lang_spanish),
-        "pt" to stringResource(R.string.lang_portuguese)
+        "pt" to stringResource(R.string.lang_portuguese),
+        "it" to stringResource(R.string.lang_italian),
+        "nl" to stringResource(R.string.lang_dutch),
+        "pl" to stringResource(R.string.lang_polish),
+        "ru" to stringResource(R.string.lang_russian),
+        "tr" to stringResource(R.string.lang_turkish),
+        "uk" to stringResource(R.string.lang_ukrainian),
+        "cs" to stringResource(R.string.lang_czech),
+        "ro" to stringResource(R.string.lang_romanian),
+        "hu" to stringResource(R.string.lang_hungarian),
+        "sv" to stringResource(R.string.lang_swedish),
     )
+
+    var showChatLangInfo by remember { mutableStateOf(false) }
 
     fun clampAppLanguage(code: String): String =
         if (code in appLanguageCodes) code else "en"
 
     // Helpers
-    // 1) replace your clampAgeInput with a non-clamping sanitizer
     fun sanitizeAgeInput(input: String): String {
         val digits = input.filter { it.isDigit() }.take(3)
-        // optionally cap max to 100 only when 3 digits
         return if (digits.length == 3) {
             val n = digits.toInt()
             if (n > 100) "100" else digits
@@ -83,7 +97,6 @@ fun SetUsernameView(
         return ageOk && genderOk && cityOk && usernameOk
     }
 
-    // DRY: themed colors for all text fields
     @Composable
     fun themedTextFieldColors(theme: ThemeTokens) =
         TextFieldDefaults.outlinedTextFieldColors(
@@ -147,8 +160,8 @@ fun SetUsernameView(
             Spacer(Modifier.weight(1f))
             Text(
                 text = "min. 18",
-                style = MaterialTheme.typography.caption,       // small
-                color = MaterialTheme.colors.error              // red
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.error
             )
         }
 
@@ -158,7 +171,7 @@ fun SetUsernameView(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("18–100", color = theme.textColor.copy(alpha = 0.6f)) },
-            isError = ageError,                                 // 🔴 turns border red
+            isError = ageError,
             colors = themedTextFieldColors(theme)
         )
 
@@ -170,7 +183,6 @@ fun SetUsernameView(
                 color = MaterialTheme.colors.error
             )
         }
-
 
         Spacer(Modifier.height(16.dp))
 
@@ -230,9 +242,7 @@ fun SetUsernameView(
         )
         OutlinedTextField(
             value = city,
-            onValueChange = { input ->
-                city = input.take(50) // hard cap to 50 chars
-            },
+            onValueChange = { input -> city = input.take(50) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(
@@ -245,15 +255,28 @@ fun SetUsernameView(
 
         Spacer(Modifier.height(16.dp))
 
-        // Chat Language
-        Text(
-            text = stringResource(R.string.onboarding_chat_language_label),
-            style = MaterialTheme.typography.h6,
-            color = theme.textColor,
+        // Chat Language (label + help icon)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 6.dp, bottom = 4.dp)
-        )
+                .padding(start = 6.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.onboarding_chat_language_label),
+                style = MaterialTheme.typography.h6,
+                color = theme.textColor
+            )
+            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = { showChatLangInfo = true }) {
+                Icon(
+                    imageVector = Icons.Outlined.HelpOutline,
+                    contentDescription = stringResource(R.string.settings_chat_language_help_title),
+                    tint = Color.Yellow
+                )
+            }
+        }
+
         Box(
             Modifier
                 .fillMaxWidth()
@@ -303,21 +326,18 @@ fun SetUsernameView(
                             username = username,
                             fcmToken = token,
                             chatLanguage = selectedChatLanguage,
-                            // ⬇️ NEW FIELDS (ensure your repo signature supports these)
                             age = age,
                             gender = gender, // "m" | "f" | "d"
                             city = city,
                             ageAffirmation = true,
                             onSuccess = {
                                 val appLang = clampAppLanguage(selectedAppLanguage)
-
                                 userViewModel.saveSearchUserLanguage(selectedChatLanguage)
                                 userViewModel.saveAppLanguage(appLang)
                                 applyAppLocale(appLang)
-
                                 userViewModel.loadUser()
                                 navController.navigate(Screen.OnboardingScreen.route) {
-                                    popUpTo(0) { inclusive = true } // prevent back to SetUsername
+                                    popUpTo(0) { inclusive = true }
                                     launchSingleTop = true
                                 }
                             },
@@ -340,7 +360,7 @@ fun SetUsernameView(
                         isSaving = false
                     }
             },
-            enabled = !isSaving&& ageValid,
+            enabled = !isSaving && ageValid,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
@@ -350,5 +370,13 @@ fun SetUsernameView(
                     stringResource(R.string.onboarding_continue)
             )
         }
+    }
+
+    // Reuse the same dialog style used in settings (wraps CustomAlertDialog)
+    if (showChatLangInfo) {
+        ChatLanguageHelpDialog(
+            theme = theme,
+            onDismiss = { showChatLangInfo = false }
+        )
     }
 }

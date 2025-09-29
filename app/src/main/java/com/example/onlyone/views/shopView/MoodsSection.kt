@@ -2,6 +2,7 @@
 package com.example.onlyone.views.shopView
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -175,7 +176,13 @@ fun MoodsSection(
                                 }
                             }
                             else -> {
-                                Button(onClick = {}, colors = buttonColors, enabled = false) {
+                                Button(
+                                    onClick = {},
+                                    colors = buttonColors,
+                                    enabled = false,
+                                    border = BorderStroke(2.dp, Color(0xFFFFD700)), // golden border
+                                    shape = RoundedCornerShape(12.dp)              // keep consistent
+                                ) {
                                     Text(stringResource(R.string.common_selected), color = theme.textColor)
                                 }
                             }

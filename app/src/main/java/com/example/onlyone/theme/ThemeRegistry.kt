@@ -10,8 +10,7 @@ import com.example.onlyone.R
 // ────────────────────────────────────────────────────────────────────────────────
 enum class ThemeId(val id: Int) {
     LIGHT(1),
-    DARK(2),
-    OCEAN(3);
+    DARK(2);
 
     companion object {
         /** Safe lookup from numeric (1-based) id; null if not found */
@@ -28,6 +27,7 @@ data class ThemeTokens(
     val cardContentColor: Color,
     val gradientColor1: Color,
     val gradientColor2: Color,
+    val textFieldColor: Color,
     // Whether status/nav bar icons should be dark (true) or light (false)
     val systemBarDarkIcons: Boolean = true
 )
@@ -43,9 +43,10 @@ object ThemeRegistry {
             backgroundRes = R.drawable.cloud_background_day,
             borderColor = Color(0xFF3F51B5),
             textColor = Color(0xFF101215),
-            buttonBackgroundColor = Color(0xFFE3F2FD),
+            buttonBackgroundColor = Color(0xFF64B5F6),
             disabledButtonBackground = Color(0xFFB0BEC5),
             cardContentColor = Color.White,
+            textFieldColor = Color(0xFFBBDEFB),   // light blue (soft, readable)
             gradientColor1 = Color(0xFF64B5F6),
             gradientColor2 = Color(0xFF1976D2),
             systemBarDarkIcons = true
@@ -57,19 +58,9 @@ object ThemeRegistry {
             buttonBackgroundColor = Color(0xFF252545),
             disabledButtonBackground = Color(0xFF145A5A),
             cardContentColor = Color(0xFF08081A),
+            textFieldColor = Color(0xFF1E1E2C),   // dark bluish gray, subtle but visible
             gradientColor1 = Color(0xFF1976D2),
             gradientColor2 = Color(0xFF0A2A6B),
-            systemBarDarkIcons = false
-        )
-        ThemeId.OCEAN -> ThemeTokens(
-            backgroundRes = R.drawable.background_new_6,
-            borderColor = Color(0xFF26C6DA),
-            textColor = Color(0xFFE1F5FE),
-            buttonBackgroundColor = Color(0xFF013E5A), // explicit to avoid relying on default
-            disabledButtonBackground = Color(0xFF0E272E),
-            cardContentColor = Color(0xFFE1F5FE),
-            gradientColor1 = Color(0xFF0D3B2E),
-            gradientColor2 = Color(0xFF001F3F),
             systemBarDarkIcons = false
         )
     }

@@ -2,6 +2,7 @@
 <resources>
     <string name="profile_cd_current_avatar">Current avatar</string>
     <string name="profile_mood_label">Mood: %1$s</string>
+    <string name="profile_mood_empty_hint">No mood set — tap to add</string>
 
     <string name="profile_mood_dialog_title">Update mood status</string>
     <string name="profile_mood_placeholder">Enter mood…</string>
@@ -16,8 +17,8 @@
     <string name="onboarding_city_placeholder">Your city</string>
     <string name="onboarding_form_invalid">Please complete all fields correctly.</string>
 
-    <string name="friends_dialog_profile_title">Profildetails</string>
-    <string name="onboarding_gender_label">Gender (M/F/D)</string>
+    <string name="friends_dialog_profile_title">Profile details</string>
+    <string name="onboarding_gender_label">Gender</string>
     <string name="onboarding_gender_placeholder">Select gender</string>
 
 </resources>

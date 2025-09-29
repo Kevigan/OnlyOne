@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shop_info_cd">Shop-Hilfe</string>
+    <string name="shop_info_title">So funktioniert der Shop</string>
+    <string name="shop_info_ok">OK</string>
+
+    <string name="shop_info_body">
+        Im Shop kannst du Avatare und Stimmungs-Icons kaufen, die du in Chats oder in deinem Status verwenden kannst.
+        Außerdem kannst du Limits verbessern, z. B. die Nachrichtenlänge, tägliche Swipes und die Länge der Stimmungsnachricht.
+        Für Käufe benötigst du Gold und Runen, die du durch das Senden von Nachrichten und erhaltenes Feedback verdienst.
+        Runen erhältst du ausschließlich als Belohnung über Feedback.
+    </string>
+
+    <!-- Chat / Swipe info -->
+    <string name="chat_swipe_info_cd">Swipe-Hilfe</string>
+    <string name="chat_swipe_info_title">Über Swipes</string>
+    <string name="chat_swipe_info_body">
+        Du kannst dein tägliches Swipe-Limit im Shop erhöhen, indem du es dort verbesserst.
+    </string>
+</resources>

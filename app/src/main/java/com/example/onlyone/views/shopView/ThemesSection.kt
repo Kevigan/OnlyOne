@@ -1,6 +1,7 @@
 // ThemesSection.kt
 package com.example.onlyone.views.shopView
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -121,12 +122,23 @@ fun ThemesSection(
 
                         when {
                             isSelected -> {
-                                Button(onClick = {}, colors = buttonColors, enabled = false) {
+                                // ✅ Selected case: golden border here
+                                Button(
+                                    onClick = {},
+                                    colors = buttonColors,
+                                    enabled = false,
+                                    border = BorderStroke(2.dp, Color(0xFFFFD700)), // gold
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
                                     Text(stringResource(R.string.common_selected), color = theme.textColor)
                                 }
                             }
                             isOwned -> {
-                                Button(onClick = { onSelectTheme(id) }, colors = buttonColors, enabled = !isLoading) {
+                                Button(
+                                    onClick = { onSelectTheme(id) },
+                                    colors = buttonColors,
+                                    enabled = !isLoading
+                                ) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),
@@ -139,7 +151,11 @@ fun ThemesSection(
                                 }
                             }
                             else -> {
-                                Button(onClick = { onBuyTheme(id) }, colors = buttonColors, enabled = !isLoading) {
+                                Button(
+                                    onClick = { onBuyTheme(id) }, // ← back to buying
+                                    colors = buttonColors,
+                                    enabled = !isLoading
+                                ) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(18.dp),

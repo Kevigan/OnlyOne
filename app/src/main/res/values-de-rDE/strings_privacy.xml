@@ -43,17 +43,16 @@
     <string name="settings_privacy_choices_1">App- und Chatsprache einstellen</string>
     <string name="settings_privacy_choices_2">Status oder Profilinformationen bearbeiten</string>
     <string name="settings_privacy_choices_3">Benachrichtigungen und Werbeeinwilligungen steuern (falls zutreffend)</string>
-    <string name="settings_privacy_choices_4">Datenexport anfordern oder Konto löschen</string>
+    <string name="settings_privacy_choices_4">Konto löschen</string>
 
     <string name="settings_privacy_contact_title">Kontakt</string>
-    <string name="settings_privacy_contact_body">Schreibe an support@onlyone.app für Datenschutzfragen oder -anfragen.</string>
+    <string name="settings_privacy_contact_body">Schreibe an arctic.mango@gmx.de für Datenschutzfragen oder -anfragen.</string>
     <string name="settings_privacy_last_updated">Zuletzt aktualisiert: 17. September 2025</string>
 
     <!-- Falls interaktive Optionen vorhanden -->
     <string name="settings_privacy_notif_messages">Nachrichten-Benachrichtigungen</string>
     <string name="settings_privacy_notif_feedback">Feedback &amp; App-Updates</string>
     <string name="settings_privacy_review_consent">Werbeeinwilligung überprüfen</string>
-    <string name="settings_privacy_export_data">Meine Daten exportieren</string>
     <string name="settings_privacy_delete_account">Mein Konto löschen</string>
 
     <!-- Lösch-Dialog -->

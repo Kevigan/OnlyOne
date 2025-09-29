@@ -127,6 +127,8 @@ class UserManager @Inject constructor(
         }
     }
 
+    // viewModels/userViewModel/UserManager.kt  (inside class)
+
     fun sendFriendRequestByEmail(
         email: String,
         onSuccess: () -> Unit,
@@ -144,43 +146,50 @@ class UserManager @Inject constructor(
                 onFailure("No user found with that email.")
                 return@findUserByEmail
             }
-
             if (currentUser.friendList.contains(toUid)) {
                 onFailure("User is already your friend.")
                 return@findUserByEmail
             }
-
             if (currentUser.outgoingFriendRequests.contains(toUid)) {
                 onFailure("Friend request already sent.")
                 return@findUserByEmail
             }
 
-            userRepository.sendFriendRequest(currentUser.uid, toUid) { success, errorMessage ->
-                if (success) {
-                    val updated = currentUser.copy(
-                        outgoingFriendRequests = currentUser.outgoingFriendRequests + toUid
+            userRepository.sendFriendRequest(currentUser.uid, toUid) { result ->
+                result.onSuccess { payload ->
+                    // ✅ Optimistic local update
+                    updateUser(
+                        currentUser.copy(
+                            outgoingFriendRequests = currentUser.outgoingFriendRequests + toUid
+                        )
                     )
-                    updateUser(updated)
 
-                    userRepository.getPublicUser(toUid)
-                        .addOnSuccessListener { doc ->
-                            doc.toObject(PublicUser::class.java)?.let { publicUser ->
-                                _outgoingRequestUsernames.update {
-                                    it + (toUid to publicUser.username)
+                    if (payload.toUsername != null) {
+                        // No read needed
+                        _outgoingRequestUsernames.update { it + (toUid to payload.toUsername) }
+                        onSuccess()
+                    } else {
+                        // 📥 Fallback: one tiny read ONLY to get username (optional)
+                        userRepository.getPublicUser(toUid)
+                            .addOnSuccessListener { doc ->
+                                val public = doc.toObject(PublicUser::class.java)
+                                if (public != null) {
+                                    _outgoingRequestUsernames.update { it + (toUid to public.username) }
                                 }
+                                onSuccess()
                             }
-                            onSuccess()
-                        }
-                        .addOnFailureListener {
-                            Log.e("UserFriendManager", "⚠️ Username fetch failed", it)
-                            onSuccess()
-                        }
-                } else {
-                    onFailure(errorMessage ?: "Unknown error")
+                            .addOnFailureListener {
+                                // Still fine—UI can render UID, you can toast later if you wish
+                                onSuccess()
+                            }
+                    }
+                }.onFailure { e ->
+                    onFailure(e.message ?: "Failed to send friend request.")
                 }
             }
         }
     }
+
 
     fun sendFriendRequestDirect(targetUid: String) {
         val currentUser = getUser() ?: return
@@ -188,14 +197,28 @@ class UserManager @Inject constructor(
         if (currentUser.friendList.contains(targetUid) ||
             currentUser.outgoingFriendRequests.contains(targetUid)) return
 
-        userRepository.sendFriendRequest(currentUser.uid, targetUid) { success, errorMessage ->
-            if (success) {
-                updateUser(currentUser.copy(
-                    outgoingFriendRequests = currentUser.outgoingFriendRequests + targetUid
-                ))
+        userRepository.sendFriendRequest(currentUser.uid, targetUid) { result ->
+            result.onSuccess { payload ->
+                // ✅ Optimistic
+                updateUser(
+                    currentUser.copy(
+                        outgoingFriendRequests = currentUser.outgoingFriendRequests + targetUid
+                    )
+                )
+                if (payload.toUsername != null) {
+                    _outgoingRequestUsernames.update { it + (targetUid to payload.toUsername) }
+                } else {
+                    // optional tiny read
+                    userRepository.getPublicUser(targetUid)
+                        .addOnSuccessListener { doc ->
+                            doc.toObject(PublicUser::class.java)?.let { public ->
+                                _outgoingRequestUsernames.update { it + (targetUid to public.username) }
+                            }
+                        }
+                }
                 Log.d("UserFriendManager", "✅ Sent request to $targetUid")
-            } else {
-                Log.e("UserFriendManager", "❌ Failed to send request: $errorMessage")
+            }.onFailure { e ->
+                Log.e("UserFriendManager", "❌ Failed to send request: ${e.message}")
             }
         }
     }
@@ -224,23 +247,21 @@ class UserManager @Inject constructor(
     fun acceptFriendRequest(requesterUid: String) {
         val currentUser = getUser() ?: return
 
-        userRepository.acceptFriendRequest(currentUser.uid, requesterUid) { success, error ->
-            if (success) {
+        userRepository.acceptFriendRequest(currentUser.uid, requesterUid) { result ->
+            result.onSuccess { payload ->
                 val updated = currentUser.copy(
                     incomingFriendRequests = currentUser.incomingFriendRequests - requesterUid,
                     friendList = currentUser.friendList + requesterUid
                 )
                 updateUser(updated)
+
                 _incomingRequestUsernames.update { it - requesterUid }
 
-                viewModelScope.launch {
-                    val fullList = updated.friendList
-                    // You may call getPublicUsersSuspend() here if you want to re-sync
-                }
-
-                Log.d("UserFriendManager", "✅ Accepted friend request from $requesterUid")
-            } else {
-                Log.e("UserFriendManager", "❌ Failed to accept request: $error")
+                // ✅ Replace the manual sync call with a full refresh:
+                loadUser()  // this calls fetchFullUserSession → returns friends → syncFriendsToLocal(friends)
+            }
+                .onFailure { e ->
+                Log.e("UserFriendManager", "❌ Failed to accept request: ${e.message}")
             }
         }
     }

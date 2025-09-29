@@ -79,7 +79,7 @@ fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel
                 }
             }
 
-            Button(
+           /* Button(
                 onClick = { userViewModel.createFakeUsers(count = countFakeUsers) },
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red),
                 modifier = Modifier.padding(top = 16.dp)
@@ -88,9 +88,9 @@ fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel
                     text = stringResource(R.string.settings_create_fake_users, countFakeUsers),
                     color = theme.textColor
                 )
-            }
+            }*/
 
-            Button(
+           /* Button(
                 onClick = {
                     userViewModel.seedAchievementDefinitions(
                         onSuccess = { count ->
@@ -108,7 +108,7 @@ fun SettingsView(userViewModel: UserViewModel,sessionViewModel: SessionViewModel
                     text = stringResource(R.string.settings_seed_achievements),
                     color = Color.White
                 )
-            }
+            }*/
         }
 
         // Overlay

@@ -1,30 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Über (In-App) -->
+    <!-- Über (App-Inhalt) -->
     <string name="settings_about_header">Über diese App</string>
     <string name="settings_about_version">Version %1$s • (%2$d)</string>
 
     <string name="settings_about_tagline_title">Was ist Only One?</string>
     <string name="settings_about_tagline_body">
-        Only One ist eine minimalistische Chat-App, in der du pro Person genau eine Nachricht pro Tag senden kannst.
-        Entdecke neue Leute im Swipe-Modus, lies ihren kurzen Status und starte mit einer einzigen, durchdachten Nachricht.
+        Only One ist eine minimalistische Chat-App, in der du genau eine Nachricht pro Person und Tag senden kannst.
+        Entdecke neue Leute im Swipe-Modus, lies ihre kurzen Statusmeldungen und beginne ein Gespräch mit einer einzigen, durchdachten Nachricht.
     </string>
 
     <string name="settings_about_what_title">So funktioniert es</string>
     <string name="settings_about_what_body">
-        • Eine Nachricht pro Nutzer und Tag\n
+        • Eine Nachricht pro Nutzer pro Tag\n
         • Freunde können einmal antworten oder reagieren (👍 👎 😐)\n
-        • Zufällige Nutzer swipen (25/Tag gratis, unbegrenzt mit Abo)\n
-        • Statusnachrichten geben den Ton vor\n
-        • Favoriten zum Merken besonderer Nachrichten
+        • Zufällige Nutzer im Swipe-Modus durchstöbern (25/Tag Limit)\n
+        • Statusmeldungen geben den Ton an\n
+        • Favoriten lassen dich eine bedeutungsvolle Nachricht behalten\n
+        • Besuche den Shop, um Avatare, Stimmungen zu kaufen und Nachrichtenlänge, Stimmungsfeld oder Swipe-Limit zu erweitern
     </string>
 
     <string name="settings_about_features_title">Hauptfunktionen</string>
-    <string name="settings_about_feature_1">Besonnenes 1-pro-Tag-Messaging</string>
-    <string name="settings_about_feature_2">Tinder-ähnliche Entdeckung ohne Fotos</string>
-    <string name="settings_about_feature_3">Kurze Status-Hinweise für Kontext</string>
-    <string name="settings_about_feature_4">Emoji-Reaktionen verbrauchen keine Tagesnachricht</string>
-    <string name="settings_about_feature_5">Leichtgewichtig und datenschutzbewusst</string>
+    <string name="settings_about_feature_1">Durchdachtes 1-pro-Tag-Messaging</string>
+    <string name="settings_about_feature_2">Swipe-Stil Nutzerentdeckung ohne Fotos</string>
+    <string name="settings_about_feature_3">Kurze Statusmeldungen für den Kontext</string>
+    <string name="settings_about_feature_4">Emoji-Reaktionen ohne Verbrauch deiner täglichen Nachricht</string>
+    <string name="settings_about_feature_5">Shop mit Avataren, Stimmungen und Upgrades</string>
+    <string name="settings_about_feature_6">Leichtgewichtig und datenschutzfreundlich</string>
 
     <string name="settings_about_tech_title">Entwickelt mit</string>
     <string name="settings_about_tech_body">
@@ -33,6 +35,7 @@
 
     <string name="settings_about_contact_title">Kontakt</string>
     <string name="settings_about_contact_body">
-        Fragen oder Feedback? Schreibe an support@onlyone.app — wir lesen alles.
+        Fragen oder Feedback? Schreib an arctic.mango@gmx.de — wir lesen alles.
     </string>
 </resources>
+

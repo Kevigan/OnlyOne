@@ -96,7 +96,7 @@ class UserRepository @Inject constructor(
     fun upgradeFeature(
         feature: String,
         levels: Int,
-        onSuccess: (Int, Int) -> Unit,
+        onSuccess: (newAbsolute: Int, remaining: Map<String, Int>) -> Unit,
         onFailure: (Exception) -> Unit
     ) = upgrade.upgradeFeature(feature, levels, onSuccess, onFailure)
 
@@ -119,14 +119,12 @@ class UserRepository @Inject constructor(
 
     // -------- UserFriendRepo --------
 
-    fun sendFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) =
-        friendRepo.sendFriendRequest(fromUid, toUid, onComplete)
+    fun sendFriendRequest(fromUid: String, toUid: String, onComplete: (Result<FriendRequestResult>) -> Unit) = friendRepo.sendFriendRequest(fromUid, toUid, onComplete)
+
+    fun acceptFriendRequest(currentUid: String, requesterUid: String, onComplete: (Result<AcceptFriendResult>) -> Unit) = friendRepo.acceptFriendRequest(currentUid, requesterUid, onComplete)
 
     fun cancelOutgoingFriendRequest(fromUid: String, toUid: String, onComplete: (Boolean, String?) -> Unit) =
         friendRepo.cancelOutgoingFriendRequest(fromUid, toUid, onComplete)
-
-    fun acceptFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) =
-        friendRepo.acceptFriendRequest(currentUid, requesterUid, onComplete)
 
     fun declineFriendRequest(currentUid: String, requesterUid: String, onComplete: (Boolean, String?) -> Unit) =
         friendRepo.declineFriendRequest(currentUid, requesterUid, onComplete)
@@ -248,11 +246,11 @@ class UserRepository @Inject constructor(
                     incomingFriendRequests = (userMap["incomingFriendRequests"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
                     outgoingFriendRequests = (userMap["outgoingFriendRequests"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
 
-                    maxMessageLength = (userMap["maxMessageLength"] as? Number)?.toInt() ?: 25,
-                    maxMoments       = (userMap["maxMoments"]       as? Number)?.toInt() ?: 75,
-                    maxSwipes        = (userMap["maxSwipes"]        as? Number)?.toInt() ?: 50,
-                    maxAdsPerDay     = (userMap["maxAdsPerDay"]     as? Number)?.toInt() ?: 3,
-                    maxMoodLength    = (userMap["maxMoodLength"]    as? Number)?.toInt() ?: 25,
+                    maxMessageLength = absFromMap(userMap, "maxMessageLength", 75, 5),
+                    maxMoments       = absFromMap(userMap, "maxMoments",        0, 25),
+                    maxSwipes        = absFromMap(userMap, "maxSwipes",        30,  5),
+                    maxAdsPerDay     = absFromMap(userMap, "maxAdsPerDay",      0,  1),
+                    maxMoodLength    = absFromMap(userMap, "maxMoodLength",    60,  5),
 
                     notifications = notifications,
                     reportCount = (userMap["reportCount"] as? Number)?.toInt() ?: 0,
@@ -288,7 +286,8 @@ class UserRepository @Inject constructor(
                 Log.d("ownedAvatars", "🔥 user ownedAvatars: ${user.ownedAvatars}")
                 Log.d("userStuff", "🔥 user gold: ${user.gold}")
                 Log.d("userStuff", "🔥 user maxMoments: ${user.maxMoments}")
-                Log.d("userStuff", "🔥 engagementStatus momentsAvailable: ${engagementStatus.momentsAvailable}")
+                Log.d("userStuff", "🔥 engagementStatus swipesUsed: ${engagementStatus.swipesUsed}")
+                Log.d("userStuff", "🔥 engagementStatus maxUsed: ${user.maxSwipes}")
 
                 onComplete(user, friends, incoming, outgoing, blocked, engagementStatus)
             }
@@ -296,6 +295,15 @@ class UserRepository @Inject constructor(
     }
 
     // -------- Parsing helpers --------
+// Derive absolute from *Level when the absolute isn't present in payload.
+    private fun absFromMap(userMap: Map<*, *>, feature: String, defaultBase: Int, step: Int): Int {
+        val abs = (userMap[feature] as? Number)?.toInt()
+        if (abs != null) return abs
+
+        val lvlKey = "${feature}Level"
+        val lvl = (userMap[lvlKey] as? Number)?.toInt() ?: 0
+        return defaultBase + step * lvl
+    }
 
     private fun parseTimestamp(any: Any?): Timestamp? = when (any) {
         is Timestamp -> any
@@ -478,7 +486,7 @@ class UserRepository @Inject constructor(
             .data as Map<*, *>
 
         val swipesUsed = (res["swipesUsed"] as? Number)?.toInt() ?: 0
-        val maxSwipes  = (res["maxSwipes"]  as? Number)?.toInt() ?: 25
+        val maxSwipes  = (res["maxSwipes"]  as? Number)?.toInt() ?: 30
         val adsUsed    = (res["adsUsed"]    as? Number)?.toInt() ?: 0
 
         Result.success(AdResetResult(swipesUsed, maxSwipes, adsUsed))

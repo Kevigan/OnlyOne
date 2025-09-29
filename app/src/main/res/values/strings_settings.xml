@@ -30,4 +30,22 @@
     <string name="lang_french">Français</string>
     <string name="lang_spanish">Español</string>
     <string name="lang_portuguese">Português</string>
+    <string name="lang_italian">Italiano</string>
+    <string name="lang_dutch">Nederlands</string>
+    <string name="lang_polish">Polski</string>
+    <string name="lang_russian">Русский</string>
+    <string name="lang_turkish">Türkçe</string>
+    <string name="lang_ukrainian">Українська</string>
+    <string name="lang_czech">Čeština</string>
+    <string name="lang_romanian">Română</string>
+    <string name="lang_hungarian">Magyar</string>
+    <string name="lang_swedish">Svenska</string>
+
+    <!-- Chat language help -->
+    <string name="settings_select_chat_language_label">Select your chat language</string>
+    <string name="settings_chat_language_help_title">What is “Chat language”?</string>
+    <string name="settings_chat_language_help_body">
+        Your chat language is the language you prefer for conversations. We use it to show you users who can chat in that language and to help set the tone of messages you see. It doesn’t change the app’s menus or buttons (that’s controlled by App language).
+    </string>
+    <string name="common_ok">OK</string>
 </resources>

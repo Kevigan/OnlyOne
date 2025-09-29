@@ -61,12 +61,30 @@ fun MoodStatusCardContent(
                 .clickable(enabled = ownedMoodIds.isNotEmpty()) { showPickerDialog = true }
         )
 
-        Text(
-            text = moodStatus,
-            color = theme.textColor.copy(alpha = 0.8f),
-            style = MaterialTheme.typography.caption,
-            modifier = Modifier.clickable { showEditDialog = true }
-        )
+        // Bigger, tappable area for mood text
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 80.dp) // ✅ easy to tap
+                .clip(CircleShape)
+                .clickable { showEditDialog = true }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            val isEmpty = moodStatus.isBlank()
+            Text(
+                text = if (isEmpty)
+                    stringResource(R.string.profile_mood_empty_hint)
+                else
+                    moodStatus,
+                color = if (isEmpty)
+                    theme.textColor.copy(alpha = 0.5f)
+                else
+                    theme.textColor.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.caption,
+                maxLines = 2
+            )
+        }
     }
 
     // Edit mood text

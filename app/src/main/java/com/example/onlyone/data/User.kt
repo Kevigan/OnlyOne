@@ -43,8 +43,8 @@ data class PublicUser(
     // 🆕 New
     val gender: String = "unspecified",
     val age: Int? = null,
-    val isAdult: Boolean = false,
-    val city: String = ""
+    val city: String = "",
+    val isAdult: Boolean = false
 )
 
 // ✨ Upgrades (users_upgrades/{uid})

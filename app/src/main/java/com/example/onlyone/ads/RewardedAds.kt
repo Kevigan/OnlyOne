@@ -27,10 +27,13 @@ object RewardedAds {
             TEST_REWARDED_ID,
             builder.build(),
             object : RewardedAdLoadCallback() {
-                override fun onAdLoaded(ad: RewardedAd) { rewarded = ad }
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewarded = ad
+                    Log.w("Ads123", "Showing ads mf!")
+                }
                 override fun onAdFailedToLoad(err: LoadAdError) {
                     rewarded = null
-                    Log.w("Ads", "Rewarded load failed: ${err.message}")
+                    Log.w("Ads123", "Rewarded load failed: ${err.message}")
                 }
             }
         )
@@ -41,21 +44,53 @@ object RewardedAds {
         onReward: (RewardItem) -> Unit = {},
         onClosed: () -> Unit = {}
     ) {
-        val ad = rewarded ?: return onClosed()
+        val ad = rewarded
+        if (ad == null) {
+            Log.w("RewardedAds", "❌ show() called but no ad is loaded")
+            onClosed()
+            return
+        }
+
+        Log.d("RewardedAds", "🎬 Showing rewarded ad...")
+
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                Log.d("RewardedAds", "✅ Ad is now visible")
+            }
+
             override fun onAdDismissedFullScreenContent() {
+                Log.d("RewardedAds", "ℹ️ Ad dismissed by user")
                 rewarded = null
                 preload(activity.application) // queue next
                 onClosed()
             }
+
             override fun onAdFailedToShowFullScreenContent(e: AdError) {
+                Log.e(
+                    "RewardedAds",
+                    "❌ Failed to show: code=${e.code}, domain=${e.domain}, message=${e.message}"
+                )
                 rewarded = null
                 preload(activity.application)
                 onClosed()
             }
+
+            override fun onAdImpression() {
+                Log.d("RewardedAds", "👀 Impression recorded")
+            }
+
+            override fun onAdClicked() {
+                Log.d("RewardedAds", "🖱️ Ad clicked")
+            }
         }
+
         ad.show(activity) { rewardItem ->
+            Log.d(
+                "RewardedAds",
+                "🏆 User earned reward: type=${rewardItem.type}, amount=${rewardItem.amount}"
+            )
             onReward(rewardItem)
         }
     }
+
 }

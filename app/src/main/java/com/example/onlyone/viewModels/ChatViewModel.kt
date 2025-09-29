@@ -134,23 +134,24 @@ class ChatViewModel @Inject constructor(
             try {
                 when (val result = chatRepository.sendMessage(message)) {
                     is MessageResult.Success -> {
-                        // Only record "written today" if this receiver wasn't marked yet
+                        // mark written today (unchanged)
                         val alreadySent = chatRepository.hasAlreadyWrittenTo(message.receiverId)
-                        if (!alreadySent) {
-                            chatRepository.recordWrittenUser(message.receiverId)
-                            Log.d("SendMessage", "📝 Marked written: ${message.receiverId}")
-                        }
-                        // Refresh user to reflect rewards/counters (gold, points, rune, etc.)
-                        userViewModel.loadUser()
+                        if (!alreadySent) chatRepository.recordWrittenUser(message.receiverId)
+
+                        // ✅ optimistic user update
+                        userViewModel.applySendRewards(
+                            goldDelta = result.gold ?: 0,
+                            pointsDelta = result.points ?: 0,
+                            rune = result.rune
+                        )
+
+                        // ✅ cheap reconciliation from source-of-truth (no friends/queues/etc.)
+                        userViewModel.fetchUserInventory()
+
                         onComplete(result)
                     }
-                    MessageResult.AlreadySent -> {
-                        // No side effects, just return the result
-                        onComplete(MessageResult.AlreadySent)
-                    }
-                    MessageResult.Error -> {
-                        onComplete(MessageResult.Error)
-                    }
+                    MessageResult.AlreadySent -> onComplete(MessageResult.AlreadySent)
+                    MessageResult.Error -> onComplete(MessageResult.Error)
                 }
             } catch (_: Throwable) {
                 // Map unexpected exceptions to your Error object

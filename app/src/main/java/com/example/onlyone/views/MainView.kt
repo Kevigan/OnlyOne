@@ -113,8 +113,8 @@ fun MainView(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SmallResetButton("WM") { chatViewModel.hardResetWritten() }
-                TestVideoAdButton()
+                //SmallResetButton("WM") { chatViewModel.hardResetWritten() }
+                //TestVideoAdButton()
 
                 if (isAdmin) {
                     OutlinedButton(

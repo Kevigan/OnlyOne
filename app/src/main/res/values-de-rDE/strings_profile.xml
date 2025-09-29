@@ -2,6 +2,7 @@
 <resources>
     <string name="profile_cd_current_avatar">Aktueller Avatar</string>
     <string name="profile_mood_label">Stimmung: %1$s</string>
+    <string name="profile_mood_empty_hint">Noch keine Stimmung – tippen zum Hinzufügen</string>
 
     <string name="profile_mood_dialog_title">Stimmung aktualisieren</string>
     <string name="profile_mood_placeholder">Stimmung eingeben…</string>
@@ -17,7 +18,7 @@
     <string name="onboarding_form_invalid">Bitte fülle alle Felder korrekt aus.</string>
 
     <string name="friends_dialog_profile_title">Profile details</string>
-    <string name="onboarding_gender_label">Geschlecht (M/W/D)</string>
+    <string name="onboarding_gender_label">Geschlecht</string>
     <string name="onboarding_gender_placeholder">Geschlecht auswählen</string>
 
 </resources>

@@ -23,6 +23,7 @@
     <string name="friends_status_blocked">Blockiert</string>
     <string name="friends_pending">Ausstehend</string>
     <string name="friends_unknown">Unbekannt</string>
+    <string name="friends_header_count">%1$d/%2$d</string>
 
     <!-- Dialog -->
     <string name="friends_dialog_title">Freundesanfrage senden</string>
@@ -35,6 +36,7 @@
     <string name="friends_toast_request_sent">Freundesanfrage gesendet!</string>
     <string name="friends_toast_cancel_failed">Anfrage konnte nicht abgebrochen werden</string>
     <string name="friends_toast_request_canceled">Anfrage abgebrochen</string>
+    <string name="friends_sending">Senden…</string>
 
     <!-- Icon-Beschreibungen -->
     <string name="friends_cd_incoming">Eingehend</string>
@@ -74,7 +76,4 @@
     <!-- Achievements dialog -->
     <string name="friends_dialog_achievements_title">Erfolge</string>
     <string name="friends_dialog_achievements_total">Gesamte Erfolge: %1$d</string>
-
-    <!-- Common -->
-    <string name="common_ok">OK</string>
 </resources>

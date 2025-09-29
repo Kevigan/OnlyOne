@@ -105,7 +105,25 @@ data class MoodItem(
 object MoodCatalog {
     val moods = listOf(
         // Activities
-        MoodItem(id = 3, imageRes = R.drawable.mood_icon_activities_3, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 3,  imageRes = R.drawable.mood_icon_activities_3, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 20, imageRes = R.drawable.new_mood_icons_2,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 21, imageRes = R.drawable.new_mood_icons_3,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 22, imageRes = R.drawable.new_mood_icons_4,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 23, imageRes = R.drawable.new_mood_icons_5,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 24, imageRes = R.drawable.new_mood_icons_6,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 25, imageRes = R.drawable.new_mood_icons_7,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 26, imageRes = R.drawable.new_mood_icons_8,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 27, imageRes = R.drawable.new_mood_icons_9,  cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 28, imageRes = R.drawable.new_mood_icons_10, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 29, imageRes = R.drawable.new_mood_icons_11, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 30, imageRes = R.drawable.new_mood_icons_12, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 31, imageRes = R.drawable.new_mood_icons_13, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 32, imageRes = R.drawable.new_mood_icons_14, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 33, imageRes = R.drawable.new_mood_icons_15, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 34, imageRes = R.drawable.new_mood_icons_16, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 35, imageRes = R.drawable.new_mood_icons_17, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 36, imageRes = R.drawable.new_mood_icons_18, cost = 500, category = MoodCategory.ACTIVITIES),
+        MoodItem(id = 37, imageRes = R.drawable.new_mood_icons_19, cost = 500, category = MoodCategory.ACTIVITIES),
 
         // Love & Affection
         MoodItem(id = 4,  imageRes = R.drawable.mood_icon_love_affection_1,  cost = 500, category = MoodCategory.LOVE),
@@ -128,6 +146,7 @@ object MoodCatalog {
     // Fast lookup map
     val idToRes: Map<Int, Int> = moods.associate { it.id to it.imageRes }
 }
+
 
 /** Safe mapping with fallback. */
 @DrawableRes

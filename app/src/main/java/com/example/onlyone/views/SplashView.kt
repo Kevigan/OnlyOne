@@ -118,11 +118,11 @@ fun SplashView(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
-                painter = painterResource(id = R.drawable.logo_only_one),
+                painter = painterResource(id = R.drawable.new_logo),
                 contentDescription = "OnlyOne Logo",
                 modifier = Modifier
                     .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                    .size(160.dp)
+                    .size(320.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(

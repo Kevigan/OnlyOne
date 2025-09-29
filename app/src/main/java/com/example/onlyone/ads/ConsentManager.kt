@@ -28,6 +28,10 @@ class ConsentManager @Inject constructor(
         activity: Activity,
         onFinished: (canRequestAds: Boolean, error: String?) -> Unit
     ) {
+        // DEBUG: wipe cached consent so form shows on every launch
+        /*if (BuildConfig.DEBUG) {
+            resetForTesting()
+        }*/
         // --- per-process guard to avoid duplicate popup on one launch ---
         if (askedThisSession) {
             onFinished(info.canRequestAds(), null)

@@ -1,14 +1,14 @@
 package com.example.onlyone.views.shopView
 
-import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ButtonDefaults
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -23,6 +23,8 @@ import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.theme.ThemeViewModel
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 
 @Composable
 fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme: ThemeTokens) {
@@ -36,16 +38,16 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
     val currentThemeId by themeViewModel.id.collectAsState()
     var loadingThemeId by remember { mutableStateOf<com.example.onlyone.theme.ThemeId?>(null) }
     val scrollState = rememberScrollState()
-
+    var showInfoDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 36.dp, bottom = 16.dp, start = 4.dp, end = 4.dp)
-                .verticalScroll(scrollState) // ← enable scrolling
+                .verticalScroll(scrollState)
         ) {
-            // Header card
+            // HEADER CARD (title + gold + help icon)
             CustomColorOverlay(
                 modifier = Modifier.fillMaxWidth(),
                 paddingBox1 = PaddingValues(5.dp),
@@ -64,12 +66,27 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = stringResource(R.string.shop_title),
-                        style = MaterialTheme.typography.h5,
-                        color = theme.textColor,
+                    // LEFT: title + help icon
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.shop_title),
+                            style = MaterialTheme.typography.h5,
+                            color = theme.textColor
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(onClick = { showInfoDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Outlined.HelpOutline,
+                                contentDescription = stringResource(R.string.shop_info_cd),
+                                tint = Color(0xFFFFD700)
+                            )
+                        }
+                    }
+
+                    // RIGHT: gold
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = stringResource(R.string.common_gold_label),
@@ -85,9 +102,11 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
                         )
                     }
                 }
-            }
+            } // ← close header overlay
 
-            // Avatars
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // AVATARS
             AvatarsSection(
                 user = user,
                 loadingAvatarId = loadingAvatarId,
@@ -140,7 +159,7 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Moods
+            // MOODS
             MoodsSection(
                 user = user,
                 loadingMoodId = loadingMoodId,
@@ -193,7 +212,7 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // in ShopView
+            // THEMES
             ThemesSection(
                 currentThemeId = currentThemeId,
                 ownedThemeIds = user?.ownedThemes ?: emptyList(),
@@ -202,7 +221,11 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
                     loadingThemeId = id
                     themeViewModel.select(id)  // persist + apply
                     loadingThemeId = null
-                    Toast.makeText(context, context.getString(R.string.shop_theme_select_success), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.shop_theme_select_success),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 },
                 theme = theme,
                 onBuyTheme = { id ->
@@ -213,17 +236,25 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
                             // Auto-apply right after purchase
                             themeViewModel.select(id)
                             loadingThemeId = null
-                            Toast.makeText(context, context.getString(R.string.shop_theme_buy_success), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.shop_theme_buy_success),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         },
                         onFailure = { reason ->
                             loadingThemeId = null
-                            Toast.makeText(context, reason.ifBlank { context.getString(R.string.shop_theme_buy_failed) }, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                reason.ifBlank { context.getString(R.string.shop_theme_buy_failed) },
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     )
                 }
             )
 
-            // Upgrades (scrollable now)
+            // UPGRADES
             if (user != null) {
                 val currentChars = pluralStringResource(
                     R.plurals.common_chars, user!!.maxMessageLength, user!!.maxMessageLength
@@ -262,20 +293,21 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
                 }
             }
 
-            // give a little breathing room so last item isn’t obscured
+            // breathing room
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Dialogs (unchanged)
-        if (showMessageLengthDialog && user != null) {
+        // UPGRADE DIALOGS
+        val u = user
+        if (showMessageLengthDialog && u != null) {
             UpgradeDialog(
                 title = stringResource(R.string.shop_upgrade_message_length_title),
                 feature = "maxMessageLength",
-                currentValue = user!!.maxMessageLength,
-                userGold = user!!.gold,
-                userRunesRare = user!!.runes_rare,
-                userRunesSuperRare = user!!.runes_super_rare,
-                userRunesMegaRare = user!!.runes_mega_rare,
+                currentValue = u.maxMessageLength,
+                userGold = u.gold,
+                userRunesRare = u.runes_rare,
+                userRunesSuperRare = u.runes_super_rare,
+                userRunesMegaRare = u.runes_mega_rare,
                 onConfirm = { callback ->
                     userViewModel.upgradeFeature(
                         feature = "maxMessageLength",
@@ -289,15 +321,15 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
             )
         }
 
-        if (showSwipesDialog && user != null) {
+        if (showSwipesDialog && u != null) {
             UpgradeDialog(
                 title = stringResource(R.string.shop_upgrade_swipes_title),
                 feature = "maxSwipes",
-                currentValue = user!!.maxSwipes,
-                userGold = user!!.gold,
-                userRunesRare = user!!.runes_rare,
-                userRunesSuperRare = user!!.runes_super_rare,
-                userRunesMegaRare = user!!.runes_mega_rare,
+                currentValue = u.maxSwipes,
+                userGold = u.gold,
+                userRunesRare = u.runes_rare,
+                userRunesSuperRare = u.runes_super_rare,
+                userRunesMegaRare = u.runes_mega_rare,
                 onConfirm = { callback ->
                     userViewModel.upgradeFeature(
                         feature = "maxSwipes",
@@ -311,15 +343,15 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
             )
         }
 
-        if (showMoodLengthDialog && user != null) {
+        if (showMoodLengthDialog && u != null) {
             UpgradeDialog(
                 title = stringResource(R.string.shop_upgrade_mood_length_title),
                 feature = "maxMoodLength",
-                currentValue = user!!.maxMoodLength,
-                userGold = user!!.gold,
-                userRunesRare = user!!.runes_rare,
-                userRunesSuperRare = user!!.runes_super_rare,
-                userRunesMegaRare = user!!.runes_mega_rare,
+                currentValue = u.maxMoodLength,
+                userGold = u.gold,
+                userRunesRare = u.runes_rare,
+                userRunesSuperRare = u.runes_super_rare,
+                userRunesMegaRare = u.runes_mega_rare,
                 onConfirm = { callback ->
                     userViewModel.upgradeFeature(
                         feature = "maxMoodLength",
@@ -332,5 +364,16 @@ fun ShopView(userViewModel: UserViewModel, themeViewModel: ThemeViewModel, theme
                 theme = theme,
             )
         }
+
+        // INFO DIALOG (reusable)
+        if (showInfoDialog) {
+            InfoDialog(
+                title = stringResource(R.string.shop_info_title),
+                message = stringResource(R.string.shop_info_body),
+                theme = theme,
+                onDismiss = { showInfoDialog = false }
+            )
+        }
     }
 }
+

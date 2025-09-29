@@ -30,4 +30,22 @@
     <string name="lang_french">Français</string>
     <string name="lang_spanish">Español</string>
     <string name="lang_portuguese">Português</string>
+    <string name="lang_italian">Italiano</string>
+    <string name="lang_dutch">Nederlands</string>
+    <string name="lang_polish">Polski</string>
+    <string name="lang_russian">Русский</string>
+    <string name="lang_turkish">Türkçe</string>
+    <string name="lang_ukrainian">Українська</string>
+    <string name="lang_czech">Čeština</string>
+    <string name="lang_romanian">Română</string>
+    <string name="lang_hungarian">Magyar</string>
+    <string name="lang_swedish">Svenska</string>
+
+    <!-- Hilfe zur Chat-Sprache -->
+    <string name="settings_select_chat_language_label">Wähle deine Chat-Sprache</string>
+    <string name="settings_chat_language_help_title">Was ist „Chat-Sprache“?</string>
+    <string name="settings_chat_language_help_body">
+        Deine Chat-Sprache ist die Sprache, in der du bevorzugt schreibst. Wir nutzen sie, um dir Nutzer anzuzeigen, die in dieser Sprache chatten können, und um die Tonalität der Nachrichten besser einzuordnen. Sie ändert nicht die App-Menüs oder Buttons (das steuert die App-Sprache).
+    </string>
+    <string name="common_ok">OK</string>
 </resources>

@@ -1,30 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Screen copy -->
     <string name="feedback_title">Wir freuen uns über dein Feedback</string>
-    <string name="feedback_subtitle">Beantworte kurz ein paar Fragen und hilf uns, besser zu werden.</string>
+    <string name="feedback_subtitle">Beantworte kurz ein paar Fragen und hilf uns, die App zu verbessern.</string>
     <string name="feedback_free_text_label">Sonst noch etwas?</string>
-    <string name="feedback_free_text_placeholder">Sag uns, was du denkst…</string>
+    <string name="feedback_free_text_placeholder">Was hast du auf dem Herzen?</string>
     <string name="feedback_submit">Feedback senden</string>
     <string name="feedback_form_incomplete">Bitte beantworte alle Pflichtfragen.</string>
     <string name="feedback_sent_toast">Danke! Dein Feedback wurde gesendet.</string>
-    <string name="feedback_already_submitted_toast">Du hast heute schon Feedback gesendet.</string>
-    <string name="feedback_error_toast">Feedback konnte nicht gesendet werden. Bitte erneut versuchen.</string>
+    <string name="feedback_already_submitted_toast">Du hast heute bereits Feedback gesendet.</string>
+    <string name="feedback_error_toast">Feedback konnte nicht gesendet werden. Bitte versuche es erneut.</string>
 
     <!-- Q1 -->
-    <string name="feedback_q1_label">Was sollen wir am meisten verbessern?</string>
+    <string name="feedback_q1_label">Was sollten wir am meisten verbessern?</string>
     <string name="feedback_q1_opt_a">Chat-Erlebnis</string>
     <string name="feedback_q1_opt_b">Swipen &amp; Entdecken</string>
-    <string name="feedback_q1_opt_c">Avatare &amp; Shop</string>
+    <string name="feedback_q1_opt_c">Shop &amp; Upgrade-System</string>
 
     <!-- Q2 -->
-    <string name="feedback_q2_label">Wie oft nutzt du die App?</string>
+    <string name="feedback_q2_label">Wie oft benutzt du die App?</string>
     <string name="feedback_q2_opt_a">Täglich</string>
     <string name="feedback_q2_opt_b">Wöchentlich</string>
     <string name="feedback_q2_opt_c">Selten</string>
     <string name="feedback_q2_opt_d">Nur ausprobiert</string>
 
     <!-- Q3 -->
-    <string name="feedback_q3_label">Würdest du uns empfehlen?</string>
+    <string name="feedback_q3_label">Würdest du uns weiterempfehlen?</string>
     <string name="feedback_q3_opt_a">Ja</string>
     <string name="feedback_q3_opt_b">Nein</string>
+
+    <!-- Q4 -->
+    <string name="feedback_q4_label">Wie findest du das Limit von 1 Nachricht pro Tag?</string>
+    <string name="feedback_q4_opt_a">Gut — macht Chats bedeutungsvoller</string>
+    <string name="feedback_q4_opt_b">Okay, aber manchmal zu streng</string>
+    <string name="feedback_q4_opt_c">Nicht gut — wirkt einschränkend</string>
+
+    <!-- Q5 -->
+    <string name="feedback_q5_label">Wie findest du das Swipe-System (neue Leute finden)?</string>
+    <string name="feedback_q5_opt_a">Super, ich treffe genug neue Nutzer</string>
+    <string name="feedback_q5_opt_b">Okay, aber ich hätte gerne mehr Swipes</string>
+    <string name="feedback_q5_opt_c">Nicht hilfreich / ich swipe selten</string>
+
+    <!-- Q6 -->
+    <string name="feedback_q6_label">Wie empfindest du die Werbung nach jeweils 10 Swipes?</string>
+    <string name="feedback_q6_opt_a">In Ordnung / nicht störend</string>
+    <string name="feedback_q6_opt_b">Etwas störend, aber akzeptabel</string>
+    <string name="feedback_q6_opt_c">Zu häufig / lässt mich mit dem Swipen aufhören</string>
+
+    <!-- Q7 -->
+    <string name="feedback_q7_label">Sind Stimmungen/Statusmeldungen hilfreich für deine Antwort?</string>
+    <string name="feedback_q7_opt_a">Sehr hilfreich</string>
+    <string name="feedback_q7_opt_b">Etwas hilfreich</string>
+    <string name="feedback_q7_opt_c">Nicht hilfreich / ignoriere ich</string>
 </resources>

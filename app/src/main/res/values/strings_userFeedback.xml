@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Screen copy -->
     <string name="feedback_title">We’d love your feedback</string>
     <string name="feedback_subtitle">Answer a few quick questions and help us improve.</string>
     <string name="feedback_free_text_label">Anything else?</string>
@@ -14,7 +15,7 @@
     <string name="feedback_q1_label">What should we improve most?</string>
     <string name="feedback_q1_opt_a">Chat experience</string>
     <string name="feedback_q1_opt_b">Swipe &amp; discovery</string>
-    <string name="feedback_q1_opt_c">Avatars &amp; shop</string>
+    <string name="feedback_q1_opt_c">Shop &amp; upgrade system</string>
 
     <!-- Q2 -->
     <string name="feedback_q2_label">How often do you use the app?</string>
@@ -28,4 +29,27 @@
     <string name="feedback_q3_opt_a">Yes</string>
     <string name="feedback_q3_opt_b">No</string>
 
+    <!-- Q4 -->
+    <string name="feedback_q4_label">How do you feel about the 1 message per day limit?</string>
+    <string name="feedback_q4_opt_a">I like it — makes chats meaningful</string>
+    <string name="feedback_q4_opt_b">It’s okay, but sometimes too strict</string>
+    <string name="feedback_q4_opt_c">I don’t like it — feels limiting</string>
+
+    <!-- Q5 -->
+    <string name="feedback_q5_label">What do you think of the swipe system (finding new people)?</string>
+    <string name="feedback_q5_opt_a">Works great, I meet enough new users</string>
+    <string name="feedback_q5_opt_b">It’s fine, but I’d like more swipes</string>
+    <string name="feedback_q5_opt_c">Doesn’t feel useful / I rarely swipe</string>
+
+    <!-- Q6 -->
+    <string name="feedback_q6_label">How do you feel about ads after every 10 swipes?</string>
+    <string name="feedback_q6_opt_a">It’s fine / not annoying</string>
+    <string name="feedback_q6_opt_b">A bit annoying, but acceptable</string>
+    <string name="feedback_q6_opt_c">Too frequent / makes me stop swiping</string>
+
+    <!-- Q7 -->
+    <string name="feedback_q7_label">Are moods/status messages helpful when deciding how to reply?</string>
+    <string name="feedback_q7_opt_a">Very helpful</string>
+    <string name="feedback_q7_opt_b">Somewhat helpful</string>
+    <string name="feedback_q7_opt_c">Not helpful / I ignore them</string>
 </resources>

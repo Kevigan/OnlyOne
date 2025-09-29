@@ -41,6 +41,9 @@
     <string name="shop_theme_select_success">Theme selected.</string>
     <string name="shop_theme_select_failed">Couldn\'t select theme.</string>
 
-
+    <string name="shop_upgrade_level_progress">Level %1$d / %2$d</string>
+    <string name="shop_upgrade_level_maxed">Maxed</string>
+    <string name="shop_no_further_upgrades">No further upgrades available</string>
+    <string name="shop_upgrade_button_maxed">Maxed</string>
 
 </resources>

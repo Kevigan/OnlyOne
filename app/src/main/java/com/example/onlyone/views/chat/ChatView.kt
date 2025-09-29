@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,7 +48,9 @@ import kotlin.math.roundToInt
 // Prewritten
 import com.example.onlyone.prewritten.PrewrittenRepository
 import com.example.onlyone.prewritten.PreMsgCategory
+import com.example.onlyone.utils.LanguageCatalog
 import com.example.onlyone.views.chat.components.PrewrittenPickerSheet
+import com.example.onlyone.views.shopView.InfoDialog
 
 @Composable
 fun ChatView(
@@ -62,6 +65,19 @@ fun ChatView(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    val buttonColors = ButtonDefaults.buttonColors(
+        backgroundColor = theme.buttonBackgroundColor,
+        contentColor = theme.textColor,
+        disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
+        disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+    )
+    val buttonColorsSend = ButtonDefaults.buttonColors(
+        backgroundColor = Color(0xFF81C784),
+        contentColor = theme.textColor,
+        disabledBackgroundColor = theme.disabledButtonBackground.copy(alpha = 0.4f),
+        disabledContentColor = theme.cardContentColor.copy(alpha = 0.6f)
+    )
 
     // ---- Suggestions Dialog State ----
     var showSuggestions by remember { mutableStateOf(false) }
@@ -101,19 +117,6 @@ fun ChatView(
     val density = LocalDensity.current
     val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
 
-    val anyLabel = stringResource(R.string.chat_language_any)
-    val displayName: (String) -> String = { code ->
-        when (code) {
-            "any" -> anyLabel
-            "en"  -> "EN"
-            "de"  -> "DE"
-            "fr"  -> "FR"
-            "es"  -> "ES"
-            "it"  -> "IT"
-            else  -> code.uppercase()
-        }
-    }
-
     val offsetX = remember { Animatable(0f) }
     var isAnimating by remember { mutableStateOf(false) }
 
@@ -122,9 +125,14 @@ fun ChatView(
     var adMode by rememberSaveable { mutableStateOf(false) }
     var lastAdGateCount by rememberSaveable { mutableStateOf(-1) }
 
+    // --- Language filter state (uses shared catalog, includes "any")
     var selectedLanguage by remember { mutableStateOf("any") }
     LaunchedEffect(user.uid) {
         userViewModel.getSearchUserLanguage { savedLang -> selectedLanguage = savedLang }
+    }
+    val languageOptions = LanguageCatalog.chatOptionsWithAny()
+    val displayName: @Composable (String) -> String = { code ->
+        LanguageCatalog.fullName(code)
     }
 
     // --- Watch Ad to Reset Swipes Dialog ---
@@ -137,6 +145,9 @@ fun ChatView(
             showResetDialog = true
         }
     }
+
+    // --- Info state ---
+    var showSwipeInfoDialog by remember { mutableStateOf(false) }
 
     // ----------------- Screen -----------------
     Column(
@@ -170,11 +181,23 @@ fun ChatView(
                 )
                 engagementStatus?.let { es ->
                     if (isRandom) {
-                        Text(
-                            text = stringResource(R.string.chat_swipes, es.swipesUsed, user.maxSwipes),
-                            style = MaterialTheme.typography.subtitle1,
-                            color = theme.textColor
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.chat_swipes, es.swipesUsed, user.maxSwipes),
+                                style = MaterialTheme.typography.subtitle1,
+                                color = theme.textColor
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            IconButton(onClick = { showSwipeInfoDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                                    contentDescription = stringResource(R.string.chat_swipe_info_cd),
+                                    tint = Color(0xFFFFD700)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -252,10 +275,13 @@ fun ChatView(
                             )
 
                             val ageStr = targetUser?.age?.takeIf { it in 1..99 }?.toString() ?: "-"
-                            val genderStr = when (targetUser?.gender?.lowercase()) {
-                                "m", "f", "d" -> targetUser.gender.uppercase()
+                            val genderStr = when (targetUser?.gender?.trim()?.lowercase()) {
+                                "m", "male" -> "M"
+                                "f", "female" -> "F"
+                                "d", "diverse", "other", "nonbinary", "non-binary", "x" -> "D"
                                 else -> "-"
                             }
+
                             val cityStr = targetUser?.city?.takeIf { it.isNotBlank() } ?: "-"
 
                             val ageLabel = stringResource(R.string.onboarding_age_label)
@@ -291,7 +317,7 @@ fun ChatView(
                                     .weight(1f),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    backgroundColor = Color(0xCC1C1C1C),
+                                    backgroundColor = theme.textFieldColor,
                                     focusedBorderColor = theme.textColor,
                                     unfocusedBorderColor = theme.textColor.copy(alpha = 0.6f),
                                     cursorColor = theme.textColor,
@@ -378,11 +404,11 @@ fun ChatView(
                                     is MessageResult.Error -> {
                                         Toast.makeText(context, context.getString(R.string.chat_send_error), Toast.LENGTH_LONG).show()
                                     }
-
                                     else -> {}
                                 }
                             }
                         },
+                        colors = buttonColorsSend,
                         enabled = targetUser != null && messageText.isNotBlank() && !isSending && !isAnimating,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -412,29 +438,31 @@ fun ChatView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 var expanded by remember { mutableStateOf(false) }
-                val languageOptions = listOf("any", "en", "de", "fr", "es", "it")
 
-                // Language dropdown
+                // Language dropdown (shared catalog, + "any")
                 Box {
-                    OutlinedButton(onClick = { expanded = true }) {
-                        Text(stringResource(R.string.chat_language_prefix, displayName(selectedLanguage)), color = theme.textColor)
+                    OutlinedButton(onClick = { expanded = true }, colors = buttonColors) {
+                        Text(
+                            stringResource(R.string.chat_language_prefix, displayName(selectedLanguage)),
+                            color = theme.textColor
+                        )
                     }
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        languageOptions.forEach { lang ->
+                        languageOptions.forEach { (code, label) ->
                             DropdownMenuItem(
                                 onClick = {
-                                    selectedLanguage = lang
+                                    selectedLanguage = code
                                     expanded = false
-                                    userViewModel.saveSearchUserLanguage(lang)
+                                    userViewModel.saveSearchUserLanguage(code)
                                     coroutineScope.launch { userViewModel.loadRandomUserBatch(showToasts = true) }
                                 }
-                            ) { Text(displayName(lang), color = theme.textColor) }
+                            ) { Text(label, color = theme.textColor) }
                         }
                     }
                 }
 
                 // Suggestions button -> opens dialog
-                OutlinedButton(onClick = { showSuggestions = true }) {
+                OutlinedButton(onClick = { showSuggestions = true }, colors = buttonColors) {
                     Text(text = stringResource(R.string.pre_msg_button), color = theme.textColor)
                 }
 
@@ -513,7 +541,6 @@ fun ChatView(
                 )
             },
             confirmButton = {
-                // capture activity in a composable scope, but DON'T call LocalContext in onClick
                 val activity = context as? android.app.Activity
                 Button(
                     onClick = {
@@ -530,7 +557,6 @@ fun ChatView(
                                         onSuccess = {
                                             Toast.makeText(context, context.getString(R.string.chat_swipes_reset_success), Toast.LENGTH_SHORT).show()
                                             showResetDialog = false
-                                            // optional: auto-fetch new users if user had none
                                             coroutineScope.launch { userViewModel.loadRandomUserBatch(showToasts = true) }
                                         },
                                         onError = { msg ->
@@ -545,8 +571,7 @@ fun ChatView(
                 ) {
                     Text(stringResource(R.string.chat_out_of_swipes_confirm), color = theme.textColor)
                 }
-            }
-            ,
+            },
             dismissButton = {
                 TextButton(onClick = { showResetDialog = false }) {
                     Text(stringResource(R.string.chat_out_of_swipes_later), color = theme.textColor)
@@ -561,12 +586,12 @@ fun ChatView(
     if (showSuggestions) {
         Dialog(
             onDismissRequest = { showSuggestions = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false) // allow custom width
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Box(
                 Modifier
-                    .fillMaxWidth(0.98f)   // nearly full width on phones
-                    .widthIn(max = 720.dp) // sensible cap on tablets
+                    .fillMaxWidth(0.98f)
+                    .widthIn(max = 720.dp)
             ) {
                 CustomColorOverlay(
                     modifier = Modifier.fillMaxWidth(),
@@ -593,5 +618,15 @@ fun ChatView(
                 }
             }
         }
+    }
+
+    // ---- Info dialog ----
+    if (showSwipeInfoDialog) {
+        InfoDialog(
+            title = stringResource(R.string.chat_swipe_info_title),
+            message = stringResource(R.string.chat_swipe_info_body),
+            theme = theme,
+            onDismiss = { showSwipeInfoDialog = false }
+        )
     }
 }

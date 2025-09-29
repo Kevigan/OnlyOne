@@ -136,15 +136,18 @@ class UserViewModel @Inject constructor(
         userManager = UserManager(
             userRepository,
             viewModelScope,
-            updateUser = { _user.value = it },
+            updateUser = { incoming ->
+                // ✅ No recompute. Trust the server-mirrored values in users_public.
+                _user.value = incoming
+            },
             updateEngagementStatus = { _engagementStatus.value = it },
             getUser = { _user.value }
         )
 
         upgradeManager = UpgradeManager(
-            userRepository,
-            viewModelScope,
-            loadUser = { loadUser() }
+            userRepository = userRepository,
+            getUser = { _user.value },
+            updateUser = { _user.value = it }
         )
 
         settingsManager = UserSettingsManager(
@@ -215,6 +218,25 @@ class UserViewModel @Inject constructor(
     // ---------------------------
 
     fun loadUser() = userManager.loadUser()
+
+    /** Safely mutate the current user in-place (no network). */
+    fun updateUserLocal(transform: (UserComposite) -> UserComposite) {
+        val cur = _user.value ?: return
+        _user.postValue(transform(cur))
+    }
+
+    /** Convenience: apply a reward delta after sending a message. */
+    fun applySendRewards(goldDelta: Int, pointsDelta: Int, rune: String?) {
+        updateUserLocal { cur ->
+            cur.copy(
+                gold = cur.gold + goldDelta,
+                points = cur.points + pointsDelta,
+                runes_rare = if (rune == "rare") cur.runes_rare + 1 else cur.runes_rare,
+                runes_super_rare = if (rune == "super_rare") cur.runes_super_rare + 1 else cur.runes_super_rare,
+                runes_mega_rare = if (rune == "mega_rare") cur.runes_mega_rare + 1 else cur.runes_mega_rare
+            )
+        }
+    }
 
     fun updatePublicProfile(
         updates: Map<String, Any>,

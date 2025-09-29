@@ -81,6 +81,9 @@ fun FriendsView(
     var selectedTabIndex by remember { mutableStateOf(0) }
     var expandedUid by remember { mutableStateOf<String?>(null) }
 
+    val friendCount = localFriends.size
+    val maxFriends = 20
+
     // Localized tab titles (used only for "Friends" text tab)
     val tabTitles = listOf(
         stringResource(R.string.friends_tab_friends),
@@ -121,20 +124,20 @@ fun FriendsView(
                         color = theme.textColor// ⬅ text color
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = {
-                            userViewModel.loadUser()
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.friends_refreshing),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .background(
+                                color = theme.textColor.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(999.dp)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.friends_cd_reload),
-                            tint = theme.textColor // ⬅ icon color
+                        Text(
+                            text = stringResource(R.string.friends_header_count, friendCount, maxFriends),
+                            style = MaterialTheme.typography.caption,
+                            color = theme.textColor
                         )
                     }
                 }
@@ -361,15 +364,13 @@ fun FriendsView(
     // 🔹 Add Friend Dialog
     if (showAddDialog) {
         var email by remember { mutableStateOf("") }
+        var isSending by remember { mutableStateOf(false) } // ✅ new
 
         CustomAlertDialog(
             theme = theme,
-            onDismiss = { showAddDialog = false }
+            onDismiss = { if (!isSending) showAddDialog = false } // ✅ don't close while sending
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 // Title
                 Text(
                     text = stringResource(R.string.friends_dialog_title),
@@ -383,6 +384,7 @@ fun FriendsView(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
+                    enabled = !isSending, // ✅ disable while sending
                     label = { Text(stringResource(R.string.friends_dialog_email_label)) },
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         textColor = theme.textColor,
@@ -401,46 +403,65 @@ fun FriendsView(
                 // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = { showAddDialog = false }) {
-                        Text(
-                            text = stringResource(R.string.friends_dialog_cancel),
-                            color = theme.textColor
-                        )
+                    TextButton(
+                        onClick = { showAddDialog = false },
+                        enabled = !isSending // ✅ prevent dismiss while sending
+                    ) {
+                        Text(text = stringResource(R.string.friends_dialog_cancel), color = theme.textColor)
                     }
+
                     Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = {
-                        if (email.isBlank()) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.friends_toast_email_empty),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@TextButton
-                        }
-                        userViewModel.sendFriendRequestByEmail(
-                            email = email,
-                            onSuccess = {
+
+                    TextButton(
+                        onClick = {
+                            if (email.isBlank()) {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.friends_toast_request_sent),
+                                    context.getString(R.string.friends_toast_email_empty),
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                showAddDialog = false
-                            },
-                            onFailure = { reason ->
-                                Toast.makeText(context, reason, Toast.LENGTH_SHORT).show()
+                                return@TextButton
                             }
-                        )
-                    }) {
-                        Text(
-                            text = stringResource(R.string.friends_dialog_send),
-                            color = theme.textColor
-                        )
+                            isSending = true // ✅ start loading
+
+                            userViewModel.sendFriendRequestByEmail(
+                                email = email,
+                                onSuccess = {
+                                    isSending = false // ✅ stop loading
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.friends_toast_request_sent),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    showAddDialog = false
+                                },
+                                onFailure = { reason ->
+                                    isSending = false // ✅ stop loading
+                                    Toast.makeText(context, reason, Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        },
+                        enabled = !isSending && email.isNotBlank()
+                    ) {
+                        if (isSending) {
+                            androidx.compose.material.CircularProgressIndicator(
+                                modifier = Modifier
+                                    .width(18.dp)
+                                    .height(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(stringResource(R.string.friends_sending), color = theme.textColor)
+                        } else {
+                            Text(text = stringResource(R.string.friends_dialog_send), color = theme.textColor)
+                        }
                     }
                 }
             }
         }
     }
+
 }

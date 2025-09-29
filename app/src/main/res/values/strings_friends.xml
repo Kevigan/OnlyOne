@@ -23,6 +23,7 @@
     <string name="friends_status_blocked">Blocked</string>
     <string name="friends_pending">Pending</string>
     <string name="friends_unknown">Unknown</string>
+    <string name="friends_header_count">%1$d/%2$d</string>
 
     <!-- Dialog -->
     <string name="friends_dialog_title">Send Friend Request</string>
@@ -35,6 +36,7 @@
     <string name="friends_toast_request_sent">Friend request sent!</string>
     <string name="friends_toast_cancel_failed">Failed to cancel request</string>
     <string name="friends_toast_request_canceled">Request canceled</string>
+    <string name="friends_sending">Sending…</string>
 
     <!-- Icon content descriptions -->
     <string name="friends_cd_incoming">Incoming</string>
@@ -75,6 +77,4 @@
     <string name="friends_dialog_achievements_title">Achievements</string>
     <string name="friends_dialog_achievements_total">Total achievements: %1$d</string>
 
-    <!-- Common -->
-    <string name="common_ok">OK</string>
 </resources>

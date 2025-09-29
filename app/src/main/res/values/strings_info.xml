@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shop_info_cd">Shop help</string>
+    <string name="shop_info_title">How the Shop works</string>
+    <string name="shop_info_ok">OK</string>
+
+    <string name="shop_info_body">
+        In the Shop you can buy avatars and mood icons to use in your chats or mood status.
+        You can also upgrade limits like message length, daily swipes, and mood message length.
+        To purchase these you need gold and runes, which you earn by sending messages and receiving feedback.
+        Runes only drop from feedback rewards.
+    </string>
+
+    <!-- Chat / Swipe info -->
+    <string name="chat_swipe_info_cd">Swipe help</string>
+    <string name="chat_swipe_info_title">About Swipes</string>
+    <string name="chat_swipe_info_body">
+        You can increase your daily swipe limit by upgrading it in the Shop.
+    </string>
+
+</resources>

@@ -35,15 +35,15 @@ import androidx.compose.ui.unit.dp
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.theme.ThemeTokens
-import com.example.onlyone.utils.calculateUpgradeCost
-import com.example.onlyone.utils.upgradeCosts
-import com.example.onlyone.utils.upgradeSteps
+import com.example.onlyone.utils.deriveLevelFromAbsolute
+import com.example.onlyone.utils.maxLevels
+import com.example.onlyone.utils.nextUpgradeCostOrNull
 
 @Composable
 fun UpgradeDialog(
     title: String,
-    feature: String, // "maxMessageLength" | "maxSwipes" (others show raw number)
-    currentValue: Int,
+    feature: String, // "maxMessageLength" | "maxSwipes" | "maxMoodLength" | etc.
+    currentValue: Int, // absolute value from users_public
     userGold: Int,
     userRunesRare: Int,
     userRunesSuperRare: Int,
@@ -55,26 +55,35 @@ fun UpgradeDialog(
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val cost = calculateUpgradeCost(feature, currentValue, 1) // always 1 step
-    val canAfford = userGold >= cost.gold &&
-            userRunesRare >= cost.runesRare &&
-            userRunesSuperRare >= cost.runesSuperRare &&
-            userRunesMegaRare >= cost.runesMegaRare
+    // Treat param as absolute and derive level
+    val currentAbsolute = currentValue
+    val level = deriveLevelFromAbsolute(feature, currentAbsolute) // 0-based
+    val totalLevels = maxLevels(feature)
+    val humanLevel = (level + 1).coerceAtMost(totalLevels).coerceAtLeast(1)
+    val isMaxed = level >= totalLevels
+
+    // Cost for the NEXT upgrade level (null if maxed)
+    val nextCost = nextUpgradeCostOrNull(feature, currentAbsolute)
+
+    val canAfford = !isMaxed && nextCost != null &&
+            userGold >= nextCost.gold &&
+            userRunesRare >= nextCost.runesRare &&
+            userRunesSuperRare >= nextCost.runesSuperRare &&
+            userRunesMegaRare >= nextCost.runesMegaRare
 
     // Localized "Current: …"
     val currentValueText = when (feature) {
         "maxMessageLength" -> pluralStringResource(
-            R.plurals.common_chars, currentValue, currentValue
+            R.plurals.common_chars, currentAbsolute, currentAbsolute
         )
         "maxSwipes" -> pluralStringResource(
-            R.plurals.common_swipes_per_day, currentValue, currentValue
+            R.plurals.common_swipes_per_day, currentAbsolute, currentAbsolute
         )
         "maxMoodLength" -> pluralStringResource(
-            R.plurals.common_chars, currentValue, currentValue
+            R.plurals.common_chars, currentAbsolute, currentAbsolute
         )
-        else -> currentValue.toString()
+        else -> currentAbsolute.toString()
     }
-
 
     Box(
         modifier = Modifier
@@ -99,6 +108,21 @@ fun UpgradeDialog(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(title, style = MaterialTheme.typography.h6, color = theme.textColor)
 
+                    // Level progress (e.g., "Level 3 / 15" or "Maxed")
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = if (isMaxed) {
+                            stringResource(R.string.shop_upgrade_level_maxed)
+                        } else {
+                            stringResource(
+                                R.string.shop_upgrade_level_progress,
+                                humanLevel,
+                                totalLevels
+                            )
+                        },
+                        color = theme.textColor
+                    )
+
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.common_current, currentValueText),
@@ -112,29 +136,37 @@ fun UpgradeDialog(
                         color = theme.textColor
                     )
 
-                    if (cost.gold > 0) {
+                    // Show next step cost (or "no further upgrades")
+                    if (isMaxed || nextCost == null) {
                         Text(
-                            text = stringResource(R.string.common_gold_with_amount, cost.gold),
+                            text = stringResource(R.string.shop_no_further_upgrades),
                             color = theme.textColor
                         )
-                    }
-                    if (cost.runesRare > 0) {
-                        Text(
-                            text = stringResource(R.string.common_runes_rare, cost.runesRare),
-                            color = theme.textColor
-                        )
-                    }
-                    if (cost.runesSuperRare > 0) {
-                        Text(
-                            text = stringResource(R.string.common_runes_super_rare, cost.runesSuperRare),
-                            color = theme.textColor
-                        )
-                    }
-                    if (cost.runesMegaRare > 0) {
-                        Text(
-                            text = stringResource(R.string.common_runes_mega_rare, cost.runesMegaRare),
-                            color = theme.textColor
-                        )
+                    } else {
+                        if (nextCost.gold > 0) {
+                            Text(
+                                text = stringResource(R.string.common_gold_with_amount, nextCost.gold),
+                                color = theme.textColor
+                            )
+                        }
+                        if (nextCost.runesRare > 0) {
+                            Text(
+                                text = stringResource(R.string.common_runes_rare, nextCost.runesRare),
+                                color = theme.textColor
+                            )
+                        }
+                        if (nextCost.runesSuperRare > 0) {
+                            Text(
+                                text = stringResource(R.string.common_runes_super_rare, nextCost.runesSuperRare),
+                                color = theme.textColor
+                            )
+                        }
+                        if (nextCost.runesMegaRare > 0) {
+                            Text(
+                                text = stringResource(R.string.common_runes_mega_rare, nextCost.runesMegaRare),
+                                color = theme.textColor
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(8.dp))
@@ -172,7 +204,14 @@ fun UpgradeDialog(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text(stringResource(R.string.common_confirm), color = theme.textColor)
+                                Text(
+                                    text = if (isMaxed) {
+                                        stringResource(R.string.shop_upgrade_button_maxed)
+                                    } else {
+                                        stringResource(R.string.common_confirm)
+                                    },
+                                    color = theme.textColor
+                                )
                             }
                         }
 
@@ -186,7 +225,6 @@ fun UpgradeDialog(
                         ) {
                             Text(stringResource(R.string.common_cancel), color = theme.textColor)
                         }
-
                     }
                 }
             }

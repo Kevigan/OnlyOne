@@ -1,6 +1,7 @@
 package com.example.onlyone
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
@@ -15,35 +16,43 @@ import com.example.onlyone.ui.theme.OnlyOneTheme
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ❌ remove the old one-shot call
-        // ConsentAndAds.showConsentThenInitAds(this, application)
+        // 1) Initialize the Google Mobile Ads SDK once
+        MobileAds.initialize(this) { status ->
+            Log.d("AdsInit", "MobileAds initialized: $status")
+        }
+        MobileAds.setRequestConfiguration(
+            RequestConfiguration.Builder()
+                .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR /*, "HASHED_TEST_DEVICE_ID"*/))
+                .build()
+        )
+
+        // 2) Run UMP consent and, when done, PRELOAD rewarded/interstitial
+        ConsentAndAds.showConsentThenInitAds(this, application)
+        // (ConsentAndAds will call RewardedAds.preload(...) for you)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
-            // ✅ create once and provide to the whole app
             val consentManager = remember { ConsentManager(applicationContext) }
-
             CompositionLocalProvider(LocalConsentManager provides consentManager) {
                 OnlyOneTheme {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.background
-                        ) {
-                            Navigation() // no extra params needed
-                        }
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        Navigation()
                     }
                 }
             }
         }
     }
 }
+
 
 

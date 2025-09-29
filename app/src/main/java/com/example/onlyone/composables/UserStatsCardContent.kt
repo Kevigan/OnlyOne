@@ -84,7 +84,7 @@ fun UserStatsCardContent(
                         Icon(
                             imageVector = Icons.Filled.Feedback,
                             contentDescription = stringResource(R.string.main_cd_feedback),
-                            tint = theme.textColor
+                            tint = Color.Yellow
                         )
                     }
                 }

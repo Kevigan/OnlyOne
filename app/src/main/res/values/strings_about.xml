@@ -14,17 +14,19 @@
     <string name="settings_about_what_body">
         • One message per user per day\n
         • Friends can reply once or react (👍 👎 😐)\n
-        • Swipe random users (25/day free, unlimited for subscribers)\n
+        • Swipe random users (25/day limit)\n
         • Status messages guide the tone\n
-        • Favorites let you keep a meaningful message
+        • Favorites let you keep a meaningful message\n
+        • Visit the Shop to buy avatars, moods, and upgrade message length, mood length, or swipe limit
     </string>
 
     <string name="settings_about_features_title">Key features</string>
     <string name="settings_about_feature_1">Thoughtful 1-a-day messaging</string>
-    <string name="settings_about_feature_2">Tinder-style user discovery without photos</string>
+    <string name="settings_about_feature_2">Swipe-style user discovery without photos</string>
     <string name="settings_about_feature_3">Short statuses to set context</string>
     <string name="settings_about_feature_4">Emoji reactions that don’t use up your daily message</string>
-    <string name="settings_about_feature_5">Lightweight and privacy-minded</string>
+    <string name="settings_about_feature_5">Shop with avatars, moods, and upgrades</string>
+    <string name="settings_about_feature_6">Lightweight and privacy-minded</string>
 
     <string name="settings_about_tech_title">Built with</string>
     <string name="settings_about_tech_body">
@@ -33,6 +35,7 @@
 
     <string name="settings_about_contact_title">Contact</string>
     <string name="settings_about_contact_body">
-        Questions or feedback? Email support@onlyone.app — we read everything.
+        Questions or feedback? Email arctic.mango@gmx.de — we read everything.
     </string>
 </resources>
+
