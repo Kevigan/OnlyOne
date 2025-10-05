@@ -36,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
@@ -114,14 +115,20 @@ fun MainBottomBar(navController: NavController, currentRoute: String?, theme: Th
                         Spacer(modifier = Modifier.width(64.dp))
 
                         NavigationIcon(
-                            icon = Icons.Default.Settings,
+                            icon = null, // set to null, since we’ll use a painter instead
                             contentDescription = "Shop",
                             isSelected = currentRoute == Screen.ShopScreen.route,
-                            onClick = { navController.navigate(Screen.ShopScreen.route) }
+                            onClick = { navController.navigate(Screen.ShopScreen.route) },
+                            customPainter = painterResource(id = R.drawable.baseline_hotel_class_24),
+                            /*selectedGradient = Brush.linearGradient(
+                                listOf(
+                                    Color(0xFFFFD54F), // amber 300
+                                    Color(0xFFFFB300)  // amber 600
+                                )
+                            )*/
                         )
-
                         NavigationIcon(
-                            icon = Icons.Default.Info,
+                            icon = Icons.Default.Settings,
                             contentDescription = "Settings",
                             isSelected = currentRoute == Screen.SettingsScreen.route,
                             onClick = { navController.navigate(Screen.SettingsScreen.route) }
@@ -179,7 +186,8 @@ fun MainBottomBar(navController: NavController, currentRoute: String?, theme: Th
 
 @Composable
 fun NavigationIcon(
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    customPainter: Painter? = null,
     contentDescription: String,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -200,12 +208,22 @@ fun NavigationIcon(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = backgroundColor,
-                modifier = Modifier.size(iconSize)
-            )
+            if (customPainter != null) {
+                Icon(
+                    painter = customPainter,
+                    contentDescription = contentDescription,
+                    tint = backgroundColor,
+                    modifier = Modifier.size(iconSize)
+                )
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = backgroundColor,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
         }
     }
 }
+

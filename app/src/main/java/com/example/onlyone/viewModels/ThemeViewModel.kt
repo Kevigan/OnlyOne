@@ -8,18 +8,32 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// ThemeViewModel.kt (use the real initial, and start eagerly)
 @HiltViewModel
 class ThemeViewModel @Inject constructor(
     private val store: ThemeStore
 ) : ViewModel() {
-    val id: StateFlow<ThemeId> = store.themeIdFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeId.LIGHT)
 
-    val tokens: StateFlow<ThemeTokens> =
-        id.map { ThemeRegistry.tokens(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeRegistry.tokens(ThemeId.LIGHT))
+    // Read once, synchronously, to avoid flicker
+    private val initial: ThemeId = store.blockingInitialThemeId()
+
+    val id: StateFlow<ThemeId> = store.themeIdFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly, // start immediately
+            initialValue = initial              // <- key: NOT LIGHT hardcoded
+        )
+
+    val tokens: StateFlow<ThemeTokens> = id
+        .map { ThemeRegistry.tokens(it) }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            ThemeRegistry.tokens(initial)      // <- match the above
+        )
 
     fun select(newId: ThemeId) = viewModelScope.launch { store.setTheme(newId) }
 }
+
 
 

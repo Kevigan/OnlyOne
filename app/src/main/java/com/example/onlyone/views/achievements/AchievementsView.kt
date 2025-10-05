@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -24,11 +25,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.onlyone.R
+import com.example.onlyone.composables.CustomColorOverlay
+import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.viewModels.userViewModel.UserViewModel
 
 @Composable
 fun AchievementsView(
-    viewModel: UserViewModel = hiltViewModel()
+    viewModel: UserViewModel = hiltViewModel(),
+    theme: ThemeTokens,
 ) {
     val isLoading = remember { mutableStateOf(true) }
 
@@ -40,11 +44,12 @@ fun AchievementsView(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(32.dp)
     ) {
         Text(
             stringResource(R.string.achv_title),
             style = MaterialTheme.typography.h4,
+            color = theme.textColor,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -55,13 +60,14 @@ fun AchievementsView(
             if (grouped.isNullOrEmpty()) {
                 Text(
                     stringResource(R.string.achv_empty),
-                    color = Color.Red
+                    color = theme.textColor
                 )
             }
 
             grouped?.forEach { (type, achievements) ->
                 Text(
                     stringResource(R.string.achv_section, type),
+                    color = theme.textColor,
                     style = MaterialTheme.typography.subtitle1
                 )
                 /*LazyRow {
@@ -74,12 +80,22 @@ fun AchievementsView(
                     contentPadding = PaddingValues(horizontal = 8.dp)    // optional: padding at start/end
                 ) {
                     items(achievements) { a ->
-                        AchievementCardGradient(
-                            achievement = a,
-                            width = 160.dp,
-                            height = 200.dp,
-                            shape = RoundedCornerShape(20) // tweak freely
+                        CustomColorOverlay(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(2f),
+                            theme = theme,
+                            onDismiss = {}
                         )
+                        {
+                            AchievementCardGradient(
+                                achievement = a,
+                                width = 160.dp,
+                                height = 200.dp,
+                                shape = RoundedCornerShape(20), // tweak freely
+                                theme = theme
+                            )
+                        }
                     }
                 }
             }

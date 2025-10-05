@@ -30,9 +30,15 @@ class UserManager @Inject constructor(
     private val _blockedUsers = MutableStateFlow<List<PublicUser>>(emptyList())
     val blockedUsers: StateFlow<List<PublicUser>> = _blockedUsers.asStateFlow()
 
-    fun loadUser() {
+    fun loadUser() = loadUser(checkChanged = false, uidsToCheck = null)
+
+    fun loadUser(
+        checkChanged: Boolean = false,        // cheap on startup
+        uidsToCheck: List<String>? = null     // optional subset on refresh
+    ) {
         userRepository.fetchFullUserSession(
             onComplete = { user, friends, incoming, outgoing, blocked, engagementStatus ->
+                // Update VM state
                 updateUser(user)
                 updateEngagementStatus(engagementStatus)
 
@@ -40,15 +46,16 @@ class UserManager @Inject constructor(
                 _outgoingRequestUsernames.value = outgoing.associate { it.uid to it.username }
                 _blockedUsers.value = blocked
 
-                viewModelScope.launch {
-                    userRepository.syncFriendsToLocal(user.friendList, friends)
-                }
+                // ❌ no need to call syncFriendsToLocal here — the repository already
+                // merged & persisted the delta before invoking onComplete.
 
                 Log.d("UserSessionManager", "✅ User session loaded successfully")
             },
             onFailure = { error ->
                 Log.e("UserSessionManager", "❌ Failed to load user", error)
-            }
+            },
+            checkChanged = checkChanged,
+            uidsToCheck = uidsToCheck
         )
     }
 

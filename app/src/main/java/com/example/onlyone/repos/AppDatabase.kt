@@ -17,7 +17,7 @@ import com.example.onlyone.data.*
         LocalUserSettings::class,
         LocalFavoriteMessage::class        // NEW
     ],
-    version = 12                          // bumped from 9 -> 10
+    version = 13                          // bumped from 9 -> 10
 )
 @TypeConverters(FavouriteMessageConverter::class)
 abstract class AppDatabase : RoomDatabase() {

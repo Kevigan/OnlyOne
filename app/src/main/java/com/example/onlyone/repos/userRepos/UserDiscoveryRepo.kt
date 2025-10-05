@@ -136,31 +136,42 @@ class UserDiscoveryRepo @Inject constructor(
             }
     }
 
-    suspend fun syncFriendsToLocal(uids: List<String>, publicFriends: List<PublicUser>) {
-        val newLocalFriends = publicFriends.map { pu ->
-            LocalFriend(
-                uid = pu.uid,
-                username = pu.username,
-                moodStatus = pu.moodStatus,
-                avatarId = pu.avatarId,
-                points = pu.points,
-                achievementCount = pu.achievementCount,     // no ?: 0 if non-null in model
-                favouriteMessage = pu.favouriteMessage,
+    suspend fun syncFriendsToLocal(
+        serverFriendUids: List<String>,          // from user.friendList (authoritative list)
+        publicFriends: List<PublicUser>          // only the friends you actually fetched (new/changed or full list)
+    ) {
+        // Current local snapshot
+        val existing = friendDao.getAllFriendsNow()
 
-                // 🆕 passthroughs
-                gender = pu.gender,
-                age = pu.age,
-                city = pu.city
-            )
-        }.sortedBy { it.uid }
+        // 1) Compute removals (present locally but NOT on server list)
+        val serverSet = serverFriendUids.toSet()
+        val removedUids = existing.asSequence()
+            .map { it.uid }
+            .filter { it !in serverSet }
+            .toList()
 
-        val existing = friendDao.getAllFriendsNow().sortedBy { it.uid }
+        // 2) Build upserts for any fetched friends (new/changed or full set)
+        fun PublicUser.toLocal(): LocalFriend = LocalFriend(
+            uid = uid,
+            username = username,
+            moodStatus = moodStatus,
+            avatarId = avatarId,
+            points = points,
+            achievementCount = achievementCount,
+            favouriteMessage = favouriteMessage,
+            gender = gender,
+            age = age,
+            city = city,
+            publicVersion = publicVersion           // 👈 keep the version!
+        )
+        val upserts = publicFriends.map { it.toLocal() }
 
-        if (existing != newLocalFriends) {
-            friendDao.clearFriends()
-            friendDao.insertAll(newLocalFriends)
+        // 3) Apply delta in one transaction (no table wipe)
+        if (removedUids.isNotEmpty() || upserts.isNotEmpty()) {
+            friendDao.applyDelta(removedUids, upserts)
         }
     }
+
 
     suspend fun getLocalFriend(uid: String): LocalFriend? {
         return friendDao.getFriendByUid(uid)

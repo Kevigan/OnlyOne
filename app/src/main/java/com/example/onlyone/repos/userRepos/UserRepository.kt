@@ -1,6 +1,7 @@
 package com.example.onlyone.repos.userRepos
 
 import android.util.Log
+import com.example.dao.FriendDao
 import com.example.onlyone.BuildConfig
 import com.example.onlyone.data.FavouriteMessage
 import com.example.onlyone.data.LocalFavoriteMessage
@@ -18,9 +19,12 @@ import com.google.firebase.functions.FirebaseFunctionsException
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 /**
  * Aggregating repository that exposes a stable API to the ViewModel layer,
@@ -31,6 +35,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class UserRepository @Inject constructor(
+    @ApplicationContext private val app: Context,
     private val publicRepo: UserPublicRepo,
     private val private: UserPrivateRepo,
     private val engagement: UserEngagementRepo,
@@ -39,7 +44,8 @@ class UserRepository @Inject constructor(
     private val settings: UserSettingsRepo,
     private val friendRepo: UserFriendRepo,
     private val discoveryRepo: UserDiscoveryRepo,
-    private val achievementRepo: UserAchievementRepo
+    private val achievementRepo: UserAchievementRepo,
+    private val friendDao: FriendDao,
 ) {
 
     // -------- UserPublicRepo --------
@@ -170,17 +176,33 @@ class UserRepository @Inject constructor(
     fun fetchFullUserSession(
         onComplete: (
             UserComposite,
-            List<PublicUser>, // friends
+            List<PublicUser>, // friends (merged)
             List<PublicUser>, // incoming
             List<PublicUser>, // outgoing
             List<PublicUser>, // blocked
             UserEngagementStatus
         ) -> Unit,
-        onFailure: (Exception) -> Unit
+        onFailure: (Exception) -> Unit,
+        checkChanged: Boolean = false,           // ✅ default cheap on startup
+        uidsToCheck: List<String>? = null        // ✅ optional subset check
     ) {
+        // 1) Read what we already have locally to build knownVersions (DAO is suspend → use runBlocking here)
+        val existing = runBlocking { friendDao.getAllFriendsNow() }
+        val knownFriendUids = existing.map { it.uid }
+        val knownVersions = existing.associate { it.uid to it.publicVersion }
+
+        // 2) Build request payload (old server ignores extras gracefully)
+        val payload = hashMapOf<String, Any>(
+            "knownFriendUids" to knownFriendUids,
+            "knownVersions" to knownVersions,
+            "checkChanged" to checkChanged
+        ).apply {
+            if (!uidsToCheck.isNullOrEmpty()) put("uidsToCheck", uidsToCheck)
+        }
+
         Firebase.functions("europe-west3")
             .getHttpsCallable("getUserWithFriends")
-            .call()
+            .call(payload)
             .addOnSuccessListener { result ->
                 val data = result.data as? Map<*, *> ?: throw Exception("Malformed response")
 
@@ -277,22 +299,132 @@ class UserRepository @Inject constructor(
                     lastRefill = engagementMap["lastRefill"] as? Timestamp
                 )
 
-                val friends = (data["friends"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
+                // === Delta-aware parsing ===
+                val deltaMap = data["friends_delta"] as? Map<*, *>
+
+                val friendsForVm: List<PublicUser>
                 val incoming = (data["incomingRequests"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
                 val outgoing = (data["outgoingRequests"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
-                val blocked = (data["blockedUsers"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
+                val blocked  = (data["blockedUsers"]   as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
 
-                Log.d("userStuff", "🔥 user name: ${user.username}")
-                Log.d("ownedAvatars", "🔥 user ownedAvatars: ${user.ownedAvatars}")
-                Log.d("userStuff", "🔥 user gold: ${user.gold}")
-                Log.d("userStuff", "🔥 user maxMoments: ${user.maxMoments}")
-                Log.d("userStuff", "🔥 engagementStatus swipesUsed: ${engagementStatus.swipesUsed}")
-                Log.d("userStuff", "🔥 engagementStatus maxUsed: ${user.maxSwipes}")
+                if (deltaMap != null) {
+                    // --- DELTA PATH ---
+                    val removedUids = (deltaMap["removedUids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                    val newUsers    = (deltaMap["newUsers"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
+                    val changed     = (deltaMap["changedUsers"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
 
-                onComplete(user, friends, incoming, outgoing, blocked, engagementStatus)
+                    // Merge with local cache snapshot we read above
+                    val byId = existing.associateBy { it.uid }.toMutableMap()
+
+                    removedUids.forEach { byId.remove(it) }
+
+                    fun PublicUser.toLocal(): LocalFriend = LocalFriend(
+                        uid = uid,
+                        username = username,
+                        moodStatus = moodStatus,
+                        avatarId = avatarId,
+                        points = points,
+                        achievementCount = achievementCount,
+                        favouriteMessage = favouriteMessage,
+                        gender = gender,
+                        age = age,
+                        city = city,
+                        publicVersion = publicVersion
+                    )
+
+                    changed.forEach { byId[it.uid] = it.toLocal() }
+                    newUsers.forEach { byId[it.uid] = it.toLocal() }
+
+                    val mergedLocal = byId.values.sortedBy { it.uid }
+
+                    // Write to Room (DAO is suspend → use runBlocking here)
+                    runBlocking {
+                        val existingSorted = friendDao.getAllFriendsNow().sortedBy { it.uid }
+                        if (existingSorted != mergedLocal) {
+                            friendDao.clearFriends()
+                            friendDao.insertAll(mergedLocal)
+                        }
+                    }
+
+                    friendsForVm = mergedLocal.map { lf ->
+                        PublicUser(
+                            uid = lf.uid,
+                            username = lf.username,
+                            moodStatus = lf.moodStatus,
+                            avatarId = lf.avatarId,
+                            points = lf.points,
+                            achievementCount = lf.achievementCount,
+                            favouriteMessage = lf.favouriteMessage,
+                            gender = lf.gender ?: "unspecified",
+                            age = lf.age,
+                            city = lf.city ?: "",
+                            publicVersion = lf.publicVersion
+                        )
+                    }
+                } else {
+                    // --- BACK-COMPAT PATH (old server returning full "friends") ---
+                    val friends = (data["friends"] as? List<*>)?.mapNotNull { parsePublicUser(it as? Map<*, *>) } ?: emptyList()
+
+                    val newLocal = friends.map { pu ->
+                        LocalFriend(
+                            uid = pu.uid,
+                            username = pu.username,
+                            moodStatus = pu.moodStatus,
+                            avatarId = pu.avatarId,
+                            points = pu.points,
+                            achievementCount = pu.achievementCount,
+                            favouriteMessage = pu.favouriteMessage,
+                            gender = pu.gender,
+                            age = pu.age,
+                            city = pu.city,
+                            publicVersion = pu.publicVersion
+                        )
+                    }.sortedBy { it.uid }
+
+                    runBlocking {
+                        val existingSorted = friendDao.getAllFriendsNow().sortedBy { it.uid }
+                        if (existingSorted != newLocal) {
+                            friendDao.clearFriends()
+                            friendDao.insertAll(newLocal)
+                        }
+                    }
+
+                    friendsForVm = friends
+                }
+
+                onComplete(user, friendsForVm, incoming, outgoing, blocked, engagementStatus)
             }
             .addOnFailureListener(onFailure)
     }
+    private val prefs by lazy {
+        app.getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
+    }
+
+    suspend fun refreshFriendDeltasIfDue(hours: Long, subsetSize: Int) {
+        val now = System.currentTimeMillis()
+        val last = prefs.getLong("friends_delta_last", 0L)
+        val dueMs = hours * 60L * 60L * 1000L
+        if (now - last < dueMs) return
+
+        val existing = friendDao.getAllFriendsNow()
+        if (existing.isEmpty()) {
+            prefs.edit().putLong("friends_delta_last", now).apply()
+            return
+        }
+
+        // ✅ simple randomized subset (no pickSubsetRoundRobin)
+        val subset = existing.map { it.uid }.shuffled().take(subsetSize)
+
+        fetchFullUserSession(
+            onComplete = { _, _, _, _, _, _ -> /* repo already merged delta */ },
+            onFailure  = { /* ignore transient */ },
+            checkChanged = true,
+            uidsToCheck  = subset
+        )
+
+        prefs.edit().putLong("friends_delta_last", now).apply()
+    }
+
 
     // -------- Parsing helpers --------
 // Derive absolute from *Level when the absolute isn't present in payload.
@@ -341,7 +473,8 @@ class UserRepository @Inject constructor(
             favouriteMessage = favourite,
             gender = (map["gender"] as? String ?: "unspecified"),
             age = (map["age"] as? Number)?.toInt(),
-            city = (map["city"] as? String ?: "")
+            city = (map["city"] as? String ?: ""),
+            publicVersion = (map["publicVersion"] as? Number)?.toInt() ?: 0
         )
     }
 

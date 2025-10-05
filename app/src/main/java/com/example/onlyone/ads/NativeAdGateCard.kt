@@ -1,7 +1,9 @@
+package com.example.onlyone
+
 import android.view.View
 import android.widget.ImageView
-import android.widget.TextView
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,14 +32,21 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.onlyone.R
 import com.example.onlyone.composables.CustomColorOverlay
 import com.example.onlyone.theme.ThemeTokens
-import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.google.android.gms.ads.nativead.NativeAdView
 
-private const val TEST_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110" // TODO: replace with real ID from admob unit
+// ✅ Your real Native ad unit
+private const val PROD_NATIVE_ID = "ca-app-pub-7925168977173280/9367567901"
+// ✅ Google test Native ad unit
+private const val TEST_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
+
+private fun nativeId(): String =
+    if (BuildConfig.DEBUG) TEST_NATIVE_ID else PROD_NATIVE_ID
 
 @Composable
 fun NativeAdGateCard(
@@ -51,7 +60,9 @@ fun NativeAdGateCard(
 
     // Load once
     LaunchedEffect(Unit) {
-        val loader = AdLoader.Builder(ctx, TEST_NATIVE_ID)
+        val request = AdRequest.Builder().build()
+
+        val loader = com.google.android.gms.ads.AdLoader.Builder(ctx, nativeId())
             .forNativeAd { ad ->
                 nativeAd?.destroy()
                 nativeAd = ad
@@ -62,8 +73,31 @@ fun NativeAdGateCard(
                     .setMediaAspectRatio(NativeAdOptions.NATIVE_MEDIA_ASPECT_RATIO_LANDSCAPE)
                     .build()
             )
+            .withAdListener(object : AdListener() {
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    isLoading = false
+                    val ri = error.responseInfo
+                    val adapterDetails = ri?.adapterResponses?.joinToString("\n") { ar ->
+                        val e = ar.adError
+                        "- ${ar.adapterClassName}: latency=${ar.latencyMillis}ms, " +
+                                "error='${e?.message}' code=${e?.code} domain=${e?.domain}"
+                    }
+                    android.util.Log.w(
+                        "NativeAdGateCard",
+                        """
+                        ❌ Native load failed:
+                        code=${error.code}, domain=${error.domain}, msg=${error.message}
+                        mediationAdapter=${ri?.mediationAdapterClassName}
+                        responseId=${ri?.responseId}
+                        Adapter responses:
+                        $adapterDetails
+                        """.trimIndent()
+                    )
+                }
+            })
             .build()
-        loader.loadAd(AdRequest.Builder().build())
+
+        loader.loadAd(request)
     }
 
     // Clean up
@@ -83,7 +117,11 @@ fun NativeAdGateCard(
         onDismiss = {}
     ) {
         Column(Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.ad_sponsored), style = MaterialTheme.typography.caption, color = theme.textColor.copy(alpha = 0.85f))
+            Text(
+                stringResource(R.string.ad_sponsored),
+                style = MaterialTheme.typography.caption,
+                color = theme.textColor.copy(alpha = 0.85f)
+            )
             Spacer(Modifier.height(8.dp))
 
             if (isLoading) {
@@ -110,7 +148,9 @@ fun NativeAdGateCard(
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = onContinue,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
             ) { Text(stringResource(R.string.ad_continue), color = theme.textColor) }
         }
     }
@@ -125,7 +165,8 @@ private fun buildNativeAdView(context: android.content.Context): NativeAdView {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         )
-        setPadding(24, 24, 24, 24)
+        val pad = (12 * context.resources.displayMetrics.density).toInt()
+        setPadding(pad, pad, pad, pad)
     }
 
     val media = MediaView(context).apply {
@@ -138,12 +179,13 @@ private fun buildNativeAdView(context: android.content.Context): NativeAdView {
     val body = TextView(context)
     val advertiser = TextView(context).apply { textSize = 12f }
     val icon = ImageView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(64, 64)
+        val d = context.resources.displayMetrics.density
+        layoutParams = LinearLayout.LayoutParams((64 * d).toInt(), (64 * d).toInt())
         visibility = View.GONE
     }
     val cta = android.widget.Button(context)
 
-    // Order: media, headline+icon, body, advertiser, CTA
+    // Order: media, headline, icon, body, advertiser, CTA
     root.addView(media)
     root.addView(headline)
     root.addView(icon)

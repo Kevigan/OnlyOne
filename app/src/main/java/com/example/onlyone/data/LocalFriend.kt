@@ -18,7 +18,8 @@ data class LocalFriend(
     // 🆕 new fields
     val gender: String = "unspecified", // "male","female","nonbinary","other","unspecified"
     val age: Int? = null,               // nullable so we don't force backfill
-    val city: String = ""               // empty as default
+    val city: String = "",              // empty as default
+    val publicVersion: Int = 0
 )
 
 // FavouriteMessageConverter.kt

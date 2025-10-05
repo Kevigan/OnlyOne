@@ -25,34 +25,34 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1) Initialize the Google Mobile Ads SDK once
         MobileAds.initialize(this) { status ->
             Log.d("AdsInit", "MobileAds initialized: $status")
         }
-        MobileAds.setRequestConfiguration(
-            RequestConfiguration.Builder()
-                .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR /*, "HASHED_TEST_DEVICE_ID"*/))
-                .build()
-        )
 
-        // 2) Run UMP consent and, when done, PRELOAD rewarded/interstitial
+        // ✅ Put test device IDs behind DEBUG
+        if (BuildConfig.DEBUG) {
+            MobileAds.setRequestConfiguration(
+                RequestConfiguration.Builder()
+                    .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR /*, "HASHED_TEST_DEVICE_ID"*/))
+                    .build()
+            )
+        }
+
+        // UMP → preload
         ConsentAndAds.showConsentThenInitAds(this, application)
-        // (ConsentAndAds will call RewardedAds.preload(...) for you)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
-
         setContent {
             val consentManager = remember { ConsentManager(applicationContext) }
             CompositionLocalProvider(LocalConsentManager provides consentManager) {
                 OnlyOneTheme {
-                    Surface(modifier = Modifier.fillMaxSize()) {
-                        Navigation()
-                    }
+                    Surface(modifier = Modifier.fillMaxSize()) { Navigation() }
                 }
             }
         }
     }
 }
+
 
 
 

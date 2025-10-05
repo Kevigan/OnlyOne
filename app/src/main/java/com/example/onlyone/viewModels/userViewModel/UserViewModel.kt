@@ -218,6 +218,16 @@ class UserViewModel @Inject constructor(
     // ---------------------------
 
     fun loadUser() = userManager.loadUser()
+    fun loadUser(
+        checkChanged: Boolean,
+        uidsToCheck: List<String>? = null
+    ) = userManager.loadUser(checkChanged = checkChanged, uidsToCheck = uidsToCheck)
+
+    fun refreshFriendDeltasIfDue(hours: Long = 6, subsetSize: Int = 12) {
+        viewModelScope.launch {
+            userRepository.refreshFriendDeltasIfDue(hours, subsetSize)
+        }
+    }
 
     /** Safely mutate the current user in-place (no network). */
     fun updateUserLocal(transform: (UserComposite) -> UserComposite) {

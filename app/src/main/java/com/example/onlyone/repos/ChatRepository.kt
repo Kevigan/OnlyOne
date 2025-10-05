@@ -73,15 +73,21 @@ class ChatRepository @Inject constructor(
             val success = response["success"] as? Boolean ?: false
             val alreadySent = response["alreadySent"] as? Boolean ?: false
 
-            return when {
-                alreadySent -> MessageResult.AlreadySent
+            when {
+                alreadySent -> {
+                    // 🔒 Server says you already sent today → reflect locally
+                    recordWrittenUser(message.receiverId)
+                    MessageResult.AlreadySent
+                }
                 success -> {
                     val rewards = response["rewards"] as? Map<*, *>
                     val gold = rewards?.get("gold") as? Int ?: 0
                     val points = rewards?.get("points") as? Int ?: 0
                     val rune = rewards?.get("runeEarned") as? String
-
                     Log.d("SendMessage", "✅ Rewards: $gold gold, $points points, rune: $rune")
+
+                    // ✅ Mark as written locally immediately
+                    recordWrittenUser(message.receiverId)
 
                     MessageResult.Success(gold, points, rune?.takeIf { it != "none" })
                 }
@@ -197,6 +203,7 @@ class ChatRepository @Inject constructor(
 
     suspend fun resetWrittenIfNewDay() {
         val entries = messageDao.getWrittenToday()
+        Log.d("ChatRepo", "entries are empty")
         if (entries.isEmpty()) return
 
         val firstWrite = entries.minOfOrNull { it.timestamp } ?: return

@@ -89,6 +89,7 @@ class ChatViewModel @Inject constructor(
     init {
         // Start the global daily timer → call reset when date changes.
         DailyResetTimer.start { resetWrittenTodayIfNeeded() }
+        resetWrittenTodayIfNeeded()
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -135,8 +136,8 @@ class ChatViewModel @Inject constructor(
                 when (val result = chatRepository.sendMessage(message)) {
                     is MessageResult.Success -> {
                         // mark written today (unchanged)
-                        val alreadySent = chatRepository.hasAlreadyWrittenTo(message.receiverId)
-                        if (!alreadySent) chatRepository.recordWrittenUser(message.receiverId)
+                        //val alreadySent = chatRepository.hasAlreadyWrittenTo(message.receiverId)
+                        //if (!alreadySent) chatRepository.recordWrittenUser(message.receiverId)
 
                         // ✅ optimistic user update
                         userViewModel.applySendRewards(

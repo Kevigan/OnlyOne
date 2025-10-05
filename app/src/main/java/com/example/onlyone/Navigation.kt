@@ -277,7 +277,7 @@ fun Navigation(
                     }
 
                     composable(Screen.AchievementsScreen.route) {
-                        AchievementsView(viewModel = userViewModel)
+                        AchievementsView(viewModel = userViewModel,theme = theme)
                     }
 
                     composable(

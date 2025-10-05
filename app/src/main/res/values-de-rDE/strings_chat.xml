@@ -12,7 +12,7 @@
     <string name="chat_searching">Suche nach jemandem…</string>
 
     <string name="chat_toast_too_long">Deine Nachricht ist zu lang! Aktualisieren Sie die Nachrichtenlänge im Shop!</string>
-    <string name="chat_reward_text">Erhalten: +%1$d Gold, +%2$d Punkte</string>
+    <string name="chat_reward_text">Erhalten: +%1$d Gold</string>
     <string name="chat_rune_drop">Gluecksdrop: %1$s Rune!</string>
     <string name="chat_already_sent">Du hast dieser Person heute bereits geschrieben.</string>
     <string name="chat_send_error">Nachricht konnte nicht gesendet werden. Versuche es spaeter.</string>

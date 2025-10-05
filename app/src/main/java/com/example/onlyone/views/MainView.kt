@@ -166,7 +166,8 @@ fun MainView(
                     },
                     onLogoutClick = { showLogoutDialog = true },
                     modifier = Modifier.fillMaxSize(),
-                    theme = theme
+                    theme = theme,
+                    navController = navController
                 )
             }
 

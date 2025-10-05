@@ -28,6 +28,9 @@
 
     <!-- Allgemein -->
     <string name="common_saving">Wird gespeichert …</string>
+    <!-- Age gate -->
+    <string name="agegate_title">Only One ist ab 18 Jahren.</string>
+    <string name="agegate_checkbox_label">Ich bestätige, dass ich 18 Jahre oder älter bin</string>
 
     <!-- Errors -->
     <string name="onboarding_error_create_profile">Profil konnte nicht erstellt werden</string>

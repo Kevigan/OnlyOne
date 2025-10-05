@@ -1,12 +1,13 @@
 package com.example.onlyone.views.chat
 
-import NativeAdGateCard
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
+import com.example.onlyone.NativeAdGateCard
 import com.example.onlyone.R
 import com.example.onlyone.RewardedAds
 import com.example.onlyone.composables.CustomColorOverlay
@@ -393,7 +395,7 @@ fun ChatView(
                                 when (result) {
                                     is MessageResult.Success -> {
                                         messageText = ""
-                                        val rewardText = context.getString(R.string.chat_reward_text, result.gold, result.points)
+                                        val rewardText = context.getString(R.string.chat_reward_text, result.gold)
                                         val runeText = result.rune?.let { "\n" + context.getString(R.string.chat_rune_drop, it) } ?: ""
                                         Toast.makeText(context, rewardText + runeText, Toast.LENGTH_LONG).show()
                                         navController.popBackStack()
@@ -510,14 +512,21 @@ fun ChatView(
                         }
                     },
                     enabled = !isAnimating && targetUser != null,
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(72.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = stringResource(R.string.chat_cd_next_user),
-                        tint = theme.textColor,
-                        modifier = Modifier.size(32.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp) // circle size
+                            .background(color = theme.gradientColor1, shape = CircleShape), // round background
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = stringResource(R.string.chat_cd_next_user),
+                            tint = Color.White, // contrast with background
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
             }
         }

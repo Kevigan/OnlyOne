@@ -15,43 +15,42 @@ object DailyResetTimer {
     private val _timeUntilReset = MutableStateFlow(getMillisUntilNextUtcMidnight())
     val timeUntilReset: StateFlow<Long> = _timeUntilReset.asStateFlow()
 
-    private var hasStarted = false
-
+    private var started = false
     private val listeners = mutableListOf<() -> Unit>()
-    private var lastTriggerDay: String? = null
 
     fun start(listener: () -> Unit) {
         listeners.add(listener)
-
-        if (hasStarted) return
-        hasStarted = true
+        if (started) return
+        started = true
 
         CoroutineScope(Dispatchers.Default).launch {
             while (true) {
                 val millis = getMillisUntilNextUtcMidnight()
                 _timeUntilReset.value = millis
 
-                val nowUtc = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                val todayKey = "${nowUtc.get(Calendar.YEAR)}-${nowUtc.get(Calendar.DAY_OF_YEAR)}"
+                // Wait exactly until next midnight (add a small buffer)
+                kotlinx.coroutines.delay(millis + 1000L)
 
-                if (millis in 0..5_000L && todayKey != lastTriggerDay) {
-                    lastTriggerDay = todayKey
-                    listeners.forEach { it() }
-                }
+                // Update countdown immediately after wake-up
+                _timeUntilReset.value = getMillisUntilNextUtcMidnight()
 
-
-                delay(60_000L)
+                // Notify all listeners once per midnight tick
+                listeners.forEach { it() }
             }
         }
     }
 
     private fun getMillisUntilNextUtcMidnight(): Long {
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-        calendar.add(Calendar.DATE, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis - System.currentTimeMillis()
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+            timeInMillis = now
+            add(Calendar.DATE, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        return cal.timeInMillis - now
     }
 }
+

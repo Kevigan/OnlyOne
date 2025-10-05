@@ -12,7 +12,7 @@
     <string name="chat_searching">Searching for someone…</string>
 
     <string name="chat_toast_too_long">Your message is too long! Upgrade maxMessageLength in shop!</string>
-    <string name="chat_reward_text">Earned: +%1$d gold, +%2$d points</string>
+    <string name="chat_reward_text">Earned: +%1$d gold</string>
     <string name="chat_rune_drop">Lucky drop: %1$s rune!</string>
     <string name="chat_already_sent">You already messaged this user today.</string>
     <string name="chat_send_error">Could not send message. Try again later.</string>

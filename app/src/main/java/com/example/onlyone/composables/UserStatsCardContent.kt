@@ -23,7 +23,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.onlyone.R
+import com.example.onlyone.Screen
 import com.example.onlyone.theme.ThemeTokens
 import com.example.onlyone.ui.avatar.AvatarPickerDialog
 
@@ -35,8 +37,8 @@ fun UserStatsCardContent(
     onMoodIconSelected: (Int) -> Unit,
     onAvatarSelected: (Int) -> Unit,
     onLogoutClick: () -> Unit,
-    // ✅ NEW: optional, so existing call sites keep working
     onFeedbackClick: (() -> Unit)? = null,
+    navController: NavController,         // ✅ NEW: for Achievements navigation
     modifier: Modifier = Modifier
 ) {
     val avatarResId = remember(user?.avatarId) { mapAvatarIdToDrawable(user?.avatarId) }
@@ -50,10 +52,10 @@ fun UserStatsCardContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .wrapContentHeight()                 // ⬅️ prevent stretching, remove bottom gap
+            .wrapContentHeight()
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        // ===== Top bar: Username + Gold (left) | Feedback + Logout (right) =====
+        // ===== Top bar: Username + Gold/Achievements (left) | Feedback + Logout (right) =====
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -69,16 +71,30 @@ fun UserStatsCardContent(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = stringResource(R.string.stats_gold, gold),
-                    style = MaterialTheme.typography.body1,
-                    color = theme.textColor
-                )
+
+                // 💰 Gold + 🏅 Achievements row
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.stats_gold, gold),
+                        style = MaterialTheme.typography.body1,
+                        color = theme.textColor
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(
+                        onClick = { navController.navigate(Screen.AchievementsScreen.route) },
+                        modifier = Modifier.size(28.dp)  // compact touch target but not tiny
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_emoji_events_24), // 🏅 medal icon
+                            contentDescription = stringResource(R.string.achv_title),
+                            tint = Color(0xFFFFD54F) // playful gold accent
+                        )
+                    }
+                }
             }
 
             // Right-side actions
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // ✅ Feedback icon (shown only if provided)
                 if (onFeedbackClick != null) {
                     IconButton(onClick = onFeedbackClick) {
                         Icon(
@@ -88,7 +104,6 @@ fun UserStatsCardContent(
                         )
                     }
                 }
-                // Logout icon
                 IconButton(onClick = onLogoutClick) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_logout_24),
@@ -99,7 +114,6 @@ fun UserStatsCardContent(
             }
         }
 
-        // Separator under top bar
         Divider(
             color = dividerColor,
             thickness = 1.dp,
@@ -114,10 +128,9 @@ fun UserStatsCardContent(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Left column: header + avatar
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = stringResource(R.string.common_avatar),   // "Avatar"
+                    text = stringResource(R.string.common_avatar),
                     style = MaterialTheme.typography.caption,
                     color = theme.textColor.copy(alpha = 0.8f)
                 )
@@ -135,7 +148,6 @@ fun UserStatsCardContent(
                 )
             }
 
-            // Vertical divider
             Box(
                 modifier = Modifier
                     .width(1.dp)
@@ -143,14 +155,13 @@ fun UserStatsCardContent(
                     .background(dividerColor)
             )
 
-            // Right column: header + mood block
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 4.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.common_mood),     // "Mood"
+                    text = stringResource(R.string.common_mood),
                     style = MaterialTheme.typography.caption,
                     color = theme.textColor.copy(alpha = 0.8f)
                 )
@@ -165,7 +176,6 @@ fun UserStatsCardContent(
         }
     }
 
-    // Owned-only Avatar picker
     if (showAvatarDialog) {
         AvatarPickerDialog(
             ownedAvatarIds = ownedAvatarIds,

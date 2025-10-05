@@ -28,6 +28,9 @@
 
     <!-- Generic -->
     <string name="common_saving">Saving…</string>
+    <!-- Age gate -->
+    <string name="agegate_title">Only One is 18+.</string>
+    <string name="agegate_checkbox_label">I confirm I am 18 or older</string>
 
     <!-- Errors -->
     <string name="onboarding_error_create_profile">Failed to create user profile</string>

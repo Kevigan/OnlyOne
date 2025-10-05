@@ -30,6 +30,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
@@ -38,14 +39,16 @@ fun SplashView(
     navController: NavController,
     userViewModel: UserViewModel
 ) {
-    val consentManager = LocalConsentManager.current           // ✅ get manager
+    val consentManager = LocalConsentManager.current
     val context = LocalContext.current
     val activity = context as Activity
 
-    // existing state/animation code...
     val firebaseUser by sessionViewModel.currentUser.collectAsState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val offsetX = remember { Animatable(-screenWidth.value) }
+
+    // ✅ composable-owned scope for launching coroutines from callbacks
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         offsetX.animateTo(
@@ -54,19 +57,14 @@ fun SplashView(
         )
     }
 
-    // ✅ Ask for consent on cold start. Safe to call each launch.
     LaunchedEffect(Unit) {
-        //if (BuildConfig.DEBUG) consentManager.resetForTesting()
-
         consentManager.requestAndShowIfRequired(activity) { canRequestAds, err ->
             Log.d("UMP", "Finished consent flow. canRequestAds=$canRequestAds, err=$err")
-            // If you initialize ads, do it here when canRequestAds==true.
         }
     }
 
-    // 🧭 Your existing navigation gate can remain as-is
     LaunchedEffect(firebaseUser) {
-        delay(1200) // let the logo animate
+        delay(1200)
 
         val auth = Firebase.auth
         val user = auth.currentUser
@@ -94,14 +92,25 @@ fun SplashView(
                 .get()
                 .addOnSuccessListener { doc ->
                     if (doc.exists()) {
-                        userViewModel.loadUser()
+                        // Cheap load every start
+                        userViewModel.loadUser(checkChanged = false)
+
+                        // ✅ use the composable scope, NOT LaunchedEffect here
+                        scope.launch {
+                            // optional tiny delay to stagger network work
+                            // delay(8000)
+                            userViewModel.refreshFriendDeltasIfDue(hours = 6, subsetSize = 12)
+                        }
+
                         navController.navigate(Screen.MainScreen.route) {
                             popUpTo(Screen.SplashScreen.route) { inclusive = true }
                         }
                     } else {
                         navController.navigate(
                             Screen.AgeGateScreen.createRoute(uid, email, google = false)
-                        ) { popUpTo(Screen.SplashScreen.route) { inclusive = true } }
+                        ) {
+                            popUpTo(Screen.SplashScreen.route) { inclusive = true }
+                        }
                     }
                 }
                 .addOnFailureListener {
