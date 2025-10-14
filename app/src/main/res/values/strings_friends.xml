@@ -30,6 +30,8 @@
     <string name="friends_dialog_email_label">Friend´s email</string>
     <string name="friends_dialog_send">Send</string>
     <string name="friends_dialog_cancel">Cancel</string>
+    <string name="friends_dialog_send_confirm">Send friend request?</string>
+
 
     <!-- Toasts -->
     <string name="friends_toast_email_empty">Email cannot be empty</string>
@@ -76,5 +78,12 @@
     <!-- Achievements dialog -->
     <string name="friends_dialog_achievements_title">Achievements</string>
     <string name="friends_dialog_achievements_total">Total achievements: %1$d</string>
+
+    <!-- Friend request notifications -->
+    <string name="friend_request_title">New friend request</string>
+    <string name="friend_request_body_named">%1$s wants to connect</string>
+    <string name="friend_request_body_generic">Someone wants to connect</string>
+    <string name="friend_request_generic">Someone wants to connect</string>
+
 
 </resources>

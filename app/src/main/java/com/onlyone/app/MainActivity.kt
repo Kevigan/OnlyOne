@@ -1,0 +1,57 @@
+package com.onlyone.app
+
+import android.os.Bundle
+import android.util.Log
+import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import com.onlyone.app.ads.LocalConsentManager
+import com.onlyone.app.privacy.ConsentManager
+import com.onlyone.app.ui.theme.OnlyOneTheme
+import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
+import com.onlyone.app.ConsentAndAds
+
+@AndroidEntryPoint
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        MobileAds.initialize(this) { status ->
+            Log.d("AdsInit", "MobileAds initialized: $status")
+        }
+
+        // ✅ Put test device IDs behind DEBUG
+        if (BuildConfig.DEBUG) {
+            MobileAds.setRequestConfiguration(
+                RequestConfiguration.Builder()
+                    .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR /*, "HASHED_TEST_DEVICE_ID"*/))
+                    .build()
+            )
+        }
+
+        // UMP → preload
+        ConsentAndAds.showConsentThenInitAds(this, application)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        setContent {
+            val consentManager = remember { ConsentManager(applicationContext) }
+            CompositionLocalProvider(LocalConsentManager provides consentManager) {
+                OnlyOneTheme {
+                    Surface(modifier = Modifier.fillMaxSize()) { Navigation() }
+                }
+            }
+        }
+    }
+}
+
+
+
+

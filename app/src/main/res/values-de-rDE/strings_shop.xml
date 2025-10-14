@@ -11,7 +11,7 @@
 
     <string name="shop_cost_header">Kosten für den nächsten Schritt:</string>
 
-    <string name="shop_upgrade">Aufwärten</string>
+    <string name="shop_upgrade">Aufwerten</string>
     <string name="shop_upgrade_success">Upgrade erfolgreich!</string>
     <string name="shop_upgrade_failed">Upgrade fehlgeschlagen!</string>
 

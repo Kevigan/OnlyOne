@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Chain Message (Create) -->
+    <string name="chain_create_header">Kettennachricht starten</string>
+    <string name="chain_seed_label">Schreib etwas zum Start…</string>
+    <string name="chain_select_friend_label">Freund auswählen</string>
+    <string name="chain_send_button">Senden</string>
+    <string name="chain_length_value">Max. Teilnehmende: %1$d</string>
+
+    <!-- FAB content descriptions -->
+    <string name="cd_write_message">Nachricht schreiben</string>
+    <string name="cd_activities">Aktivitäten</string>
+    <string name="cd_start_chain">Kette starten</string>
+
+    <!-- Screen title -->
+    <string name="screen_title_create_chain">Kette starten</string>
+
+    <!-- Chain Message explainer -->
+    <string name="chain_description_title">Was ist eine Kettennachricht?</string>
+    <string name="chain_description_body">
+        Starte eine kurze Nachricht und gib sie an Freunde weiter. Jede Person fügt eine Zeile hinzu und gibt sie weiter. Sobald die gewählte Länge (3–10) erreicht ist, wird die komplette Kette für alle Teilnehmer freigeschaltet – ihr könnt sie lesen und lokal speichern.
+    </string>
+    <string name="chain_description_hint">
+        Tipp: Wähle den ersten Freund und die Kettenlänge. Wenn jemand beschäftigt ist, kannst du den Zug später umleiten.
+    </string>
+
+    <!-- Detail headers / CTAs -->
+    <string name="chain_header_your_turn">Du bist dran</string>
+    <string name="chain_header_finish">Kette abschließen</string>
+    <string name="chain_header_waiting">Warten auf den nächsten Schritt</string>
+    <string name="chain_header_complete">Kette abgeschlossen</string>
+    <string name="chain_header_expired">Kette abgelaufen</string>
+
+    <string name="chain_add_and_pass_button">Zeile hinzufügen &amp; weitergeben</string>
+    <string name="chain_finish_button">Abschließen &amp; anzeigen</string>
+    <string name="chain_subtitle_format">Schritte %1$d / %2$d — %3$s • %4$s</string>
+
+    <string name="chain_save_locally">Lokal speichern</string>
+    <string name="chain_share">Teilen</string>
+
+    <!-- Toasts -->
+    <string name="chain_toast_created">Kette erstellt</string>
+    <string name="chain_toast_failed">Kette konnte nicht erstellt werden</string>
+
+
+
+    <string name="chain_toast_step_sent">Deine Zeile wurde hinzugefügt</string>
+    <string name="chain_toast_step_failed">Zeile konnte nicht hinzugefügt werden</string>
+    <string name="chain_toast_rerouted">Zug umgeleitet</string>
+    <string name="chain_toast_reroute_failed">Zug konnte nicht umgeleitet werden</string>
+    <string name="chain_toast_saved_local">Lokal gespeichert</string>
+
+    <!-- Chains list / common -->
+    <string name="chains_recent_header">Deine Ketten (letzte 24 Std.)</string>
+    <string name="chains_empty_title">Keine aktuellen Ketten</string>
+    <string name="chains_empty_hint">Starte eine über das +-Menü.</string>
+    <string name="chain_state_open">Offen</string>
+    <string name="chain_state_complete">Abgeschlossen</string>
+    <string name="chain_state_expired">Abgelaufen</string>
+    <string name="chain_time_left_hm">%1$dh %2$02dm übrig</string>
+    <string name="chain_time_left_m">%1$dm übrig</string>
+    <string name="chain_time_left_zero">0 Min übrig</string>
+    <string name="common_untitled">Ohne Titel</string>
+    <string name="cd_help">Hilfe</string>
+
+    <!-- Create: labels -->
+    <string name="chain_title_label">Titel</string>
+
+    <!-- Reroute -->
+    <string name="chain_reroute_header">Neu zuweisen (bei Inaktivität)</string>
+    <string name="chain_reroute_pick">Neue Person auswählen</string>
+    <string name="chain_reroute_now">Du kannst jetzt neu zuweisen.</string>
+    <string name="chain_reroute_later">Verfügbar in ~%1$d Min</string>
+    <string name="chain_reroute_button">Neu zuweisen</string>
+
+
+    <!-- Saved Chains -->
+    <string name="saved_chains_title">Gespeicherte Chains</string>
+    <string name="saved_chains_empty">Noch nichts gespeichert</string>
+    <string name="saved_label_created">Erstellt:</string>
+    <string name="saved_label_contributors">Mitwirkende:</string>
+    <string name="saved_dialog_close">Schließen</string>
+    <string name="saved_chains_created">Erstellt: %1$s</string>
+    <string name="saved_chains_contributors">Mitwirkende: %1$s</string>
+</resources>

@@ -19,7 +19,7 @@
         Verdiene Gold für den Shop, indem du Nachrichten sendest und gute Reaktionen erhältst!
     </string>
     <string name="onboarding_step2">
-        Entdecke neue Leute im Swipe-Modus — du startest mit 50 Swipes pro Tag.
+        Entdecke neue Leute im Swipe-Modus — du startest mit 25 Swipes pro Tag.
     </string>
     <string name="onboarding_step3">
         Nutze deine Statusnachricht, um den Ton anzugeben: schreibe etwas Interessantes über dich
@@ -35,6 +35,15 @@
     <!-- Errors -->
     <string name="onboarding_error_create_profile">Profil konnte nicht erstellt werden</string>
     <string name="onboarding_error_fcm_token">FCM-Token konnte nicht abgerufen werden</string>
+
+    <!-- Verify Email -->
+    <string name="verify_email_title">Bestätige deine E-Mail</string>
+    <string name="verify_email_sent">Bestätigungs-E-Mail wurde gesendet.</string>
+    <string name="verify_email_failed">E-Mail konnte nicht gesendet werden.</string>
+    <string name="verify_email_resend">E-Mail erneut senden</string>
+    <string name="verify_email_verified">Ich habe bestätigt</string>
+    <string name="verify_email_not_verified">Noch nicht bestätigt. Bitte klicke auf den Link in deiner E-Mail.</string>
+    <string name="verify_email_check_failed">Überprüfung konnte nicht durchgeführt werden.</string>
 </resources>
 
 

@@ -64,5 +64,8 @@
     <string name="report_toast_invalid">Couldn´t send report (invalid)</string>
     <string name="report_toast_error">Report failed. Try again</string>
 
-
+    <!-- ChatScreenEntry status messages -->
+    <string name="chat_status_opening">Opening chat…</string>
+    <string name="chat_status_unavailable">This chat isn’t available.</string>
+    <string name="chat_status_loading_user">Loading your profile…</string>
 </resources>

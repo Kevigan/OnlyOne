@@ -17,14 +17,19 @@ val privacyUrl = localProperties.getProperty("PRIVACY_URL") ?: "https://onlyone-
 
 android {
     namespace = "com.onlyone.app"
-    compileSdk = 34
+
+    // ⬆️ Required for Play Console (Android 15)
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.onlyone.app"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 2
-        versionName = "1.1"
+
+        // ⬆️ Required for Play Console (Android 15)
+        targetSdk = 35
+
+        versionCode = 5
+        versionName = "1.3"
 
         buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
         buildConfigField("String", "PRIVACY_URL", "\"$privacyUrl\"")
@@ -58,8 +63,8 @@ android {
         }
     }
 
-
     compileOptions {
+        // Keeping 1.8 for compatibility; you can raise later if needed
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }

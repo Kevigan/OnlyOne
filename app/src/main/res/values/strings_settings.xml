@@ -19,6 +19,7 @@
     <string name="settings_notifications_header">Notifications</string>
     <string name="settings_notifications_message">Messages</string>
     <string name="settings_notifications_feedback">Feedback</string>
+    <string name="settings_notifications_friend_request">Friend requests</string>
 
     <!-- Buttons / dev tools (if used) -->
     <string name="settings_create_fake_users">Create %1$d fake users</string>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <!-- Chain Message (Create) -->
+    <string name="chain_create_header">Start Chain Message</string>
+    <string name="chain_seed_label">Say something to start…</string>
+    <string name="chain_select_friend_label">Select friend</string>
+    <string name="chain_send_button">Send</string>
+    <string name="chain_length_value">Max users: %1$d</string>
+    <!-- FAB content descriptions -->
+    <string name="cd_write_message">Write Message</string>
+    <string name="cd_activities">Activities</string>
+    <string name="cd_start_chain">Start Chain</string>
+
+    <!-- Screen title -->
+    <string name="screen_title_create_chain">Start Chain</string>
+
+    <!-- Chain Message explainer -->
+    <string name="chain_description_title">What is a Chain Message?</string>
+    <string name="chain_description_body">
+        Start a short message and pass it on to friends. Each person adds one line and hands it to the next. When it reaches your chosen length (3–10), the full chain unlocks for all participants — you can read it and save it locally.
+    </string>
+    <string name="chain_description_hint">
+        Tip: Choose the first friend and the chain length. If someone is busy, you can reroute the turn after a while.
+    </string>
+
+    <!-- Detail headers / CTAs -->
+    <string name="chain_header_your_turn">It’s your turn</string>
+    <string name="chain_header_finish">Finish the chain</string>
+    <string name="chain_header_waiting">Waiting for next step</string>
+    <string name="chain_header_complete">Chain complete</string>
+    <string name="chain_header_expired">Chain expired</string>
+
+    <string name="chain_add_and_pass_button">Add line &amp; pass</string>
+    <string name="chain_finish_button">Finish &amp; reveal</string>
+    <string name="chain_subtitle_format">Steps %1$d / %2$d — %3$s • %4$s</string>
+
+    <string name="chain_save_locally">Save locally</string>
+    <string name="chain_share">Share</string>
+
+    <!-- Toasts -->
+    <string name="chain_toast_created">Chain created</string>
+    <string name="chain_toast_failed">Couldn’t create chain</string>
+
+
+    <string name="chain_toast_step_sent">Added your line</string>
+    <string name="chain_toast_step_failed">Couldn’t add your line</string>
+    <string name="chain_toast_rerouted">Turn rerouted</string>
+    <string name="chain_toast_reroute_failed">Couldn’t reroute turn</string>
+    <string name="chain_toast_saved_local">Saved locally</string>
+
+    <!-- Chains list / common -->
+    <string name="chains_recent_header">Your chains (last 24h)</string>
+    <string name="chains_empty_title">No recent chains</string>
+    <string name="chains_empty_hint">Start one from the + menu.</string>
+    <string name="chain_state_open">Open</string>
+    <string name="chain_state_complete">Complete</string>
+    <string name="chain_state_expired">Expired</string>
+    <string name="chain_time_left_hm">%1$dh %2$02dm left</string>
+    <string name="chain_time_left_m">%1$dm left</string>
+    <string name="chain_time_left_zero">0m left</string>
+    <string name="common_untitled">Untitled</string>
+    <string name="cd_help">Help</string>
+
+    <!-- Create: labels -->
+    <string name="chain_title_label">Title</string>
+
+    <!-- Reroute -->
+    <string name="chain_reroute_header">Reassign (if idle)</string>
+    <string name="chain_reroute_pick">Pick a new assignee</string>
+    <string name="chain_reroute_now">You can reassign now.</string>
+    <string name="chain_reroute_later">Available in ~%1$d min</string>
+    <string name="chain_reroute_button">Reassign</string>
+
+
+    <!-- Saved Chains -->
+    <string name="saved_chains_title">Saved chains</string>
+    <string name="saved_chains_empty">Nothing saved yet</string>
+    <string name="saved_label_created">Created:</string>
+    <string name="saved_label_contributors">Contributors:</string>
+    <string name="saved_dialog_close">Close</string>
+    <string name="saved_chains_created">Created: %1$s</string>
+    <string name="saved_chains_contributors">Contributors: %1$s</string>
+</resources>

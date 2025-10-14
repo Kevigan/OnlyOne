@@ -19,7 +19,7 @@
         Earn gold for the shop by sending messages and receiving good reactions!
     </string>
     <string name="onboarding_step2">
-        Discover new people in Swipe mode — you start with 50 swipes per day.
+        Discover new people in Swipe mode — you start with 25 swipes per day.
     </string>
     <string name="onboarding_step3">
         Use your status message to set the tone: write something interesting about yourself
@@ -35,6 +35,15 @@
     <!-- Errors -->
     <string name="onboarding_error_create_profile">Failed to create user profile</string>
     <string name="onboarding_error_fcm_token">Failed to get FCM token</string>
+
+    <!-- Verify Email -->
+    <string name="verify_email_title">Verify your email</string>
+    <string name="verify_email_sent">Verification email sent.</string>
+    <string name="verify_email_failed">Failed to send email.</string>
+    <string name="verify_email_resend">Resend email</string>
+    <string name="verify_email_verified">I’ve verified</string>
+    <string name="verify_email_not_verified">Not verified yet. Please tap the link in your email.</string>
+    <string name="verify_email_check_failed">Could not check verification.</string>
 </resources>
 
 

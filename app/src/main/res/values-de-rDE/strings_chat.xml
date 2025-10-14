@@ -64,5 +64,8 @@
     <string name="report_toast_invalid">Meldung konnte nicht gesendet werden (ungültig)</string>
     <string name="report_toast_error">Meldung fehlgeschlagen. Bitte erneut versuchen</string>
 
-
+    <!-- ChatScreenEntry status messages -->
+    <string name="chat_status_opening">Chat wird geöffnet…</string>
+    <string name="chat_status_unavailable">Dieser Chat ist nicht verfügbar.</string>
+    <string name="chat_status_loading_user">Profil wird geladen…</string>
 </resources>
